@@ -98,7 +98,7 @@ export default function App() {
       <header className="bg-card/80 backdrop-blur-sm border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="relative flex justify-center items-center">
-            <h1 className="text-5xl font-bold text-foreground">Second Thought</h1>
+            <h1 className="text-5xl font-bold text-[#06402B]">Second Thought</h1>
             <img 
             /*
             If the imported logo is already a string URL, just use it directly.
@@ -120,30 +120,30 @@ export default function App() {
           <div className="flex gap-2">
             <button
               onClick={() => setCurrentView('home')}
-              className={`py-6 px-8 border-b-4 font-medium text-base transition-colors ${
+              className={`py-6 px-8 border-b-4 font-medium text-base transition-colors text-[#255736] ${
                 currentView === 'home'
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-muted-foreground hover:text-foreground hover:border-muted'
+                  ? 'border-primary'
+                  : 'border-transparent hover:border-muted'
               }`}
             >
               All Items
             </button>
             <button
               onClick={() => setCurrentView('time')}
-              className={`py-6 px-8 border-b-4 font-medium text-base transition-colors ${
+              className={`py-6 px-8 border-b-4 font-medium text-base transition-colors text-[#255736] ${
                 currentView === 'time'
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-muted-foreground hover:text-foreground hover:border-muted'
+                  ? 'border-primary'
+                  : 'border-transparent hover:border-muted'
               }`}
             >
               Timeline
             </button>
             <button
               onClick={() => setCurrentView('goals')}
-              className={`py-6 px-8 border-b-4 font-medium text-base transition-colors ${
+              className={`py-6 px-8 border-b-4 font-medium text-base transition-colors text-[#255736] ${
                 currentView === 'goals'
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-muted-foreground hover:text-foreground hover:border-muted'
+                  ? 'border-primary'
+                  : 'border-transparent hover:border-muted'
               }`}
             >
               Goals
