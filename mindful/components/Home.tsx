@@ -1,5 +1,5 @@
 import { Item } from '../App';
-import { Calendar, Target } from 'lucide-react';
+import { Calendar, Target, ShoppingBag } from 'lucide-react';
 
 interface HomeProps {
   items: Item[];
@@ -11,7 +11,7 @@ export function Home({ items, onItemClick }: HomeProps) {
     return (
       <div className="text-center py-16">
         <div className="text-muted-foreground/40 mb-4">
-          <Target className="w-16 h-16 mx-auto" />
+          <ShoppingBag className="w-16 h-16 mx-auto" />
         </div>
         <h2 className="text-xl text-foreground/80 mb-2">No items yet</h2>
         <p className="text-muted-foreground">
