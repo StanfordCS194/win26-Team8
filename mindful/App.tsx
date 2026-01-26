@@ -6,6 +6,7 @@ import { TimeBasedView } from './components/TimeBasedView';
 import { GoalsBasedView } from './components/GoalsBasedView';
 import { Plus } from 'lucide-react';
 import './styles/globals.css';
+import logoImage from './assets/logo.png'; // imports photo as module, rather than using hardcoded path later on
 
 export interface Item {
   id: string;
@@ -99,7 +100,13 @@ export default function App() {
           <div className="relative flex justify-center items-center">
             <h1 className="text-5xl font-bold text-foreground">Second Thought</h1>
             <img 
-              src="/assets/logo.png" 
+            /*
+            If the imported logo is already a string URL, just use it directly.
+            Otherwise, if it’s an object and has a .default property, use that.
+            If there’s no .default, but there is a .uri, use that instead.
+            Else: just return whatever it is
+            */
+              src={typeof logoImage === 'string' ? logoImage : (logoImage as any).default || (logoImage as any).uri || logoImage} // replacing previous hardcoded path.
               alt="Logo" 
               className="absolute right-0 top-0 h-20 w-auto"
             />
