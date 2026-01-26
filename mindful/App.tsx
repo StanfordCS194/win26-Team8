@@ -4,6 +4,7 @@ import { ItemDetail } from './components/ItemDetail';
 import { AddItemForm } from './components/AddItemForm';
 import { TimeBasedView } from './components/TimeBasedView';
 import { GoalsBasedView } from './components/GoalsBasedView';
+import { OurMission } from './components/OurMission';
 import { Plus } from 'lucide-react';
 import './styles/globals.css';
 import logoImage from './assets/logo.png'; // imports photo as module, rather than using hardcoded path later on
@@ -35,12 +36,12 @@ export interface Category {
   itemIds: string[];
 }
 
-type View = 'home' | 'item' | 'add' | 'time' | 'goals';
+type View = 'home' | 'item' | 'add' | 'time' | 'goals' | 'mission';
 
 export default function App() {
   const [items, setItems] = useState<Item[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [currentView, setCurrentView] = useState<View>('home');
+  const [currentView, setCurrentView] = useState<View>('mission');
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 
   // Load data from localStorage
@@ -108,7 +109,7 @@ export default function App() {
             */
               src={typeof logoImage === 'string' ? logoImage : (logoImage as any).default || (logoImage as any).uri || logoImage} // replacing previous hardcoded path.
               alt="Logo" 
-              className="absolute right-0 top-0 h-20 w-auto"
+              className="absolute left-0 -top-6 h-32 w-auto"
             />
           </div>
         </div>
@@ -118,6 +119,16 @@ export default function App() {
       <nav className="bg-card/60 backdrop-blur-sm border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex gap-2">
+            <button
+              onClick={() => setCurrentView('mission')}
+              className={`py-6 px-8 border-b-4 font-medium text-base transition-colors text-[#255736] ${
+                currentView === 'mission'
+                  ? 'border-primary'
+                  : 'border-transparent hover:border-muted'
+              }`}
+            >
+              Home
+            </button>
             <button
               onClick={() => setCurrentView('home')}
               className={`py-6 px-8 border-b-4 font-medium text-base transition-colors text-[#255736] ${
@@ -153,19 +164,21 @@ export default function App() {
       </nav>
 
       {/* Add Item Button */}
-      <div className="bg-background border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-end">
-            <button
-              onClick={() => setCurrentView('add')}
-              className="flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-full hover:bg-primary/90 transition-all shadow-sm hover:shadow-md"
-            >
-              <Plus className="w-5 h-5" />
-              Add Item
-            </button>
+      {currentView !== 'mission' && (
+        <div className="bg-background border-b border-border">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div className="flex justify-end">
+              <button
+                onClick={() => setCurrentView('add')}
+                className="flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-full hover:bg-primary/90 transition-all shadow-sm hover:shadow-md"
+              >
+                <Plus className="w-5 h-5" />
+                Add Item
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-16">
@@ -190,6 +203,9 @@ export default function App() {
         )}
         {currentView === 'goals' && (
           <GoalsBasedView items={items} onItemClick={handleItemClick} />
+        )}
+        {currentView === 'mission' && (
+          <OurMission />
         )}
       </main>
     </div>
