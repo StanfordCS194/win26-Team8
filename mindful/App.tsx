@@ -93,7 +93,7 @@ export default function App() {
   const selectedItem = items.find(item => item.id === selectedItemId);
 
   return (
-    <div className="min-h-screen bg-background overflow-y-auto">
+    <div className="w-full min-h-screen bg-background overflow-y-auto">
       {/* Header */}
       <header className="bg-card/80 backdrop-blur-sm border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
