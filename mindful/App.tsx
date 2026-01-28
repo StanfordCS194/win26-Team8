@@ -205,7 +205,7 @@ export default function App() {
           <GoalsBasedView items={items} onItemClick={handleItemClick} />
         )}
         {currentView === 'mission' && (
-          <OurMission />
+          <OurMission onNavigate={(view) => setCurrentView(view)} />
         )}
       </main>
     </div>

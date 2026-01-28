@@ -1,6 +1,11 @@
 import logoImage from '../assets/logo.png';
 
-export function OurMission() {
+// Add this interface to define the props
+interface OurMissionProps {
+  onNavigate: (view: 'time' | 'goals') => void;
+}
+
+export function OurMission({ onNavigate }: OurMissionProps) {
   return (
     <div>
       <div className="flex flex-col items-center mb-12">
@@ -35,9 +40,25 @@ export function OurMission() {
         <h2 className="text-2xl text-[#06402B] font-serif">Get Started</h2>
       </div>
 
-      <p className="text-[#06402B] leading-relaxed font-serif">
+      <p className="text-[#06402B] leading-relaxed font-serif mb-6">
         Add items to purchase after a time constraint goes by or after you complete a goal!
       </p>
+    {/* Add this button to navigate to the timeline view */}
+      <div className="flex gap-4">
+        <button
+          onClick={() => onNavigate('time')}
+          className="flex items-center justify-center bg-primary text-primary-foreground px-6 py-3 rounded-full hover:bg-primary/90 transition-all shadow-sm hover:shadow-md font-medium"
+        >
+          View Timeline
+        </button>
+        {/* Add this button to navigate to the goals view */}
+        <button
+          onClick={() => onNavigate('goals')}
+          className="flex items-center justify-center bg-primary text-primary-foreground px-6 py-3 rounded-full hover:bg-primary/90 transition-all shadow-sm hover:shadow-md font-medium"
+        >
+          View Goals
+        </button>
+      </div>
     </div>
   );
 }
