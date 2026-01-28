@@ -47,14 +47,14 @@ export function OurMission({ onNavigate }: OurMissionProps) {
       <div className="flex gap-4">
         <button
           onClick={() => onNavigate('time')}
-          className="flex items-center justify-center bg-primary text-primary-foreground px-6 py-3 rounded-full hover:bg-primary/90 transition-all shadow-sm hover:shadow-md font-medium"
+          className="flex items-center justify-center bg-[#06402B] text-white px-6 py-3 rounded-full hover:bg-[#052E1F] transition-all shadow-sm hover:shadow-md font-medium"
         >
           View Timeline
         </button>
         {/* Add this button to navigate to the goals view */}
         <button
           onClick={() => onNavigate('goals')}
-          className="flex items-center justify-center bg-primary text-primary-foreground px-6 py-3 rounded-full hover:bg-primary/90 transition-all shadow-sm hover:shadow-md font-medium"
+          className="flex items-center justify-center bg-[#06402B] text-white px-6 py-3 rounded-full hover:bg-[#052E1F] transition-all shadow-sm hover:shadow-md font-medium"
         >
           View Goals
         </button>
