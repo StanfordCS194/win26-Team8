@@ -7,3 +7,4 @@ This is Mina testing branches!
 Tarini Mutreja
 Nicole Esibov (for source control with git assignment)
 this is emily, hiii
+hi this is Manat
