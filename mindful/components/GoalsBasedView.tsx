@@ -1,31 +1,18 @@
 import { Item } from '../App';
-import { Target } from 'lucide-react';
+import { Target, Plus } from 'lucide-react';
 
 interface GoalsBasedViewProps {
   items: Item[];
   onItemClick: (itemId: string) => void;
+  onAddItem: () => void;
 }
 
-export function GoalsBasedView({ items, onItemClick }: GoalsBasedViewProps) {
+export function GoalsBasedView({ items, onItemClick, onAddItem }: GoalsBasedViewProps) {
   const goalsBasedItems = items.filter(item => item.constraintType === 'goals');
 
   const easyItems = goalsBasedItems.filter(item => item.difficulty === 'easy');
   const mediumItems = goalsBasedItems.filter(item => item.difficulty === 'medium');
   const hardItems = goalsBasedItems.filter(item => item.difficulty === 'hard');
-
-  if (goalsBasedItems.length === 0) {
-    return (
-      <div className="text-center py-16">
-        <div className="text-muted-foreground/40 mb-4">
-          <Target className="w-16 h-16 mx-auto" />
-        </div>
-        <h2 className="text-xl text-foreground/80 mb-2">No goals-based items</h2>
-        <p className="text-muted-foreground">
-          Items with goal constraints will appear here organized by difficulty.
-        </p>
-      </div>
-    );
-  }
 
   const renderSection = (
     title: string, 
@@ -96,35 +83,58 @@ export function GoalsBasedView({ items, onItemClick }: GoalsBasedViewProps) {
 
   return (
     <div>
-      <div className="mb-8">
-        <h2 className="text-2xl text-foreground font-serif">Goals-Based Items</h2>
-        <p className="text-muted-foreground mt-2">
-          Organized by difficulty level
-        </p>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl text-foreground font-serif">Goals-Based Items</h2>
+          <p className="text-muted-foreground mt-2">
+            Organized by difficulty level
+          </p>
+        </div>
+        <button
+          onClick={onAddItem}
+          className="flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-full hover:bg-primary/90 transition-all shadow-sm hover:shadow-md"
+        >
+          <Plus className="w-5 h-5" />
+          Add Item
+        </button>
       </div>
 
-      {renderSection(
-        'Easy',
-        easyItems,
-        'text-primary',
-        'bg-primary',
-        'border-primary'
-      )}
+      {goalsBasedItems.length === 0 ? (
+        <div className="text-center py-16">
+          <div className="text-muted-foreground/40 mb-4">
+            <Target className="w-16 h-16 mx-auto" />
+          </div>
+          <h3 className="text-xl text-foreground/80 mb-2">No goals-based items</h3>
+          <p className="text-muted-foreground">
+            Items with goal constraints will appear here organized by difficulty.
+          </p>
+        </div>
+      ) : (
+        <>
+          {renderSection(
+            'Easy',
+            easyItems,
+            'text-primary',
+            'bg-primary',
+            'border-primary'
+          )}
 
-      {renderSection(
-        'Medium',
-        mediumItems,
-        'text-accent',
-        'bg-accent',
-        'border-accent'
-      )}
+          {renderSection(
+            'Medium',
+            mediumItems,
+            'text-accent',
+            'bg-accent',
+            'border-accent'
+          )}
 
-      {renderSection(
-        'Hard',
-        hardItems,
-        'text-destructive',
-        'bg-destructive',
-        'border-destructive'
+          {renderSection(
+            'Hard',
+            hardItems,
+            'text-destructive',
+            'bg-destructive',
+            'border-destructive'
+          )}
+        </>
       )}
     </div>
   );

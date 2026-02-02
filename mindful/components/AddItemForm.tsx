@@ -21,6 +21,20 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
   const [impact, setImpact] = useState('');
   const [urgency, setUrgency] = useState('');
 
+  const resetForm = () => {
+    setStep(1);
+    setName('');
+    setImageUrl('');
+    setConstraintType('time');
+    setWaitUntilDate('');
+    setDifficulty('medium');
+    setConsumptionScore(5);
+    setWhy('');
+    setAlternatives('');
+    setImpact('');
+    setUrgency('');
+  };
+
   const handleStep1Submit = (e: React.FormEvent) => {
     e.preventDefault();
     setStep(2);
@@ -50,6 +64,8 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
   const handleFinalSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('📋 Final submit - preparing item data');
+    
     onSubmit({
       name,
       imageUrl: imageUrl || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500',
@@ -63,6 +79,9 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
         urgency,
       },
     });
+    
+    // Reset form for next item
+    resetForm();
   };
 
   return (

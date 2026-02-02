@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Supabase Connection Test</title>
+  <style>
+    body {
+      font-family: system-ui;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+    }
+    .section {
+      margin: 20px 0;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+    .success { background: #d4edda; border-color: #28a745; }
+    .error { background: #f8d7da; border-color: #dc3545; }
+    .info { background: #d1ecf1; border-color: #17a2b8; }
+    button {
+      padding: 10px 20px;
+      margin: 5px;
+      cursor: pointer;
+    }
+    pre {
+      background: #f5f5f5;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔍 Supabase Connection Test</h1>
+  
+  <div class="section info">
+    <h3>Instructions:</h3>
+    <ol>
+      <li>Open this file in your browser</li>
+      <li>Open the browser console (F12)</li>
+      <li>Click the buttons below to test your connection</li>
+    </ol>
+  </div>
+
+  <div class="section">
+    <h3>Tests:</h3>
+    <button onclick="testConnection()">1. Test Connection</button>
+    <button onclick="testAuth()">2. Test Authentication</button>
+    <button onclick="testDatabase()">3. Test Database Access</button>
+    <button onclick="checkTables()">4. Check Tables Exist</button>
+  </div>
+
+  <div id="results"></div>
+
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+    const supabaseUrl = "https://mohgivduzthccoybnbnr.supabase.co";
+    const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1vaGdpdmR1enRoY2NveWJuYm5yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk3MTA1MDUsImV4cCI6MjA4NTI4NjUwNX0.eoiFJ4fvJnIrV16uwL6Blr2rgMsXwoDE-vNPmY4K4d4";
+
+    window.supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+    function addResult(title, content, type = 'info') {
+      const div = document.createElement('div');
+      div.className = `section ${type}`;
+      div.innerHTML = `<h3>${title}</h3><pre>${content}</pre>`;
+      document.getElementById('results').appendChild(div);
+    }
+
+    window.testConnection = async function() {
+      console.log('Testing connection...');
+      try {
+        const { data, error } = await window.supabase.from('items').select('count', { count: 'exact', head: true });
+        if (error) {
+          console.error('Connection test failed:', error);
+          addResult('❌ Connection Test Failed', JSON.stringify(error, null, 2), 'error');
+        } else {
+          console.log('✅ Connection successful!');
+          addResult('✅ Connection Test Passed', 'Successfully connected to Supabase!', 'success');
+        }
+      } catch (err) {
+        console.error('Connection test error:', err);
+        addResult('❌ Connection Test Error', err.message, 'error');
+      }
+    };
+
+    window.testAuth = async function() {
+      console.log('Testing authentication...');
+      try {
+        const { data: { user }, error } = await window.supabase.auth.getUser();
+        if (error) {
+          console.error('Auth test failed:', error);
+          addResult('❌ Auth Test Failed', 'Not logged in. Please log in through your app first.', 'error');
+        } else if (!user) {
+          addResult('⚠️ No User', 'No user logged in. Log in through your app and try again.', 'info');
+        } else {
+          console.log('✅ User authenticated:', user.email);
+          addResult('✅ Auth Test Passed', `User: ${user.email}\nID: ${user.id}`, 'success');
+        }
+      } catch (err) {
+        console.error('Auth test error:', err);
+        addResult('❌ Auth Test Error', err.message, 'error');
+      }
+    };
+
+    window.testDatabase = async function() {
+      console.log('Testing database access...');
+      try {
+        const { data: { user } } = await window.supabase.auth.getUser();
+        if (!user) {
+          addResult('⚠️ Cannot Test Database', 'Please log in first', 'info');
+          return;
+        }
+
+        // Try to fetch items
+        const { data, error } = await window.supabase
+          .from('items')
+          .select('*')
+          .eq('user_id', user.id);
+
+        if (error) {
+          console.error('Database test failed:', error);
+          addResult('❌ Database Access Failed', JSON.stringify(error, null, 2), 'error');
+        } else {
+          console.log('✅ Database access successful! Found', data.length, 'items');
+          addResult('✅ Database Access Passed', `Found ${data.length} items for user ${user.email}`, 'success');
+        }
+      } catch (err) {
+        console.error('Database test error:', err);
+        addResult('❌ Database Test Error', err.message, 'error');
+      }
+    };
+
+    window.checkTables = async function() {
+      console.log('Checking tables...');
+      try {
+        const tables = ['items', 'profiles', 'item_reflections'];
+        let results = '';
+        
+        for (const table of tables) {
+          const { data, error } = await window.supabase
+            .from(table)
+            .select('count', { count: 'exact', head: true });
+          
+          if (error) {
+            results += `❌ ${table}: ${error.message}\n`;
+          } else {
+            results += `✅ ${table}: Table exists\n`;
+          }
+        }
+        
+        addResult('Table Check Results', results, results.includes('❌') ? 'error' : 'success');
+      } catch (err) {
+        addResult('❌ Table Check Error', err.message, 'error');
+      }
+    };
+
+    console.log('🔧 Supabase test page loaded!');
+    console.log('Click the buttons to run tests.');
+  </script>
+</body>
+</html>

@@ -5,9 +5,13 @@ import { AddItemForm } from './components/AddItemForm';
 import { TimeBasedView } from './components/TimeBasedView';
 import { GoalsBasedView } from './components/GoalsBasedView';
 import { OurMission } from './components/OurMission';
-import { Plus } from 'lucide-react';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { Auth } from './components/Auth';
+import { Profile } from './components/Profile';
+import { Plus, User } from 'lucide-react';
 import './styles/globals.css';
-import logoImage from './assets/logo.png'; // imports photo as module, rather than using hardcoded path later on
+import logoImage from './assets/logo.png';
+import { fetchItems, saveItem, deleteItem as deleteItemDb } from './lib/database';
 
 export interface Item {
   id: string;
@@ -36,49 +40,106 @@ export interface Category {
   itemIds: string[];
 }
 
-type View = 'home' | 'item' | 'add' | 'time' | 'goals' | 'mission';
+type View = 'home' | 'item' | 'add' | 'time' | 'goals' | 'mission' | 'profile';
 
-export default function App() {
+function AppContent() {
+  const { user, loading } = useAuth();
   const [items, setItems] = useState<Item[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [currentView, setCurrentView] = useState<View>('mission');
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 
-  // Load data from localStorage
+  // Load items from Supabase when user is authenticated
   useEffect(() => {
-    const storedItems = localStorage.getItem('secondThought_items');
-    const storedCategories = localStorage.getItem('secondThought_categories');
+    if (user) {
+      loadItems();
+    } else if (!loading) {
+      // User not authenticated, clear items
+      setItems([]);
+    }
+  }, [user, loading]);
+
+  const loadItems = async () => {
+    // Try user-specific localStorage first
+    const userKey = `secondThought_user_${user?.id}_items`;
+    const userItems = localStorage.getItem(userKey);
     
-    if (storedItems) {
-      setItems(JSON.parse(storedItems));
+    if (userItems) {
+      console.log('✅ Loaded items from user-specific localStorage');
+      setItems(JSON.parse(userItems));
+      return;
     }
-    if (storedCategories) {
-      setCategories(JSON.parse(storedCategories));
+    
+    // Try general localStorage
+    const generalItems = localStorage.getItem('secondThought_items');
+    if (generalItems) {
+      console.log('✅ Loaded items from general localStorage');
+      setItems(JSON.parse(generalItems));
+      return;
     }
-  }, []);
+    
+    // Try Supabase last (as it's timing out)
+    console.log('🌐 Attempting to load from Supabase...');
+    try {
+      const { items: loadedItems, error } = await fetchItems();
+      if (!error && loadedItems && loadedItems.length > 0) {
+        setItems(loadedItems);
+        console.log('✅ Loaded items from Supabase');
+      }
+    } catch (err) {
+      console.warn('⚠️ Supabase load failed:', err);
+    }
+  };
 
-  // Save items to localStorage
-  useEffect(() => {
-    if (items.length > 0) {
-      localStorage.setItem('secondThought_items', JSON.stringify(items));
-    }
-  }, [items]);
-
-  // Save categories to localStorage
-  useEffect(() => {
-    if (categories.length > 0) {
-      localStorage.setItem('secondThought_categories', JSON.stringify(categories));
-    }
-  }, [categories]);
-
-  const handleAddItem = (item: Omit<Item, 'id' | 'addedDate'>) => {
+  const handleAddItem = async (item: Omit<Item, 'id' | 'addedDate'>) => {
+    console.log('📋 handleAddItem called with:', item);
+    
+    // IMMEDIATELY switch to home view first
+    setCurrentView('home');
+    console.log('🔄 Switched to All Items view');
+    
+    // Generate UUID (with fallback)
+    const generateId = () => {
+      if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        return crypto.randomUUID();
+      }
+      // Fallback UUID generation
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+    };
+    
     const newItem: Item = {
       ...item,
-      id: Date.now().toString(),
+      id: generateId(),
       addedDate: new Date().toISOString(),
     };
-    setItems([...items, newItem]);
-    setCurrentView('home');
+    
+    console.log('🆕 Created new item with ID:', newItem.id);
+    
+    // Update state immediately
+    const updatedItems = [...items, newItem];
+    setItems(updatedItems);
+    
+    // Save to localStorage first (guaranteed to work)
+    console.log('💾 Saving to localStorage...');
+    localStorage.setItem('secondThought_items', JSON.stringify(updatedItems));
+    localStorage.setItem(`secondThought_user_${user?.id}_items`, JSON.stringify(updatedItems));
+    console.log('✅ Item saved to localStorage');
+    
+    // Try to save to Supabase in the background (non-blocking)
+    console.log('🌐 Attempting Supabase save in background...');
+    saveItem(newItem).then(({ success, error }) => {
+      if (success) {
+        console.log('✅ Also saved to Supabase successfully');
+      } else {
+        console.warn('⚠️ Supabase save failed (using localStorage only):', error?.message || error);
+      }
+    }).catch(err => {
+      console.warn('⚠️ Supabase save error (using localStorage only):', err);
+    });
   };
 
   const handleItemClick = (itemId: string) => {
@@ -86,20 +147,48 @@ export default function App() {
     setCurrentView('item');
   };
 
-  const handleDeleteItem = (itemId: string) => {
+  const handleDeleteItem = async (itemId: string) => {
+    // Optimistically update UI
+    const originalItems = items;
     setItems(items.filter(item => item.id !== itemId));
+    
+    // Delete from Supabase
+    const { success, error } = await deleteItemDb(itemId);
+    
+    if (!success) {
+      console.error('Failed to delete item:', error);
+      // Rollback optimistic update on error
+      setItems(originalItems);
+      alert('Failed to delete item. Please try again.');
+      return;
+    }
+    
     setCurrentView('home');
   };
 
   const selectedItem = items.find(item => item.id === selectedItemId);
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Auth />;
+  }
+
   return (
     <div className="w-full min-h-screen bg-background overflow-y-auto">
       {/* Header */}
       <header className="bg-card/80 backdrop-blur-sm border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="relative flex justify-center items-center">
-            <h1 className="text-5xl font-bold text-[#06402B]">Second Thought</h1>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex justify-between items-center">
             <img 
             /*
             If the imported logo is already a string URL, just use it directly.
@@ -107,83 +196,78 @@ export default function App() {
             If there’s no .default, but there is a .uri, use that instead.
             Else: just return whatever it is
             */
-              src={typeof logoImage === 'string' ? logoImage : (logoImage as any).default || (logoImage as any).uri || logoImage} // replacing previous hardcoded path.
-              alt="Logo" 
-              className="absolute left-0 -top-6 h-32 w-auto"
-            />
-          </div>
-        </div>
-      </header>
-
-      {/* Navigation Tabs */}
-      <nav className="bg-card/60 backdrop-blur-sm border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex gap-2">
-            <button
+              src={typeof logoImage === 'string' ? logoImage : (logoImage as any).default || (logoImage as any).uri || logoImage}
+              alt="Second Thought Logo" 
+              className="h-32 w-auto cursor-pointer hover:opacity-80 transition-opacity"
               onClick={() => setCurrentView('mission')}
-              className={`py-6 px-8 border-b-4 font-medium text-base transition-colors text-[#255736] ${
-                currentView === 'mission'
-                  ? 'border-primary'
-                  : 'border-transparent hover:border-muted'
-              }`}
-            >
-              Home
-            </button>
-            <button
-              onClick={() => setCurrentView('home')}
-              className={`py-6 px-8 border-b-4 font-medium text-base transition-colors text-[#255736] ${
-                currentView === 'home'
-                  ? 'border-primary'
-                  : 'border-transparent hover:border-muted'
-              }`}
-            >
-              All Items
-            </button>
-            <button
-              onClick={() => setCurrentView('time')}
-              className={`py-6 px-8 border-b-4 font-medium text-base transition-colors text-[#255736] ${
-                currentView === 'time'
-                  ? 'border-primary'
-                  : 'border-transparent hover:border-muted'
-              }`}
-            >
-              Timeline
-            </button>
-            <button
-              onClick={() => setCurrentView('goals')}
-              className={`py-6 px-8 border-b-4 font-medium text-base transition-colors text-[#255736] ${
-                currentView === 'goals'
-                  ? 'border-primary'
-                  : 'border-transparent hover:border-muted'
-              }`}
-            >
-              Goals
-            </button>
-          </div>
-        </div>
-      </nav>
+            />
+            <div className="flex items-center gap-6">
+              {/* Navigation Tabs */}
+              <nav className="flex gap-1">
+                <button
+                  onClick={() => setCurrentView('mission')}
+                  className={`px-4 py-2 font-medium text-sm transition-colors rounded-lg ${
+                    currentView === 'mission'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-[#255736] hover:bg-muted/30'
+                  }`}
+                >
+                  Home
+                </button>
+                <button
+                  onClick={() => setCurrentView('home')}
+                  className={`px-4 py-2 font-medium text-sm transition-colors rounded-lg ${
+                    currentView === 'home'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-[#255736] hover:bg-muted/30'
+                  }`}
+                >
+                  All Items
+                </button>
+                <button
+                  onClick={() => setCurrentView('time')}
+                  className={`px-4 py-2 font-medium text-sm transition-colors rounded-lg ${
+                    currentView === 'time'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-[#255736] hover:bg-muted/30'
+                  }`}
+                >
+                  Timeline
+                </button>
+                <button
+                  onClick={() => setCurrentView('goals')}
+                  className={`px-4 py-2 font-medium text-sm transition-colors rounded-lg ${
+                    currentView === 'goals'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-[#255736] hover:bg-muted/30'
+                  }`}
+                >
+                  Goals
+                </button>
+              </nav>
 
-      {/* Add Item Button */}
-      {currentView !== 'mission' && (
-        <div className="bg-background border-b border-border">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex justify-end">
+              {/* Profile Button */}
               <button
-                onClick={() => setCurrentView('add')}
-                className="flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-full hover:bg-primary/90 transition-all shadow-sm hover:shadow-md"
+                onClick={() => setCurrentView('profile')}
+                className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-full hover:bg-primary/90 transition-all shadow-sm hover:shadow-md"
+                title="View Profile"
               >
-                <Plus className="w-5 h-5" />
-                Add Item
+                <User className="w-5 h-5" />
+                <span className="hidden sm:inline">Profile</span>
               </button>
             </div>
           </div>
         </div>
-      )}
+      </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-16">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-16">
         {currentView === 'home' && (
-          <Home items={items} onItemClick={handleItemClick} />
+          <Home 
+            items={items} 
+            onItemClick={handleItemClick}
+            onAddItem={() => setCurrentView('add')}
+          />
         )}
         {currentView === 'item' && selectedItem && (
           <ItemDetail 
@@ -199,15 +283,34 @@ export default function App() {
           />
         )}
         {currentView === 'time' && (
-          <TimeBasedView items={items} onItemClick={handleItemClick} />
+          <TimeBasedView 
+            items={items} 
+            onItemClick={handleItemClick}
+            onAddItem={() => setCurrentView('add')}
+          />
         )}
         {currentView === 'goals' && (
-          <GoalsBasedView items={items} onItemClick={handleItemClick} />
+          <GoalsBasedView 
+            items={items} 
+            onItemClick={handleItemClick}
+            onAddItem={() => setCurrentView('add')}
+          />
         )}
         {currentView === 'mission' && (
-          <OurMission />
+          <OurMission onGetStarted={() => setCurrentView('home')} />
+        )}
+        {currentView === 'profile' && (
+          <Profile items={items} />
         )}
       </main>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }

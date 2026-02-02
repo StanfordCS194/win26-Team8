@@ -1,12 +1,13 @@
 import { Item } from '../App';
-import { Calendar, Clock } from 'lucide-react';
+import { Calendar, Clock, Plus } from 'lucide-react';
 
 interface TimeBasedViewProps {
   items: Item[];
   onItemClick: (itemId: string) => void;
+  onAddItem: () => void;
 }
 
-export function TimeBasedView({ items, onItemClick }: TimeBasedViewProps) {
+export function TimeBasedView({ items, onItemClick, onAddItem }: TimeBasedViewProps) {
   const timeBasedItems = items
     .filter(item => item.constraintType === 'time')
     .sort((a, b) => {
@@ -15,31 +16,37 @@ export function TimeBasedView({ items, onItemClick }: TimeBasedViewProps) {
       return dateA - dateB;
     });
 
-  if (timeBasedItems.length === 0) {
-    return (
-      <div className="text-center py-16">
-        <div className="text-muted-foreground/40 mb-4">
-          <Clock className="w-16 h-16 mx-auto" />
-        </div>
-        <h2 className="text-xl text-foreground/80 mb-2">No time-based items</h2>
-        <p className="text-muted-foreground">
-          Items with time constraints will appear here in chronological order.
-        </p>
-      </div>
-    );
-  }
-
   return (
     <div>
-      <div className="mb-8">
-        <h2 className="text-2xl text-foreground font-serif">Time-Based Items</h2>
-        <p className="text-muted-foreground mt-2">
-          Sorted by wait date (earliest first)
-        </p>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl text-foreground font-serif">Time-Based Items</h2>
+          <p className="text-muted-foreground mt-2">
+            Sorted by wait date (earliest first)
+          </p>
+        </div>
+        <button
+          onClick={onAddItem}
+          className="flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-full hover:bg-primary/90 transition-all shadow-sm hover:shadow-md"
+        >
+          <Plus className="w-5 h-5" />
+          Add Item
+        </button>
       </div>
 
-      <div className="space-y-4">
-        {timeBasedItems.map((item) => {
+      {timeBasedItems.length === 0 ? (
+        <div className="text-center py-16">
+          <div className="text-muted-foreground/40 mb-4">
+            <Clock className="w-16 h-16 mx-auto" />
+          </div>
+          <h3 className="text-xl text-foreground/80 mb-2">No time-based items</h3>
+          <p className="text-muted-foreground">
+            Items with time constraints will appear here in chronological order.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {timeBasedItems.map((item) => {
           const waitDate = new Date(item.waitUntilDate || '');
           const today = new Date();
           const daysRemaining = Math.ceil((waitDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
@@ -103,8 +110,9 @@ export function TimeBasedView({ items, onItemClick }: TimeBasedViewProps) {
               </div>
             </div>
           );
-        })}
-      </div>
+          })}
+        </div>
+      )}
     </div>
   );
 }
