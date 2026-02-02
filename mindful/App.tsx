@@ -9,6 +9,13 @@ import { Plus } from 'lucide-react';
 import './styles/globals.css';
 import logoImage from './assets/logo.png'; // imports photo as module, rather than using hardcoded path later on
 
+// Question-answer pair for dynamic questionnaire
+export interface QuestionAnswer {
+  id: string;
+  question: string;
+  answer: string;
+}
+
 export interface Item {
   id: string;
   name: string;
@@ -20,13 +27,8 @@ export interface Item {
   waitUntilDate?: string;
   // Goals-based constraint
   difficulty?: 'easy' | 'medium' | 'hard';
-  // Questionnaire answers
-  questionnaire: {
-    why: string;
-    alternatives: string;
-    impact: string;
-    urgency: string;
-  };
+  // Dynamic questionnaire answers
+  questionnaire: QuestionAnswer[];
 }
 
 export interface Category {

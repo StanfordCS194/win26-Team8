@@ -109,41 +109,16 @@ export function ItemDetail({ item, onBack, onDelete }: ItemDetailProps) {
           </h2>
 
           <div className="space-y-6">
-            <div className="p-5 bg-muted/20 rounded-xl">
-              <h3 className="font-medium text-foreground mb-2 font-serif">
-                Why do you want this item?
-              </h3>
-              <p className="text-foreground/80 leading-relaxed">
-                {item.questionnaire.why}
-              </p>
-            </div>
-
-            <div className="p-5 bg-muted/20 rounded-xl">
-              <h3 className="font-medium text-foreground mb-2 font-serif">
-                What alternatives have you considered?
-              </h3>
-              <p className="text-foreground/80 leading-relaxed">
-                {item.questionnaire.alternatives}
-              </p>
-            </div>
-
-            <div className="p-5 bg-muted/20 rounded-xl">
-              <h3 className="font-medium text-foreground mb-2 font-serif">
-                What impact will this purchase have?
-              </h3>
-              <p className="text-foreground/80 leading-relaxed">
-                {item.questionnaire.impact}
-              </p>
-            </div>
-
-            <div className="p-5 bg-muted/20 rounded-xl">
-              <h3 className="font-medium text-foreground mb-2 font-serif">
-                How urgent is this purchase?
-              </h3>
-              <p className="text-foreground/80 leading-relaxed">
-                {item.questionnaire.urgency}
-              </p>
-            </div>
+            {item.questionnaire.map((qa, index) => (
+              <div key={qa.id} className="p-5 bg-muted/20 rounded-xl">
+                <h3 className="font-medium text-foreground mb-2 font-serif">
+                  {index + 1}. {qa.question}
+                </h3>
+                <p className="text-foreground/80 leading-relaxed">
+                  {qa.answer}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </div>
