@@ -10,6 +10,8 @@ This app can be bundled as a Chrome extension using Expo's web export.
    - `npm run build:web`
 3. Build the extension bundle:
    - `npm run build:extension`
+4. Build popup bundle whenever modifications are made to popup.jsx:
+   - `npm run build:popup`
 
 ## Load in Chrome
 
@@ -18,4 +20,4 @@ This app can be bundled as a Chrome extension using Expo's web export.
 3. Click "Load unpacked"
 4. Select the `mindful/extension` folder
 
-The popup will load the Expo web build from `extension/dist/index.html`.
+The popup will load the Expo web build from `extension/index.html`.
