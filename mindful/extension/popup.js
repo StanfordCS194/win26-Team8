@@ -12261,10 +12261,10 @@
     const [url, setUrl] = (0, import_react.useState)("Loading...");
     const [showQuestions, setShowQuestions] = (0, import_react.useState)(false);
     const questions = [
-      "What are you hoping to use this for?",
-      "How often do you expect to use it?",
-      "What is your budget for this item?",
-      "What would make you feel confident about buying it?"
+      "Why do you want this item?",
+      "What alternatives have you considered?",
+      "What impact will this purchase have?",
+      "How urgent is this purchase?"
     ];
     (0, import_react.useEffect)(() => {
       if (typeof chrome !== "undefined" && chrome.tabs && chrome.tabs.query) {
