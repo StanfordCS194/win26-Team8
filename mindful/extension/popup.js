@@ -12259,6 +12259,13 @@
   var import_client = __toESM(require_client());
   var App = () => {
     const [url, setUrl] = (0, import_react.useState)("Loading...");
+    const [showQuestions, setShowQuestions] = (0, import_react.useState)(false);
+    const questions = [
+      "What are you hoping to use this for?",
+      "How often do you expect to use it?",
+      "What is your budget for this item?",
+      "What would make you feel confident about buying it?"
+    ];
     (0, import_react.useEffect)(() => {
       if (typeof chrome !== "undefined" && chrome.tabs && chrome.tabs.query) {
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -12269,7 +12276,15 @@
         setUrl("Chrome tabs API unavailable.");
       }
     }, []);
-    return /* @__PURE__ */ import_react.default.createElement("div", null, /* @__PURE__ */ import_react.default.createElement("h1", null, "Second Thought"), /* @__PURE__ */ import_react.default.createElement("p", null, "Current product URL:"), /* @__PURE__ */ import_react.default.createElement("div", { className: "url" }, url), /* @__PURE__ */ import_react.default.createElement("button", { className: "button", type: "button" }, "Add to Mindful Cart"));
+    return /* @__PURE__ */ import_react.default.createElement("div", null, /* @__PURE__ */ import_react.default.createElement("h1", null, "Second Thought"), /* @__PURE__ */ import_react.default.createElement("p", null, "Current product URL:"), /* @__PURE__ */ import_react.default.createElement("div", { className: "url" }, url), /* @__PURE__ */ import_react.default.createElement(
+      "button",
+      {
+        className: "button",
+        type: "button",
+        onClick: () => setShowQuestions(true)
+      },
+      "Add to Mindful Cart"
+    ), showQuestions && /* @__PURE__ */ import_react.default.createElement("div", { className: "questions" }, questions.map((question) => /* @__PURE__ */ import_react.default.createElement("label", { className: "question", key: question }, /* @__PURE__ */ import_react.default.createElement("span", null, question), /* @__PURE__ */ import_react.default.createElement("input", { type: "text" })))));
   };
   var container = document.getElementById("root");
   if (container) {
