@@ -5,6 +5,10 @@
   "description": "mindful web app packaged as a Chrome extension.",
   "action": {
     "default_title": "mindful",
-    "default_popup": "dist/index.html"
-  }
+    "default_popup": "index.html"
+  },
+  "permissions": [
+    "activeTab",
+    "tabs"
+  ]
 }

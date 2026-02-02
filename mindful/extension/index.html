@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Second Thought</title>
+    <style>
+      :root {
+        color-scheme: light;
+      }
+
+      body {
+        margin: 0;
+        padding: 16px;
+        font-family: "Inter", Arial, sans-serif;
+        color: #1f2933;
+        background: #fdfcfa;
+        width: 360px;
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: 18px;
+      }
+
+      p {
+        margin: 0;
+        font-size: 14px;
+      }
+
+      .url {
+        margin-top: 8px;
+        padding: 8px 10px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        background: #ffffff;
+        font-size: 12px;
+        color: #334155;
+        word-break: break-all;
+      }
+
+      button {
+        margin-top: 12px;
+        padding: 8px 12px;
+        border: none;
+        border-radius: 8px;
+        background: #8ba89a;
+        color: #fdfcfa;
+        font-size: 14px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1>Second Thought</h1>
+    <p>Current product URL:</p>
+    <div id="current-url" class="url">Loading...</div>
+    <button type="button">Add to Mindful Cart</button>
+    <script src="./getURL.js"></script>
+  </body>
+</html>
