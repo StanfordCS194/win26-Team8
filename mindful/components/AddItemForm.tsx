@@ -23,6 +23,18 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
 
+  const resetForm = () => {
+    setStep(1);
+    setName('');
+    setImageUrl('');
+    setConstraintType('time');
+    setWaitUntilDate('');
+    setDifficulty('medium');
+    setConsumptionScore(5);
+    setQuestions([]);
+    setAnswers({});
+  };
+
   const handleStep1Submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoadingQuestions(true);
@@ -70,6 +82,7 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
 
   const handleFinalSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('📋 Final submit - preparing item data');
 
     // Convert questions and answers to QuestionAnswer array
     const questionnaire: QuestionAnswer[] = questions.map((q) => ({
@@ -78,14 +91,18 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
       answer: answers[q.id] || '',
     }));
 
+
     onSubmit({
       name,
-      imageUrl: imageUrl || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500',
+      imageUrl: imageUrl || '',
       constraintType,
       consumptionScore,
       ...(constraintType === 'time' ? { waitUntilDate } : { difficulty }),
       questionnaire,
     });
+    
+    // Reset form for next item
+    resetForm();
   };
 
   return (

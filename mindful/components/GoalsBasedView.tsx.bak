@@ -121,12 +121,21 @@ export function GoalsBasedView({ items, onItemClick, onAddItem }: GoalsBasedView
       ) : (
         <>
           {renderSection(
+<<<<<<< Updated upstream
             'Easy',
             easyItems,
             'text-primary',
             'bg-primary',
             'border-primary'
           )}
+=======
+        'Easy',
+        easyItems,
+        'text-primary',
+        'bg-primary',
+        'border-primary'
+      )}
+>>>>>>> Stashed changes
 
           {renderSection(
             'Medium',

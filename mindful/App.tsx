@@ -5,9 +5,13 @@ import { AddItemForm } from './components/AddItemForm';
 import { TimeBasedView } from './components/TimeBasedView';
 import { GoalsBasedView } from './components/GoalsBasedView';
 import { OurMission } from './components/OurMission';
-import { Plus } from 'lucide-react';
+import { Auth } from './components/Auth';
+import { Profile } from './components/Profile';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { fetchItems, saveItem, deleteItem as deleteItemDb } from './lib/database';
+import { Plus, User } from 'lucide-react';
 import './styles/globals.css';
-import logoImage from './assets/logo.png'; // imports photo as module, rather than using hardcoded path later on
+import logoImage from './assets/logo.png';
 
 // Question-answer pair for dynamic questionnaire
 export interface QuestionAnswer {
@@ -23,64 +27,113 @@ export interface Item {
   constraintType: 'time' | 'goals';
   consumptionScore: number;
   addedDate: string;
-  // Time-based constraint
   waitUntilDate?: string;
-  // Goals-based constraint
   difficulty?: 'easy' | 'medium' | 'hard';
   // Dynamic questionnaire answers
   questionnaire: QuestionAnswer[];
 }
 
-export interface Category {
-  id: string;
-  name: string;
-  imageUrl: string;
-  itemIds: string[];
-}
+type View = 'home' | 'item' | 'add' | 'time' | 'goals' | 'mission' | 'profile';
 
-type View = 'home' | 'item' | 'add' | 'time' | 'goals' | 'mission';
-
-export default function App() {
+function AppContent() {
+  const { user, loading } = useAuth();
   const [items, setItems] = useState<Item[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
   const [currentView, setCurrentView] = useState<View>('mission');
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 
-  // Load data from localStorage
+  // Load items when user logs in
   useEffect(() => {
-    const storedItems = localStorage.getItem('secondThought_items');
-    const storedCategories = localStorage.getItem('secondThought_categories');
+    if (user) {
+      loadItems();
+    } else if (!loading) {
+      setItems([]);
+    }
+  }, [user, loading]);
+
+  const loadItems = async () => {
+    if (!user) return;
+    
+    // First, load from localStorage (instant)
+    console.log('💾 Loading from localStorage...');
+    const localStorageKey = `secondThought_user_${user.id}_items`;
+    const storedItems = localStorage.getItem(localStorageKey);
     
     if (storedItems) {
-      setItems(JSON.parse(storedItems));
+      try {
+        const parsedItems = JSON.parse(storedItems);
+        setItems(parsedItems);
+        console.log('✅ Loaded', parsedItems.length, 'items from localStorage');
+      } catch (err) {
+        console.error('❌ Failed to parse localStorage items:', err);
+      }
     }
-    if (storedCategories) {
-      setCategories(JSON.parse(storedCategories));
+    
+    // Then, try to sync with Supabase (in background)
+    console.log('🌐 Syncing with Supabase...');
+    const { items: loadedItems, error } = await fetchItems(user.id);
+    
+    if (!error && loadedItems) {
+      setItems(loadedItems);
+      // Update localStorage with Supabase data
+      localStorage.setItem(localStorageKey, JSON.stringify(loadedItems));
+      console.log('✅ Synced', loadedItems.length, 'items from Supabase');
+    } else if (error) {
+      console.warn('⚠️ Supabase sync failed (using localStorage):', error);
     }
-  }, []);
+  };
 
-  // Save items to localStorage
-  useEffect(() => {
-    if (items.length > 0) {
-      localStorage.setItem('secondThought_items', JSON.stringify(items));
-    }
-  }, [items]);
-
-  // Save categories to localStorage
-  useEffect(() => {
-    if (categories.length > 0) {
-      localStorage.setItem('secondThought_categories', JSON.stringify(categories));
-    }
-  }, [categories]);
-
-  const handleAddItem = (item: Omit<Item, 'id' | 'addedDate'>) => {
+  const handleAddItem = async (item: Omit<Item, 'id' | 'addedDate'>) => {
+    if (!user) return;
+    
+    console.log('➕ Adding item:', item.name);
+    setCurrentView('home');
+    
+    // Generate UUID
+    const generateId = () => {
+      if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        return crypto.randomUUID();
+      }
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+    };
+    
     const newItem: Item = {
       ...item,
-      id: Date.now().toString(),
+      id: generateId(),
       addedDate: new Date().toISOString(),
     };
-    setItems([...items, newItem]);
-    setCurrentView('home');
+    
+    // Optimistic UI update
+    const updatedItems = [...items, newItem];
+    setItems(updatedItems);
+    
+    // Save to Supabase and wait for it
+    console.log('💾 Saving to Supabase (please wait)...');
+    const { success, error } = await saveItem(newItem, user.id);
+    
+    if (success) {
+      console.log('✅ Item saved to Supabase');
+      
+      // Also save to localStorage as backup
+      localStorage.setItem('secondThought_items', JSON.stringify(updatedItems));
+      localStorage.setItem(`secondThought_user_${user.id}_items`, JSON.stringify(updatedItems));
+      console.log('✅ Also saved to localStorage');
+    } else {
+      console.error('❌ Failed to save to Supabase:', error);
+      // Rollback UI
+      setItems(items);
+      const errorMsg = error?.message || 'Unknown error';
+      
+      // Show detailed error
+      if (errorMsg.includes('timeout')) {
+        alert(`Supabase connection timeout.\n\nThis is a browser/network issue blocking API calls.\n\nTry:\n1. Different browser\n2. Disable VPN/extensions\n3. Different network\n\nYour items are saved in localStorage for now.`);
+      } else {
+        alert(`Failed to save item: ${errorMsg}\n\nCheck the console (F12) for details.`);
+      }
+    }
   };
 
   const handleItemClick = (itemId: string) => {
@@ -88,104 +141,141 @@ export default function App() {
     setCurrentView('item');
   };
 
-  const handleDeleteItem = (itemId: string) => {
-    setItems(items.filter(item => item.id !== itemId));
-    setCurrentView('home');
+  const handleDeleteItem = async (itemId: string) => {
+    if (!user) return;
+    
+    console.log('🗑️ Deleting item from Supabase...');
+    
+    // Delete from Supabase first (with longer timeout)
+    const { success, error } = await deleteItemDb(itemId, user.id);
+    
+    if (success) {
+      console.log('✅ Item deleted from Supabase');
+      
+      // Update UI after successful delete
+      const updatedItems = items.filter(item => item.id !== itemId);
+      setItems(updatedItems);
+      
+      // Update localStorage
+      const localStorageKey = `secondThought_user_${user.id}_items`;
+      localStorage.setItem(localStorageKey, JSON.stringify(updatedItems));
+      console.log('✅ Item deleted from localStorage');
+      
+      setCurrentView('home');
+    } else {
+      console.error('❌ Failed to delete from Supabase:', error);
+      const errorMsg = error?.message || 'Unknown error';
+      
+      if (errorMsg.includes('timeout')) {
+        alert(`Supabase connection timeout.\n\nThis is a browser/network issue.\n\nThe item is still in localStorage.\n\nTry a different browser or network.`);
+      } else {
+        alert(`Failed to delete item: ${errorMsg}`);
+      }
+    }
   };
 
   const selectedItem = items.find(item => item.id === selectedItemId);
+
+  // Show loading spinner
+  if (loading) {
+    return (
+      <div className="w-full min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show auth screen if not logged in
+  if (!user) {
+    return <Auth />;
+  }
 
   return (
     <div className="w-full min-h-screen bg-background overflow-y-auto">
       {/* Header */}
       <header className="bg-card/80 backdrop-blur-sm border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="relative flex justify-center items-center">
-            <h1 className="text-5xl font-bold text-[#06402B]">Second Thought</h1>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex justify-between items-center">
             <img 
-            /*
-            If the imported logo is already a string URL, just use it directly.
-            Otherwise, if it’s an object and has a .default property, use that.
-            If there’s no .default, but there is a .uri, use that instead.
-            Else: just return whatever it is
-            */
-              src={typeof logoImage === 'string' ? logoImage : (logoImage as any).default || (logoImage as any).uri || logoImage} // replacing previous hardcoded path.
-              alt="Logo" 
-              className="absolute left-0 -top-6 h-32 w-auto"
-            />
-          </div>
-        </div>
-      </header>
-
-      {/* Navigation Tabs */}
-      <nav className="bg-card/60 backdrop-blur-sm border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex gap-2">
-            <button
+              src={typeof logoImage === 'string' ? logoImage : (logoImage as any).default || (logoImage as any).uri || logoImage}
+              alt="Second Thought Logo" 
+              className="h-32 w-auto cursor-pointer hover:opacity-80 transition-opacity"
               onClick={() => setCurrentView('mission')}
-              className={`py-6 px-8 border-b-4 font-medium text-base transition-colors text-[#255736] ${
-                currentView === 'mission'
-                  ? 'border-primary'
-                  : 'border-transparent hover:border-muted'
-              }`}
-            >
-              Home
-            </button>
-            <button
-              onClick={() => setCurrentView('home')}
-              className={`py-6 px-8 border-b-4 font-medium text-base transition-colors text-[#255736] ${
-                currentView === 'home'
-                  ? 'border-primary'
-                  : 'border-transparent hover:border-muted'
-              }`}
-            >
-              All Items
-            </button>
-            <button
-              onClick={() => setCurrentView('time')}
-              className={`py-6 px-8 border-b-4 font-medium text-base transition-colors text-[#255736] ${
-                currentView === 'time'
-                  ? 'border-primary'
-                  : 'border-transparent hover:border-muted'
-              }`}
-            >
-              Timeline
-            </button>
-            <button
-              onClick={() => setCurrentView('goals')}
-              className={`py-6 px-8 border-b-4 font-medium text-base transition-colors text-[#255736] ${
-                currentView === 'goals'
-                  ? 'border-primary'
-                  : 'border-transparent hover:border-muted'
-              }`}
-            >
-              Goals
-            </button>
-          </div>
-        </div>
-      </nav>
+            />
+            <div className="flex items-center gap-6">
+              {/* Navigation Tabs */}
+              <nav className="flex gap-1">
+                <button
+                  onClick={() => setCurrentView('mission')}
+                  className={`px-4 py-2 font-medium text-sm transition-colors rounded-lg ${
+                    currentView === 'mission'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-[#255736] hover:bg-muted/30'
+                  }`}
+                >
+                  Home
+                </button>
+                <button
+                  onClick={() => setCurrentView('home')}
+                  className={`px-4 py-2 font-medium text-sm transition-colors rounded-lg ${
+                    currentView === 'home'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-[#255736] hover:bg-muted/30'
+                  }`}
+                >
+                  All Items
+                </button>
+                <button
+                  onClick={() => setCurrentView('time')}
+                  className={`px-4 py-2 font-medium text-sm transition-colors rounded-lg ${
+                    currentView === 'time'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-[#255736] hover:bg-muted/30'
+                  }`}
+                >
+                  Timeline
+                </button>
+                <button
+                  onClick={() => setCurrentView('goals')}
+                  className={`px-4 py-2 font-medium text-sm transition-colors rounded-lg ${
+                    currentView === 'goals'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-[#255736] hover:bg-muted/30'
+                  }`}
+                >
+                  Goals
+                </button>
+              </nav>
 
-      {/* Add Item Button */}
-      {currentView !== 'mission' && (
-        <div className="bg-background border-b border-border">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex justify-end">
+              {/* Profile Button */}
               <button
-                onClick={() => setCurrentView('add')}
-                className="flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-full hover:bg-primary/90 transition-all shadow-sm hover:shadow-md"
+                onClick={() => setCurrentView('profile')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all shadow-sm hover:shadow-md ${
+                  currentView === 'profile'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                }`}
+                title="View Profile"
               >
-                <Plus className="w-5 h-5" />
-                Add Item
+                <User className="w-5 h-5" />
+                <span className="hidden sm:inline">Profile</span>
               </button>
             </div>
           </div>
         </div>
-      )}
+      </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-16">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-16">
         {currentView === 'home' && (
-          <Home items={items} onItemClick={handleItemClick} />
+          <Home 
+            items={items} 
+            onItemClick={handleItemClick}
+            onAddItem={() => setCurrentView('add')}
+          />
         )}
         {currentView === 'item' && selectedItem && (
           <ItemDetail 
@@ -201,15 +291,34 @@ export default function App() {
           />
         )}
         {currentView === 'time' && (
-          <TimeBasedView items={items} onItemClick={handleItemClick} />
+          <TimeBasedView 
+            items={items} 
+            onItemClick={handleItemClick}
+            onAddItem={() => setCurrentView('add')}
+          />
         )}
         {currentView === 'goals' && (
-          <GoalsBasedView items={items} onItemClick={handleItemClick} />
+          <GoalsBasedView 
+            items={items} 
+            onItemClick={handleItemClick}
+            onAddItem={() => setCurrentView('add')}
+          />
         )}
         {currentView === 'mission' && (
-          <OurMission onNavigate={(view) => setCurrentView(view)} />
+          <OurMission onGetStarted={() => setCurrentView('home')} />
+        )}
+        {currentView === 'profile' && (
+          <Profile items={items} />
         )}
       </main>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }

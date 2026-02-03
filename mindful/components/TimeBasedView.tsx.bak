@@ -45,6 +45,16 @@ export function TimeBasedView({ items, onItemClick, onAddItem }: TimeBasedViewPr
           </p>
         </div>
       ) : (
+<<<<<<< Updated upstream
+        <div className="space-y-4">
+          {timeBasedItems.map((item) => {
+          const waitDate = new Date(item.waitUntilDate || '');
+          const today = new Date();
+          const daysRemaining = Math.ceil((waitDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+          const isPast = daysRemaining < 0;
+=======
+>>>>>>> Stashed changes
+
         <div className="space-y-4">
           {timeBasedItems.map((item) => {
             const waitDate = new Date(item.waitUntilDate || '');
@@ -59,22 +69,22 @@ export function TimeBasedView({ items, onItemClick, onAddItem }: TimeBasedViewPr
                 className="bg-card rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer border border-border/50 hover:border-primary/30 p-5"
               >
                 <div className="flex gap-4">
-                  <div className="w-24 h-24 flex-shrink-0 bg-muted/30 rounded-xl overflow-hidden">
-                    {item.imageUrl ? (
-                      <img
-                        src={item.imageUrl}
-                        alt={item.name}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.currentTarget.src = 'https://via.placeholder.com/100/e5e7eb/9ca3af?text=No+Image';
-                        }}
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-muted/50">
-                        <Clock className="w-8 h-8 text-muted-foreground/30" />
-                      </div>
-                    )}
-                  </div>
+                <div className="w-24 h-24 flex-shrink-0 bg-muted/30 rounded-xl overflow-hidden">
+                  {item.imageUrl ? (
+                    <img
+                      src={item.imageUrl}
+                      alt={item.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = 'https://via.placeholder.com/100/e5e7eb/9ca3af?text=No+Image';
+                      }}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-muted/50">
+                      <Clock className="w-8 h-8 text-muted-foreground/30" />
+                    </div>
+                  )}
+                </div>
 
                   <div className="flex-1 min-w-0">
                     <h3 className="font-medium text-foreground mb-2 font-serif">
@@ -118,7 +128,12 @@ export function TimeBasedView({ items, onItemClick, onAddItem }: TimeBasedViewPr
                   </div>
                 </div>
               </div>
+<<<<<<< Updated upstream
+            </div>
+          );
+=======
             );
+>>>>>>> Stashed changes
           })}
         </div>
       )}
