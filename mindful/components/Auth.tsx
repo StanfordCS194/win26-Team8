@@ -22,7 +22,8 @@ export function Auth() {
         if (error) {
           setError(error.message || 'Failed to sign up');
         } else {
-          alert('Account created! Please check your email for verification.');
+          alert('Account created! You can now sign in.');
+          setIsSignUp(false);
         }
       } else {
         const { error } = await signIn(email, password);
@@ -62,7 +63,7 @@ export function Auth() {
                   onChange={(e) => setFullName(e.target.value)}
                   required={isSignUp}
                   placeholder="John Doe"
-                  className="w-full px-5 py-4 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground text-lg"
+                  className="w-full px-5 py-4 border border-border bg-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground text-lg"
                 />
               </div>
             )}
@@ -77,7 +78,7 @@ export function Auth() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 placeholder="your@email.com"
-                className="w-full px-5 py-4 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground text-lg"
+                className="w-full px-5 py-4 border border-border bg-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground text-lg"
               />
             </div>
 
@@ -92,7 +93,7 @@ export function Auth() {
                 required
                 placeholder="••••••••"
                 minLength={6}
-                className="w-full px-5 py-4 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground text-lg"
+                className="w-full px-5 py-4 border border-border bg-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground text-lg"
               />
             </div>
 

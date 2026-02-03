@@ -5,13 +5,13 @@ import { AddItemForm } from './components/AddItemForm';
 import { TimeBasedView } from './components/TimeBasedView';
 import { GoalsBasedView } from './components/GoalsBasedView';
 import { OurMission } from './components/OurMission';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Auth } from './components/Auth';
 import { Profile } from './components/Profile';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { fetchItems, saveItem, deleteItem as deleteItemDb } from './lib/database';
 import { Plus, User } from 'lucide-react';
 import './styles/globals.css';
 import logoImage from './assets/logo.png';
-import { fetchItems, saveItem, deleteItem as deleteItemDb } from './lib/database';
 
 export interface Item {
   id: string;
@@ -20,11 +20,8 @@ export interface Item {
   constraintType: 'time' | 'goals';
   consumptionScore: number;
   addedDate: string;
-  // Time-based constraint
   waitUntilDate?: string;
-  // Goals-based constraint
   difficulty?: 'easy' | 'medium' | 'hard';
-  // Questionnaire answers
   questionnaire: {
     why: string;
     alternatives: string;
@@ -33,77 +30,66 @@ export interface Item {
   };
 }
 
-export interface Category {
-  id: string;
-  name: string;
-  imageUrl: string;
-  itemIds: string[];
-}
-
 type View = 'home' | 'item' | 'add' | 'time' | 'goals' | 'mission' | 'profile';
 
 function AppContent() {
   const { user, loading } = useAuth();
   const [items, setItems] = useState<Item[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
   const [currentView, setCurrentView] = useState<View>('mission');
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 
-  // Load items from Supabase when user is authenticated
+  // Load items when user logs in
   useEffect(() => {
     if (user) {
       loadItems();
     } else if (!loading) {
-      // User not authenticated, clear items
       setItems([]);
     }
   }, [user, loading]);
 
   const loadItems = async () => {
-    // Try user-specific localStorage first
-    const userKey = `secondThought_user_${user?.id}_items`;
-    const userItems = localStorage.getItem(userKey);
+    if (!user) return;
     
-    if (userItems) {
-      console.log('✅ Loaded items from user-specific localStorage');
-      setItems(JSON.parse(userItems));
-      return;
-    }
+    // First, load from localStorage (instant)
+    console.log('💾 Loading from localStorage...');
+    const localStorageKey = `secondThought_user_${user.id}_items`;
+    const storedItems = localStorage.getItem(localStorageKey);
     
-    // Try general localStorage
-    const generalItems = localStorage.getItem('secondThought_items');
-    if (generalItems) {
-      console.log('✅ Loaded items from general localStorage');
-      setItems(JSON.parse(generalItems));
-      return;
-    }
-    
-    // Try Supabase last (as it's timing out)
-    console.log('🌐 Attempting to load from Supabase...');
-    try {
-      const { items: loadedItems, error } = await fetchItems();
-      if (!error && loadedItems && loadedItems.length > 0) {
-        setItems(loadedItems);
-        console.log('✅ Loaded items from Supabase');
+    if (storedItems) {
+      try {
+        const parsedItems = JSON.parse(storedItems);
+        setItems(parsedItems);
+        console.log('✅ Loaded', parsedItems.length, 'items from localStorage');
+      } catch (err) {
+        console.error('❌ Failed to parse localStorage items:', err);
       }
-    } catch (err) {
-      console.warn('⚠️ Supabase load failed:', err);
+    }
+    
+    // Then, try to sync with Supabase (in background)
+    console.log('🌐 Syncing with Supabase...');
+    const { items: loadedItems, error } = await fetchItems(user.id);
+    
+    if (!error && loadedItems) {
+      setItems(loadedItems);
+      // Update localStorage with Supabase data
+      localStorage.setItem(localStorageKey, JSON.stringify(loadedItems));
+      console.log('✅ Synced', loadedItems.length, 'items from Supabase');
+    } else if (error) {
+      console.warn('⚠️ Supabase sync failed (using localStorage):', error);
     }
   };
 
   const handleAddItem = async (item: Omit<Item, 'id' | 'addedDate'>) => {
-    console.log('📋 handleAddItem called with:', item);
+    if (!user) return;
     
-    // IMMEDIATELY switch to home view first
+    console.log('➕ Adding item:', item.name);
     setCurrentView('home');
-    console.log('🔄 Switched to All Items view');
     
-    // Generate UUID (with fallback)
+    // Generate UUID
     const generateId = () => {
       if (typeof crypto !== 'undefined' && crypto.randomUUID) {
         return crypto.randomUUID();
       }
-      // Fallback UUID generation
       return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
         const r = Math.random() * 16 | 0;
         const v = c === 'x' ? r : (r & 0x3 | 0x8);
@@ -117,29 +103,34 @@ function AppContent() {
       addedDate: new Date().toISOString(),
     };
     
-    console.log('🆕 Created new item with ID:', newItem.id);
-    
-    // Update state immediately
+    // Optimistic UI update
     const updatedItems = [...items, newItem];
     setItems(updatedItems);
     
-    // Save to localStorage first (guaranteed to work)
-    console.log('💾 Saving to localStorage...');
-    localStorage.setItem('secondThought_items', JSON.stringify(updatedItems));
-    localStorage.setItem(`secondThought_user_${user?.id}_items`, JSON.stringify(updatedItems));
-    console.log('✅ Item saved to localStorage');
+    // Save to Supabase and wait for it
+    console.log('💾 Saving to Supabase (please wait)...');
+    const { success, error } = await saveItem(newItem, user.id);
     
-    // Try to save to Supabase in the background (non-blocking)
-    console.log('🌐 Attempting Supabase save in background...');
-    saveItem(newItem).then(({ success, error }) => {
-      if (success) {
-        console.log('✅ Also saved to Supabase successfully');
+    if (success) {
+      console.log('✅ Item saved to Supabase');
+      
+      // Also save to localStorage as backup
+      localStorage.setItem('secondThought_items', JSON.stringify(updatedItems));
+      localStorage.setItem(`secondThought_user_${user.id}_items`, JSON.stringify(updatedItems));
+      console.log('✅ Also saved to localStorage');
+    } else {
+      console.error('❌ Failed to save to Supabase:', error);
+      // Rollback UI
+      setItems(items);
+      const errorMsg = error?.message || 'Unknown error';
+      
+      // Show detailed error
+      if (errorMsg.includes('timeout')) {
+        alert(`Supabase connection timeout.\n\nThis is a browser/network issue blocking API calls.\n\nTry:\n1. Different browser\n2. Disable VPN/extensions\n3. Different network\n\nYour items are saved in localStorage for now.`);
       } else {
-        console.warn('⚠️ Supabase save failed (using localStorage only):', error?.message || error);
+        alert(`Failed to save item: ${errorMsg}\n\nCheck the console (F12) for details.`);
       }
-    }).catch(err => {
-      console.warn('⚠️ Supabase save error (using localStorage only):', err);
-    });
+    }
   };
 
   const handleItemClick = (itemId: string) => {
@@ -148,37 +139,53 @@ function AppContent() {
   };
 
   const handleDeleteItem = async (itemId: string) => {
-    // Optimistically update UI
-    const originalItems = items;
-    setItems(items.filter(item => item.id !== itemId));
+    if (!user) return;
     
-    // Delete from Supabase
-    const { success, error } = await deleteItemDb(itemId);
+    console.log('🗑️ Deleting item from Supabase...');
     
-    if (!success) {
-      console.error('Failed to delete item:', error);
-      // Rollback optimistic update on error
-      setItems(originalItems);
-      alert('Failed to delete item. Please try again.');
-      return;
+    // Delete from Supabase first (with longer timeout)
+    const { success, error } = await deleteItemDb(itemId, user.id);
+    
+    if (success) {
+      console.log('✅ Item deleted from Supabase');
+      
+      // Update UI after successful delete
+      const updatedItems = items.filter(item => item.id !== itemId);
+      setItems(updatedItems);
+      
+      // Update localStorage
+      const localStorageKey = `secondThought_user_${user.id}_items`;
+      localStorage.setItem(localStorageKey, JSON.stringify(updatedItems));
+      console.log('✅ Item deleted from localStorage');
+      
+      setCurrentView('home');
+    } else {
+      console.error('❌ Failed to delete from Supabase:', error);
+      const errorMsg = error?.message || 'Unknown error';
+      
+      if (errorMsg.includes('timeout')) {
+        alert(`Supabase connection timeout.\n\nThis is a browser/network issue.\n\nThe item is still in localStorage.\n\nTry a different browser or network.`);
+      } else {
+        alert(`Failed to delete item: ${errorMsg}`);
+      }
     }
-    
-    setCurrentView('home');
   };
 
   const selectedItem = items.find(item => item.id === selectedItemId);
 
+  // Show loading spinner
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="w-full min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-foreground">Loading...</p>
+          <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
     );
   }
 
+  // Show auth screen if not logged in
   if (!user) {
     return <Auth />;
   }
@@ -190,12 +197,6 @@ function AppContent() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             <img 
-            /*
-            If the imported logo is already a string URL, just use it directly.
-            Otherwise, if it’s an object and has a .default property, use that.
-            If there’s no .default, but there is a .uri, use that instead.
-            Else: just return whatever it is
-            */
               src={typeof logoImage === 'string' ? logoImage : (logoImage as any).default || (logoImage as any).uri || logoImage}
               alt="Second Thought Logo" 
               className="h-32 w-auto cursor-pointer hover:opacity-80 transition-opacity"
@@ -249,7 +250,11 @@ function AppContent() {
               {/* Profile Button */}
               <button
                 onClick={() => setCurrentView('profile')}
-                className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-full hover:bg-primary/90 transition-all shadow-sm hover:shadow-md"
+                className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all shadow-sm hover:shadow-md ${
+                  currentView === 'profile'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                }`}
                 title="View Profile"
               >
                 <User className="w-5 h-5" />

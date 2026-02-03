@@ -68,7 +68,7 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
     
     onSubmit({
       name,
-      imageUrl: imageUrl || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500',
+      imageUrl: imageUrl || '',
       constraintType,
       consumptionScore,
       ...(constraintType === 'time' ? { waitUntilDate } : { difficulty }),
