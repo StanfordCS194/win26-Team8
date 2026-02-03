@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Item } from '../App';
 import { ImageWithFallback } from './figma/ImageWithFallback';
+import { fetchUrlMetadata } from '../services/urlMetadata';
+import { Loader2, Link } from 'lucide-react';
 
 interface AddItemFormProps {
   onSubmit: (item: Omit<Item, 'id' | 'addedDate'>) => void;
@@ -9,13 +11,15 @@ interface AddItemFormProps {
 
 export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
   const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [productUrl, setProductUrl] = useState('');
   const [name, setName] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [constraintType, setConstraintType] = useState<'time' | 'goals'>('time');
   const [waitUntilDate, setWaitUntilDate] = useState('');
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
   const [consumptionScore, setConsumptionScore] = useState(5);
-  
+  const [isLoadingMetadata, setIsLoadingMetadata] = useState(false);
+
   const [why, setWhy] = useState('');
   const [alternatives, setAlternatives] = useState('');
   const [impact, setImpact] = useState('');
@@ -23,6 +27,7 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
 
   const resetForm = () => {
     setStep(1);
+    setProductUrl('');
     setName('');
     setImageUrl('');
     setConstraintType('time');
@@ -33,6 +38,25 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
     setAlternatives('');
     setImpact('');
     setUrgency('');
+  };
+
+  const handleFetchMetadata = async () => {
+    if (!productUrl) return;
+
+    setIsLoadingMetadata(true);
+    try {
+      const metadata = await fetchUrlMetadata(productUrl);
+      if (metadata.title) {
+        setName(metadata.title);
+      }
+      if (metadata.image) {
+        setImageUrl(metadata.image);
+      }
+    } catch (error) {
+      console.error('Error fetching metadata:', error);
+    } finally {
+      setIsLoadingMetadata(false);
+    }
   };
 
   const handleStep1Submit = (e: React.FormEvent) => {
@@ -100,7 +124,39 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
 
         {step === 1 && (
           <form onSubmit={handleStep1Submit} className="space-y-6">
-          {/* Basic Information */}
+          {/* Product URL - Auto-fetch metadata */}
+          <div>
+            <label className="block text-sm font-medium text-foreground/80 mb-2">
+              Product URL
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="url"
+                value={productUrl}
+                onChange={(e) => setProductUrl(e.target.value)}
+                placeholder="https://amazon.com/product/..."
+                className="flex-1 px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
+              />
+              <button
+                type="button"
+                onClick={handleFetchMetadata}
+                disabled={!productUrl || isLoadingMetadata}
+                className="px-4 py-3 bg-secondary text-secondary-foreground rounded-xl hover:bg-secondary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {isLoadingMetadata ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Link className="w-5 h-5" />
+                )}
+                <span className="hidden sm:inline">Fetch</span>
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Paste a product link to auto-fill name and image
+            </p>
+          </div>
+
+          {/* Item Name */}
           <div>
             <label className="block text-sm font-medium text-foreground/80 mb-2">
               Item Name *
@@ -115,9 +171,10 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
             />
           </div>
 
+          {/* Image URL */}
           <div>
             <label className="block text-sm font-medium text-foreground/80 mb-2">
-               URL
+              Image URL
             </label>
             <input
               type="url"
@@ -126,6 +183,16 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
               placeholder="https://example.com/image.jpg"
               className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
             />
+            {imageUrl && (
+              <div className="mt-2">
+                <img
+                  src={imageUrl}
+                  alt="Preview"
+                  className="w-20 h-20 object-cover rounded-lg border border-border"
+                  onError={(e) => (e.currentTarget.style.display = 'none')}
+                />
+              </div>
+            )}
           </div>
 
           {/* Actions */}
