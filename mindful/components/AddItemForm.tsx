@@ -3,6 +3,7 @@ import { Item, QuestionAnswer } from '../App';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { generateQuestions, GeneratedQuestion } from '../services/questionGenerator';
 import { Loader2 } from 'lucide-react';
+import { Slider } from './ui/slider';
 
 interface AddItemFormProps {
   onSubmit: (item: Omit<Item, 'id' | 'addedDate'>) => void;
@@ -20,7 +21,7 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
 
   // Dynamic questions state
   const [questions, setQuestions] = useState<GeneratedQuestion[]>([]);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [answers, setAnswers] = useState<Record<string, number>>({});
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
 
   const resetForm = () => {
@@ -44,10 +45,10 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
       const generatedQuestions = await generateQuestions(name);
       setQuestions(generatedQuestions);
 
-      // Initialize answers object with empty strings for each question
-      const initialAnswers: Record<string, string> = {};
+      // Initialize answers object with default value of 3 (middle of 1-5 scale) for each question
+      const initialAnswers: Record<string, number> = {};
       generatedQuestions.forEach((q) => {
-        initialAnswers[q.id] = '';
+        initialAnswers[q.id] = 3;
       });
       setAnswers(initialAnswers);
 
@@ -85,10 +86,11 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
     console.log('📋 Final submit - preparing item data');
 
     // Convert questions and answers to QuestionAnswer array
+    // Convert numeric answers (1-5) to strings for storage
     const questionnaire: QuestionAnswer[] = questions.map((q) => ({
       id: q.id,
       question: q.question,
-      answer: answers[q.id] || '',
+      answer: String(answers[q.id] || 3),
     }));
 
 
@@ -207,24 +209,40 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
               These questions are tailored specifically for "{name}"
             </p>
 
-            <div className="space-y-4">
-              {questions.map((q, index) => (
-                <div key={q.id}>
-                  <label className="block text-sm font-medium text-foreground/80 mb-2">
-                    {index + 1}. {q.question} *
-                  </label>
-                  <textarea
-                    value={answers[q.id] || ''}
-                    onChange={(e) =>
-                      setAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))
-                    }
-                    required
-                    rows={3}
-                    placeholder={q.placeholder}
-                    className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none text-foreground placeholder:text-muted-foreground"
-                  />
-                </div>
-              ))}
+            <div className="space-y-6">
+              {questions.map((q, index) => {
+                const currentValue = answers[q.id] || 3;
+                const scaleLabels = q.placeholder.split('/');
+                const leftLabel = scaleLabels[0]?.trim() || 'Low';
+                const rightLabel = scaleLabels[1]?.trim() || 'High';
+                
+                return (
+                  <div key={q.id} className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-sm font-medium text-foreground/80">
+                        {index + 1}. {q.question}
+                      </label>
+                      <span className="text-lg font-semibold text-primary">
+                        {currentValue}/5
+                      </span>
+                    </div>
+                    <Slider
+                      value={[currentValue]}
+                      onValueChange={(value) =>
+                        setAnswers((prev) => ({ ...prev, [q.id]: value[0] }))
+                      }
+                      min={1}
+                      max={5}
+                      step={1}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>1 - {leftLabel}</span>
+                      <span>5 - {rightLabel}</span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 

@@ -109,16 +109,38 @@ export function ItemDetail({ item, onBack, onDelete }: ItemDetailProps) {
           </h2>
 
           <div className="space-y-6">
-            {item.questionnaire.map((qa, index) => (
-              <div key={qa.id} className="p-5 bg-muted/20 rounded-xl">
-                <h3 className="font-medium text-foreground mb-2 font-serif">
-                  {index + 1}. {qa.question}
-                </h3>
-                <p className="text-foreground/80 leading-relaxed">
-                  {qa.answer}
-                </p>
-              </div>
-            ))}
+            {item.questionnaire.map((qa, index) => {
+              // Check if answer is a numeric value (1-5 scale)
+              const numericAnswer = parseInt(qa.answer, 10);
+              const isNumericAnswer = !isNaN(numericAnswer) && numericAnswer >= 1 && numericAnswer <= 5;
+              
+              return (
+                <div key={qa.id} className="p-5 bg-muted/20 rounded-xl">
+                  <h3 className="font-medium text-foreground mb-3 font-serif">
+                    {index + 1}. {qa.question}
+                  </h3>
+                  {isNumericAnswer ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl font-semibold text-primary">
+                          {numericAnswer}/5
+                        </span>
+                        <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-primary transition-all"
+                            style={{ width: `${(numericAnswer / 5) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-foreground/80 leading-relaxed">
+                      {qa.answer}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
