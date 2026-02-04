@@ -37,13 +37,13 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
   };
 
   // Calculate mindfulness score from question answers and consumption score
-  // Questions are on 1-5 scale, consumption score is 1-10, we normalize to 1-10 scale
+  // Questions and consumption score are on 1-5 scale, we normalize to 1-10 scale
   const calculateMindfulnessScore = (questionAnswers: Record<string, number>): number => {
     const mindfulnessValues: number[] = [];
     
     // Include consumption score (inverted, like importance: higher need = less mindful)
-    // Consumption score is already 1-10, so invert it: 1 = 10, 10 = 1
-    const consumptionMindfulness = 11 - consumptionScore;
+    // Consumption score is 1-5, invert then scale to 1-10: 1 (need less) = 10, 5 (need more) = 2
+    const consumptionMindfulness = (6 - consumptionScore) * 2;
     mindfulnessValues.push(consumptionMindfulness);
     
     // Process question answers if available
@@ -243,16 +243,16 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <label className="block text-sm font-medium text-foreground/80">
-                  Rank your need for this item (1 = need less, 10 = need more)
+                  Rank your need for this item (1 = need less, 5 = need more)
                 </label>
                 <span className="text-lg font-semibold text-primary">
-                  {consumptionScore}/10
+                  {consumptionScore}/5
                 </span>
               </div>
               <input
                 type="range"
                 min="1"
-                max="10"
+                max="5"
                 value={consumptionScore}
                 onChange={(e) => setConsumptionScore(Number(e.target.value))}
                 className="w-full accent-primary"
