@@ -45,10 +45,10 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
       const generatedQuestions = await generateQuestions(name);
       setQuestions(generatedQuestions);
 
-      // Initialize answers object with default value of 3 (middle of 1-5 scale) for each question
+      // Initialize answers object with default value of 1 for each question
       const initialAnswers: Record<string, number> = {};
       generatedQuestions.forEach((q) => {
-        initialAnswers[q.id] = 3;
+        initialAnswers[q.id] = 1;
       });
       setAnswers(initialAnswers);
 
@@ -90,7 +90,7 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
     const questionnaire: QuestionAnswer[] = questions.map((q) => ({
       id: q.id,
       question: q.question,
-      answer: String(answers[q.id] || 3),
+      answer: String(answers[q.id] || 1),
     }));
 
 
@@ -211,7 +211,7 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
 
             <div className="space-y-6">
               {questions.map((q, index) => {
-                const currentValue = answers[q.id] || 3;
+                const currentValue = answers[q.id] || 1;
                 const scaleLabels = q.placeholder.split('/');
                 const leftLabel = scaleLabels[0]?.trim() || 'Low';
                 const rightLabel = scaleLabels[1]?.trim() || 'High';
