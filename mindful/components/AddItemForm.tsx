@@ -36,6 +36,59 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
     setAnswers({});
   };
 
+  // Calculate mindfulness score from question answers and consumption score
+  // Questions are on 1-5 scale, consumption score is 1-10, we normalize to 1-10 scale
+  const calculateMindfulnessScore = (questionAnswers: Record<string, number>): number => {
+    const mindfulnessValues: number[] = [];
+    
+    // Include consumption score (inverted, like importance: higher need = less mindful)
+    // Consumption score is already 1-10, so invert it: 1 = 10, 10 = 1
+    const consumptionMindfulness = 11 - consumptionScore;
+    mindfulnessValues.push(consumptionMindfulness);
+    
+    // Process question answers if available
+    if (questions.length > 0) {
+      questions.forEach((q) => {
+        const answer = questionAnswers[q.id] || 1;
+        
+        // Normalize answers based on question type for mindfulness
+        // Lower importance/urgency = more mindful
+        // Higher alternatives/impact = more mindful
+        let mindfulnessValue: number;
+        
+        switch (q.id) {
+          case 'importance':
+            // Invert: 1 (not important) = 10, 5 (very important) = 2
+            mindfulnessValue = 12 - (answer * 2);
+            break;
+          case 'urgency':
+            // Invert: 1 (not urgent) = 10, 5 (very urgent) = 2
+            mindfulnessValue = 12 - (answer * 2);
+            break;
+          case 'alternatives':
+            // Direct: 1 (not satisfied) = 2, 5 (very satisfied) = 10
+            mindfulnessValue = (answer * 2);
+            break;
+          case 'impact':
+            // Direct: 1 (no impact) = 2, 5 (significant impact) = 10
+            mindfulnessValue = (answer * 2);
+            break;
+          default:
+            // For other question types, use direct mapping (1-5 -> 2-10)
+            mindfulnessValue = (answer * 2);
+        }
+        
+        // Ensure value is within 1-10 range
+        mindfulnessValue = Math.max(1, Math.min(10, mindfulnessValue));
+        mindfulnessValues.push(mindfulnessValue);
+      });
+    }
+    
+    // Calculate average and round to nearest integer
+    const average = mindfulnessValues.reduce((sum, val) => sum + val, 0) / mindfulnessValues.length;
+    return Math.round(average);
+  };
+
   const handleStep1Submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoadingQuestions(true);
@@ -63,16 +116,19 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
   const handleStep2Submit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Calculate time-based constraint
-    const days = consumptionScore * 7; // 1 week per score point
+    // Calculate mindfulness score from question answers
+    const calculatedScore = calculateMindfulnessScore(answers);
+    
+    // Calculate time-based constraint based on mindfulness score
+    const days = calculatedScore * 7; // 1 week per score point
     const waitDate = new Date();
     waitDate.setDate(waitDate.getDate() + days);
     setWaitUntilDate(waitDate.toISOString().split('T')[0]);
     
-    // Calculate goals-based difficulty
-    if (consumptionScore <= 3) {
+    // Calculate goals-based difficulty based on mindfulness score
+    if (calculatedScore <= 3) {
       setDifficulty('easy');
-    } else if (consumptionScore <= 7) {
+    } else if (calculatedScore <= 7) {
       setDifficulty('medium');
     } else {
       setDifficulty('hard');
@@ -83,7 +139,7 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
 
   const handleFinalSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('📋 Final submit - preparing item data');
+    console.log('Final submit - preparing item data');
 
     // Convert questions and answers to QuestionAnswer array
     // Convert numeric answers (1-5) to strings for storage
@@ -93,12 +149,14 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
       answer: String(answers[q.id] || 1),
     }));
 
+    // Calculate mindfulness score from question answers
+    const calculatedMindfulnessScore = calculateMindfulnessScore(answers);
 
     onSubmit({
       name,
       imageUrl: imageUrl || '',
       constraintType,
-      consumptionScore,
+      consumptionScore: calculatedMindfulnessScore,
       ...(constraintType === 'time' ? { waitUntilDate } : { difficulty }),
       questionnaire,
     });
@@ -269,7 +327,7 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
           <form onSubmit={handleFinalSubmit} className="space-y-6">
             <div className="mb-4">
               <p className="text-foreground/80">
-                Based on your consumption score of <strong>{consumptionScore}/10</strong>, choose your preferred constraint approach:
+                Based on your mindfulness score of <strong>{calculateMindfulnessScore(answers)}/10</strong>, choose your preferred constraint approach:
               </p>
             </div>
 
