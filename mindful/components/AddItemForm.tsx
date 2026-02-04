@@ -17,7 +17,7 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
   const [constraintType, setConstraintType] = useState<'time' | 'goals'>('time');
   const [waitUntilDate, setWaitUntilDate] = useState('');
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
-  const [consumptionScore, setConsumptionScore] = useState(5);
+  const [consumptionScore, setConsumptionScore] = useState(1);
 
   // Dynamic questions state
   const [questions, setQuestions] = useState<GeneratedQuestion[]>([]);
@@ -31,7 +31,7 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
     setConstraintType('time');
     setWaitUntilDate('');
     setDifficulty('medium');
-    setConsumptionScore(5);
+    setConsumptionScore(1);
     setQuestions([]);
     setAnswers({});
   };
@@ -240,10 +240,15 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
         {step === 2 && (
           <form onSubmit={handleStep2Submit} className="space-y-6">
             {/* Consumption Score */}
-            <div>
-              <label className="block text-sm font-medium text-foreground/80 mb-3">
-                Consumption Score: {consumptionScore}/10
-              </label>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-medium text-foreground/80">
+                  Rank your need for this item (1 = need less, 10 = need more)
+                </label>
+                <span className="text-lg font-semibold text-primary">
+                  {consumptionScore}/10
+                </span>
+              </div>
               <input
                 type="range"
                 min="1"
@@ -252,7 +257,7 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
                 onChange={(e) => setConsumptionScore(Number(e.target.value))}
                 className="w-full accent-primary"
               />
-              <div className="flex justify-between text-xs text-muted-foreground mt-2">
+              <div className="flex justify-between text-xs text-muted-foreground">
                 <span>Need Less</span>
                 <span>Need More</span>
               </div>
@@ -260,13 +265,6 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
 
             {/* Dynamic Questionnaire */}
           <div className="border-t border-border/50 pt-6">
-            <h3 className="text-lg font-serif text-foreground mb-2">
-              Reflection Questions
-            </h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              These questions are tailored specifically for "{name}"
-            </p>
-
             <div className="space-y-6">
               {questions.map((q, index) => {
                 const currentValue = answers[q.id] || 1;
