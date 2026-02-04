@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { Item } from '../App';
+import { Item, QuestionAnswer } from '../App';
 import { ImageWithFallback } from './figma/ImageWithFallback';
+import { generateQuestions, GeneratedQuestion } from '../services/questionGenerator';
+import { Loader2 } from 'lucide-react';
 
 interface AddItemFormProps {
   onSubmit: (item: Omit<Item, 'id' | 'addedDate'>) => void;
@@ -15,11 +17,11 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
   const [waitUntilDate, setWaitUntilDate] = useState('');
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
   const [consumptionScore, setConsumptionScore] = useState(5);
-  
-  const [why, setWhy] = useState('');
-  const [alternatives, setAlternatives] = useState('');
-  const [impact, setImpact] = useState('');
-  const [urgency, setUrgency] = useState('');
+
+  // Dynamic questions state
+  const [questions, setQuestions] = useState<GeneratedQuestion[]>([]);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
 
   const resetForm = () => {
     setStep(1);
@@ -29,15 +31,32 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
     setWaitUntilDate('');
     setDifficulty('medium');
     setConsumptionScore(5);
-    setWhy('');
-    setAlternatives('');
-    setImpact('');
-    setUrgency('');
+    setQuestions([]);
+    setAnswers({});
   };
 
-  const handleStep1Submit = (e: React.FormEvent) => {
+  const handleStep1Submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setStep(2);
+    setIsLoadingQuestions(true);
+
+    try {
+      // Generate contextual questions based on the product name
+      const generatedQuestions = await generateQuestions(name);
+      setQuestions(generatedQuestions);
+
+      // Initialize answers object with empty strings for each question
+      const initialAnswers: Record<string, string> = {};
+      generatedQuestions.forEach((q) => {
+        initialAnswers[q.id] = '';
+      });
+      setAnswers(initialAnswers);
+
+      setStep(2);
+    } catch (error) {
+      console.error('Error generating questions:', error);
+    } finally {
+      setIsLoadingQuestions(false);
+    }
   };
 
   const handleStep2Submit = (e: React.FormEvent) => {
@@ -63,21 +82,23 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
 
   const handleFinalSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
     console.log('📋 Final submit - preparing item data');
-    
+
+    // Convert questions and answers to QuestionAnswer array
+    const questionnaire: QuestionAnswer[] = questions.map((q) => ({
+      id: q.id,
+      question: q.question,
+      answer: answers[q.id] || '',
+    }));
+
+
     onSubmit({
       name,
       imageUrl: imageUrl || '',
       constraintType,
       consumptionScore,
       ...(constraintType === 'time' ? { waitUntilDate } : { difficulty }),
-      questionnaire: {
-        why,
-        alternatives,
-        impact,
-        urgency,
-      },
+      questionnaire,
     });
     
     // Reset form for next item
@@ -132,14 +153,23 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
           <div className="flex gap-3 pt-4">
             <button
               type="submit"
-              className="flex-1 bg-primary text-primary-foreground px-6 py-3 rounded-full hover:bg-primary/90 transition-all shadow-sm hover:shadow-md"
+              disabled={isLoadingQuestions}
+              className="flex-1 bg-primary text-primary-foreground px-6 py-3 rounded-full hover:bg-primary/90 transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              Continue to Reflection
+              {isLoadingQuestions ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Generating Questions...
+                </>
+              ) : (
+                'Continue to Reflection'
+              )}
             </button>
             <button
               type="button"
               onClick={onCancel}
-              className="px-8 py-3 border border-border text-foreground rounded-full hover:bg-muted/30 transition-colors"
+              disabled={isLoadingQuestions}
+              className="px-8 py-3 border border-border text-foreground rounded-full hover:bg-muted/30 transition-colors disabled:opacity-50"
             >
               Cancel
             </button>
@@ -168,68 +198,33 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
               </div>
             </div>
 
-            {/* Questionnaire */}
+            {/* Dynamic Questionnaire */}
           <div className="border-t border-border/50 pt-6">
-            <h3 className="text-lg font-serif text-foreground mb-4">
+            <h3 className="text-lg font-serif text-foreground mb-2">
               Reflection Questions
             </h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              These questions are tailored specifically for "{name}"
+            </p>
 
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-foreground/80 mb-2">
-                  Why do you want this item? *
-                </label>
-                <textarea
-                  value={why}
-                  onChange={(e) => setWhy(e.target.value)}
-                  required
-                  rows={3}
-                  placeholder="Think about your motivations..."
-                  className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none text-foreground placeholder:text-muted-foreground"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-foreground/80 mb-2">
-                  What alternatives have you considered? *
-                </label>
-                <textarea
-                  value={alternatives}
-                  onChange={(e) => setAlternatives(e.target.value)}
-                  required
-                  rows={3}
-                  placeholder="Could you borrow it? Do you already have something similar?"
-                  className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none text-foreground placeholder:text-muted-foreground"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-foreground/80 mb-2">
-                  What impact will this purchase have? *
-                </label>
-                <textarea
-                  value={impact}
-                  onChange={(e) => setImpact(e.target.value)}
-                  required
-                  rows={3}
-                  placeholder="Consider financial, environmental, and personal impact..."
-                  className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none text-foreground placeholder:text-muted-foreground"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-foreground/80 mb-2">
-                  How urgent is this purchase? *
-                </label>
-                <textarea
-                  value={urgency}
-                  onChange={(e) => setUrgency(e.target.value)}
-                  required
-                  rows={3}
-                  placeholder="Do you need it now or can it wait?"
-                  className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none text-foreground placeholder:text-muted-foreground"
-                />
-              </div>
+              {questions.map((q, index) => (
+                <div key={q.id}>
+                  <label className="block text-sm font-medium text-foreground/80 mb-2">
+                    {index + 1}. {q.question} *
+                  </label>
+                  <textarea
+                    value={answers[q.id] || ''}
+                    onChange={(e) =>
+                      setAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))
+                    }
+                    required
+                    rows={3}
+                    placeholder={q.placeholder}
+                    className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none text-foreground placeholder:text-muted-foreground"
+                  />
+                </div>
+              ))}
             </div>
           </div>
 

@@ -13,6 +13,13 @@ import { Plus, User } from 'lucide-react';
 import './styles/globals.css';
 import logoImage from './assets/logo.png';
 
+// Question-answer pair for dynamic questionnaire
+export interface QuestionAnswer {
+  id: string;
+  question: string;
+  answer: string;
+}
+
 export interface Item {
   id: string;
   name: string;
@@ -22,12 +29,8 @@ export interface Item {
   addedDate: string;
   waitUntilDate?: string;
   difficulty?: 'easy' | 'medium' | 'hard';
-  questionnaire: {
-    why: string;
-    alternatives: string;
-    impact: string;
-    urgency: string;
-  };
+  // Dynamic questionnaire answers
+  questionnaire: QuestionAnswer[];
 }
 
 type View = 'home' | 'item' | 'add' | 'time' | 'goals' | 'mission' | 'profile';

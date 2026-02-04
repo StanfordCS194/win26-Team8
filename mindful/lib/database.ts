@@ -1,5 +1,5 @@
 import { supabase } from '../env';
-import type { Item } from '../App';
+import type { Item, QuestionAnswer } from '../App';
 
 export interface DbItem {
   id: string;
@@ -13,6 +13,7 @@ export interface DbItem {
   added_date: string;
   wait_until_date?: string;
   difficulty?: 'easy' | 'medium' | 'hard';
+  // Store dynamic questionnaire as JSON in questionnaire_why, others are empty strings
   questionnaire_why: string;
   questionnaire_alternatives: string;
   questionnaire_impact: string;
@@ -22,6 +23,9 @@ export interface DbItem {
 }
 
 function itemToDb(item: Item, userId: string): Omit<DbItem, 'created_at' | 'updated_at'> {
+  // Serialize the dynamic questionnaire array as JSON
+  const questionnaireJson = JSON.stringify(item.questionnaire);
+
   return {
     id: item.id,
     user_id: userId,
@@ -34,14 +38,42 @@ function itemToDb(item: Item, userId: string): Omit<DbItem, 'created_at' | 'upda
     added_date: item.addedDate,
     wait_until_date: item.waitUntilDate,
     difficulty: item.difficulty,
-    questionnaire_why: item.questionnaire.why,
-    questionnaire_alternatives: item.questionnaire.alternatives,
-    questionnaire_impact: item.questionnaire.impact,
-    questionnaire_urgency: item.questionnaire.urgency,
+    // Store JSON in questionnaire_why, use empty strings for others
+    questionnaire_why: questionnaireJson,
+    questionnaire_alternatives: '',
+    questionnaire_impact: '',
+    questionnaire_urgency: '',
   };
 }
 
 function dbToItem(dbItem: DbItem): Item {
+  // Try to parse questionnaire_why as JSON array (new format)
+  // Fall back to old fixed format if parsing fails
+  let questionnaire: QuestionAnswer[];
+
+  try {
+    const parsed = JSON.parse(dbItem.questionnaire_why);
+    if (Array.isArray(parsed)) {
+      questionnaire = parsed;
+    } else {
+      // Old format - convert to new format
+      questionnaire = [
+        { id: 'why', question: 'Why do you want this item?', answer: dbItem.questionnaire_why },
+        { id: 'alternatives', question: 'What alternatives have you considered?', answer: dbItem.questionnaire_alternatives },
+        { id: 'impact', question: 'What impact will this have?', answer: dbItem.questionnaire_impact },
+        { id: 'urgency', question: 'How urgent is this purchase?', answer: dbItem.questionnaire_urgency },
+      ];
+    }
+  } catch {
+    // Not JSON - use old fixed format
+    questionnaire = [
+      { id: 'why', question: 'Why do you want this item?', answer: dbItem.questionnaire_why },
+      { id: 'alternatives', question: 'What alternatives have you considered?', answer: dbItem.questionnaire_alternatives },
+      { id: 'impact', question: 'What impact will this have?', answer: dbItem.questionnaire_impact },
+      { id: 'urgency', question: 'How urgent is this purchase?', answer: dbItem.questionnaire_urgency },
+    ];
+  }
+
   return {
     id: dbItem.id,
     name: dbItem.name,
@@ -51,12 +83,7 @@ function dbToItem(dbItem: DbItem): Item {
     addedDate: dbItem.added_date,
     waitUntilDate: dbItem.wait_until_date,
     difficulty: dbItem.difficulty,
-    questionnaire: {
-      why: dbItem.questionnaire_why,
-      alternatives: dbItem.questionnaire_alternatives,
-      impact: dbItem.questionnaire_impact,
-      urgency: dbItem.questionnaire_urgency,
-    },
+    questionnaire,
   };
 }
 
