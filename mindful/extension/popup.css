@@ -2570,6 +2570,54 @@ html {
   font-size: var(--font-size);
 }
 
+/* Extension-only layout tweaks */
+
+body {
+  width: 480px;
+  min-height: 480px;
+  padding: 22px;
+  overflow-y: auto;
+  font-size: 17px;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+}
+
+h1 {
+  margin-bottom: 12px;
+}
+
+#root > div {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+#root .max-w-2xl {
+  max-width: 100%;
+  width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+#root .bg-card {
+  flex: 1;
+}
+
+#root input,
+#root textarea {
+  font-size: 1rem;
+}
+
+#root button {
+  font-size: 1rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
 .selection\:bg-primary *::-moz-selection{
   background-color: var(--primary);
 }
