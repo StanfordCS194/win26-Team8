@@ -37,13 +37,15 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
   };
 
   // Calculate mindfulness score from question answers and consumption score
+  // The mindfulness score measures intentional, aware decision-making, not the absence of need.
+  // It penalizes impulsivity and unexamined urgency, while rewarding reflection, flexibility, and impact awareness.
   // Questions and consumption score are on 1-5 scale, we normalize to 1-10 scale
   const calculateMindfulnessScore = (questionAnswers: Record<string, number>): number => {
     const mindfulnessValues: number[] = [];
     
-    // Include consumption score (inverted, like importance: higher need = less mindful)
-    // Consumption score is 1-5, invert then scale to 1-10: 1 (need less) = 10, 5 (need more) = 2
-    const consumptionMindfulness = (6 - consumptionScore) * 2;
+    // Include consumption score (neutral context: strong need can still be handled mindfully)
+    // Consumption score is 1-5, scale directly to 1-10: 1 = 2, 5 = 10
+    const consumptionMindfulness = consumptionScore * 2;
     mindfulnessValues.push(consumptionMindfulness);
     
     // Process question answers if available
@@ -52,30 +54,30 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
         const answer = questionAnswers[q.id] || 1;
         
         // Normalize answers based on question type for mindfulness
-        // Lower importance/urgency = more mindful
-        // Higher alternatives/impact = more mindful
+        // Only urgency is inverted (high = impulsive/unexamined = less mindful)
+        // All other questions are direct (high = reflective/aware = more mindful)
+        // This rewards reflection, awareness, and thoughtful consideration regardless of the conclusion
         let mindfulnessValue: number;
         
         switch (q.id) {
-          case 'importance':
-            // Invert: 1 (not important) = 10, 5 (very important) = 2
-            mindfulnessValue = 12 - (answer * 2);
-            break;
           case 'urgency':
-            // Invert: 1 (not urgent) = 10, 5 (very urgent) = 2
+            // Invert: high urgency signals impulsivity and unexamined urgency
+            // Low urgency shows patience and reflection
+            // 1 (not urgent) = 10, 5 (very urgent) = 2
             mindfulnessValue = 12 - (answer * 2);
             break;
+          case 'importance':
           case 'alternatives':
-            // Direct: 1 (not satisfied) = 2, 5 (very satisfied) = 10
-            mindfulnessValue = (answer * 2);
-            break;
           case 'impact':
-            // Direct: 1 (no impact) = 2, 5 (significant impact) = 10
+          default:
+            // Direct mapping: high scores indicate reflection and awareness
+            // For importance: recognizing something is essential through reflection is mindful
+            // For alternatives: considering alternatives (whether satisfied or not) shows reflection
+            // For impact: understanding outcomes shows awareness
+            // For other questions: any thoughtful consideration is rewarded
+            // 1 = 2, 5 = 10
             mindfulnessValue = (answer * 2);
             break;
-          default:
-            // For other question types, use direct mapping (1-5 -> 2-10)
-            mindfulnessValue = (answer * 2);
         }
         
         // Ensure value is within 1-10 range
@@ -85,6 +87,7 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
     }
     
     // Calculate average and round to nearest integer
+    // All inputs normalized to 1-10 scale, averaged to produce final mindfulness score
     const average = mindfulnessValues.reduce((sum, val) => sum + val, 0) / mindfulnessValues.length;
     return Math.round(average);
   };
