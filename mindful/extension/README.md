@@ -10,7 +10,7 @@ This app can be bundled as a Chrome extension using Expo's web export.
    - `npm run build:web`
 3. Build the extension bundle:
    - `npm run build:extension`
-4. Build popup bundle whenever modifications are made to popup.jsx:
+4. Build popup bundle whenever modifications are made to popup.tsx:
    - `npm run build:popup`
 
 ## Load in Chrome

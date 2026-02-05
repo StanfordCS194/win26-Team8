@@ -1,5 +1,5 @@
 import { useAuth } from '../contexts/AuthContext';
-import { Item } from '../App';
+import type { Item } from '../types/item';
 import { User, Calendar, Target, Clock, TrendingUp } from 'lucide-react';
 
 interface ProfileProps {

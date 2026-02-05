@@ -7,9 +7,11 @@ export interface GeneratedQuestion {
   placeholder: string;
 }
 
-// For Expo, use EXPO_PUBLIC_ prefix for environment variables
+// For Expo, use EXPO_PUBLIC_ prefix for environment variables.
+// Guard for environments (like extension popups) without `process`.
 // @ts-ignore - process.env may not have types in all environments
-const ANTHROPIC_API_KEY = process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY || '';
+const ANTHROPIC_API_KEY =
+  (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_ANTHROPIC_API_KEY) || '';
 
 const DEFAULT_QUESTIONS: GeneratedQuestion[] = [
   {
