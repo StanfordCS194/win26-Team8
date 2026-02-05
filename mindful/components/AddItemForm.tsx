@@ -3,6 +3,7 @@ import { Item, QuestionAnswer } from '../App';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { generateQuestions, GeneratedQuestion } from '../services/questionGenerator';
 import { Loader2 } from 'lucide-react';
+import { Slider } from './ui/slider';
 
 interface AddItemFormProps {
   onSubmit: (item: Omit<Item, 'id' | 'addedDate'>) => void;
@@ -16,11 +17,11 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
   const [constraintType, setConstraintType] = useState<'time' | 'goals'>('time');
   const [waitUntilDate, setWaitUntilDate] = useState('');
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
-  const [consumptionScore, setConsumptionScore] = useState(5);
+  const [consumptionScore, setConsumptionScore] = useState(1);
 
   // Dynamic questions state
   const [questions, setQuestions] = useState<GeneratedQuestion[]>([]);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [answers, setAnswers] = useState<Record<string, number>>({});
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
 
   const resetForm = () => {
@@ -30,9 +31,65 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
     setConstraintType('time');
     setWaitUntilDate('');
     setDifficulty('medium');
-    setConsumptionScore(5);
+    setConsumptionScore(1);
     setQuestions([]);
     setAnswers({});
+  };
+
+  // Calculate mindfulness score from question answers and consumption score
+  // The mindfulness score measures intentional, aware decision-making, not the absence of need.
+  // It penalizes impulsivity and unexamined urgency, while rewarding reflection, flexibility, and impact awareness.
+  // Questions and consumption score are on 1-5 scale, we normalize to 1-10 scale
+  const calculateMindfulnessScore = (questionAnswers: Record<string, number>): number => {
+    const mindfulnessValues: number[] = [];
+    
+    // Include consumption score (neutral context: strong need can still be handled mindfully)
+    // Consumption score is 1-5, scale directly to 1-10: 1 = 2, 5 = 10
+    const consumptionMindfulness = consumptionScore * 2;
+    mindfulnessValues.push(consumptionMindfulness);
+    
+    // Process question answers if available
+    if (questions.length > 0) {
+      questions.forEach((q) => {
+        const answer = questionAnswers[q.id] || 1;
+        
+        // Normalize answers based on question type for mindfulness
+        // Only urgency is inverted (high = impulsive/unexamined = less mindful)
+        // All other questions are direct (high = reflective/aware = more mindful)
+        // This rewards reflection, awareness, and thoughtful consideration regardless of the conclusion
+        let mindfulnessValue: number;
+        
+        switch (q.id) {
+          case 'urgency':
+            // Invert: high urgency signals impulsivity and unexamined urgency
+            // Low urgency shows patience and reflection
+            // 1 (not urgent) = 10, 5 (very urgent) = 2
+            mindfulnessValue = 12 - (answer * 2);
+            break;
+          case 'importance':
+          case 'alternatives':
+          case 'impact':
+          default:
+            // Direct mapping: high scores indicate reflection and awareness
+            // For importance: recognizing something is essential through reflection is mindful
+            // For alternatives: considering alternatives (whether satisfied or not) shows reflection
+            // For impact: understanding outcomes shows awareness
+            // For other questions: any thoughtful consideration is rewarded
+            // 1 = 2, 5 = 10
+            mindfulnessValue = (answer * 2);
+            break;
+        }
+        
+        // Ensure value is within 1-10 range
+        mindfulnessValue = Math.max(1, Math.min(10, mindfulnessValue));
+        mindfulnessValues.push(mindfulnessValue);
+      });
+    }
+    
+    // Calculate average and round to nearest integer
+    // All inputs normalized to 1-10 scale, averaged to produce final mindfulness score
+    const average = mindfulnessValues.reduce((sum, val) => sum + val, 0) / mindfulnessValues.length;
+    return Math.round(average);
   };
 
   const handleStep1Submit = async (e: React.FormEvent) => {
@@ -44,10 +101,10 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
       const generatedQuestions = await generateQuestions(name);
       setQuestions(generatedQuestions);
 
-      // Initialize answers object with empty strings for each question
-      const initialAnswers: Record<string, string> = {};
+      // Initialize answers object with default value of 1 for each question
+      const initialAnswers: Record<string, number> = {};
       generatedQuestions.forEach((q) => {
-        initialAnswers[q.id] = '';
+        initialAnswers[q.id] = 1;
       });
       setAnswers(initialAnswers);
 
@@ -62,16 +119,19 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
   const handleStep2Submit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Calculate time-based constraint
-    const days = consumptionScore * 7; // 1 week per score point
+    // Calculate mindfulness score from question answers
+    const calculatedScore = calculateMindfulnessScore(answers);
+    
+    // Calculate time-based constraint based on mindfulness score
+    const days = calculatedScore * 7; // 1 week per score point
     const waitDate = new Date();
     waitDate.setDate(waitDate.getDate() + days);
     setWaitUntilDate(waitDate.toISOString().split('T')[0]);
     
-    // Calculate goals-based difficulty
-    if (consumptionScore <= 3) {
+    // Calculate goals-based difficulty based on mindfulness score
+    if (calculatedScore <= 3) {
       setDifficulty('easy');
-    } else if (consumptionScore <= 7) {
+    } else if (calculatedScore <= 7) {
       setDifficulty('medium');
     } else {
       setDifficulty('hard');
@@ -82,21 +142,31 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
 
   const handleFinalSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('📋 Final submit - preparing item data');
+    console.log('Final submit - preparing item data');
 
     // Convert questions and answers to QuestionAnswer array
-    const questionnaire: QuestionAnswer[] = questions.map((q) => ({
-      id: q.id,
-      question: q.question,
-      answer: answers[q.id] || '',
-    }));
+    // Consumption score as question 1
+    const questionnaire: QuestionAnswer[] = [
+      {
+        id: 'consumption',
+        question: 'Rank your need for this item (1 = need less, 5 = need more)',
+        answer: String(consumptionScore),
+      },
+      ...questions.map((q) => ({
+        id: q.id,
+        question: q.question,
+        answer: String(answers[q.id] || 1),
+      })),
+    ];
 
+    // Calculate mindfulness score from question answers
+    const calculatedMindfulnessScore = calculateMindfulnessScore(answers);
 
     onSubmit({
       name,
       imageUrl: imageUrl || '',
       constraintType,
-      consumptionScore,
+      consumptionScore: calculatedMindfulnessScore,
       ...(constraintType === 'time' ? { waitUntilDate } : { difficulty }),
       questionnaire,
     });
@@ -179,54 +249,66 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
 
         {step === 2 && (
           <form onSubmit={handleStep2Submit} className="space-y-6">
-            {/* Consumption Score */}
-            <div>
-              <label className="block text-sm font-medium text-foreground/80 mb-3">
-                Consumption Score: {consumptionScore}/10
-              </label>
-              <input
-                type="range"
-                min="1"
-                max="10"
-                value={consumptionScore}
-                onChange={(e) => setConsumptionScore(Number(e.target.value))}
-                className="w-full accent-primary"
-              />
-              <div className="flex justify-between text-xs text-muted-foreground mt-2">
-                <span>Need Less</span>
-                <span>Need More</span>
-              </div>
-            </div>
-
-            {/* Dynamic Questionnaire */}
-          <div className="border-t border-border/50 pt-6">
-            <h3 className="text-lg font-serif text-foreground mb-2">
-              Reflection Questions
-            </h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              These questions are tailored specifically for "{name}"
-            </p>
-
-            <div className="space-y-4">
-              {questions.map((q, index) => (
-                <div key={q.id}>
-                  <label className="block text-sm font-medium text-foreground/80 mb-2">
-                    {index + 1}. {q.question} *
+            <div className="space-y-6">
+              {/* Consumption Score - Question 1 */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-sm font-medium text-foreground/80">
+                    1. Rank your need for this item (1 = need less, 5 = need more)
                   </label>
-                  <textarea
-                    value={answers[q.id] || ''}
-                    onChange={(e) =>
-                      setAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))
-                    }
-                    required
-                    rows={3}
-                    placeholder={q.placeholder}
-                    className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none text-foreground placeholder:text-muted-foreground"
-                  />
+                  <span className="text-lg font-semibold text-primary">
+                    {consumptionScore}/5
+                  </span>
                 </div>
-              ))}
+                <Slider
+                  value={[consumptionScore]}
+                  onValueChange={(value) => setConsumptionScore(value[0])}
+                  min={1}
+                  max={5}
+                  step={1}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>1 - Need Less</span>
+                  <span>5 - Need More</span>
+                </div>
+              </div>
+
+              {/* Dynamic Questionnaire - Questions 2, 3, 4, etc. */}
+              {questions.map((q, index) => {
+                const currentValue = answers[q.id] || 1;
+                const scaleLabels = q.placeholder.split('/');
+                const leftLabel = scaleLabels[0]?.trim() || 'Low';
+                const rightLabel = scaleLabels[1]?.trim() || 'High';
+                
+                return (
+                  <div key={q.id} className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-sm font-medium text-foreground/80">
+                        {index + 2}. {q.question}
+                      </label>
+                      <span className="text-lg font-semibold text-primary">
+                        {currentValue}/5
+                      </span>
+                    </div>
+                    <Slider
+                      value={[currentValue]}
+                      onValueChange={(value) =>
+                        setAnswers((prev) => ({ ...prev, [q.id]: value[0] }))
+                      }
+                      min={1}
+                      max={5}
+                      step={1}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>1 - {leftLabel}</span>
+                      <span>5 - {rightLabel}</span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          </div>
 
           {/* Actions */}
           <div className="flex gap-3 pt-4">
@@ -251,7 +333,7 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
           <form onSubmit={handleFinalSubmit} className="space-y-6">
             <div className="mb-4">
               <p className="text-foreground/80">
-                Based on your consumption score of <strong>{consumptionScore}/10</strong>, choose your preferred constraint approach:
+                Based on your mindfulness score of <strong>{calculateMindfulnessScore(answers)}/10</strong>, choose your preferred constraint approach:
               </p>
             </div>
 
