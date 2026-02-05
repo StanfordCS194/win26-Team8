@@ -145,12 +145,19 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
     console.log('Final submit - preparing item data');
 
     // Convert questions and answers to QuestionAnswer array
-    // Convert numeric answers (1-5) to strings for storage
-    const questionnaire: QuestionAnswer[] = questions.map((q) => ({
-      id: q.id,
-      question: q.question,
-      answer: String(answers[q.id] || 1),
-    }));
+    // Consumption score as question 1
+    const questionnaire: QuestionAnswer[] = [
+      {
+        id: 'consumption',
+        question: 'Rank your need for this item (1 = need less, 5 = need more)',
+        answer: String(consumptionScore),
+      },
+      ...questions.map((q) => ({
+        id: q.id,
+        question: q.question,
+        answer: String(answers[q.id] || 1),
+      })),
+    ];
 
     // Calculate mindfulness score from question answers
     const calculatedMindfulnessScore = calculateMindfulnessScore(answers);
@@ -242,33 +249,32 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
 
         {step === 2 && (
           <form onSubmit={handleStep2Submit} className="space-y-6">
-            {/* Consumption Score */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <label className="block text-sm font-medium text-foreground/80">
-                  Rank your need for this item (1 = need less, 5 = need more)
-                </label>
-                <span className="text-lg font-semibold text-primary">
-                  {consumptionScore}/5
-                </span>
-              </div>
-              <input
-                type="range"
-                min="1"
-                max="5"
-                value={consumptionScore}
-                onChange={(e) => setConsumptionScore(Number(e.target.value))}
-                className="w-full accent-primary"
-              />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Need Less</span>
-                <span>Need More</span>
-              </div>
-            </div>
-
-            {/* Dynamic Questionnaire */}
-          <div className="border-t border-border/50 pt-6">
             <div className="space-y-6">
+              {/* Consumption Score - Question 1 */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-sm font-medium text-foreground/80">
+                    1. Rank your need for this item (1 = need less, 5 = need more)
+                  </label>
+                  <span className="text-lg font-semibold text-primary">
+                    {consumptionScore}/5
+                  </span>
+                </div>
+                <Slider
+                  value={[consumptionScore]}
+                  onValueChange={(value) => setConsumptionScore(value[0])}
+                  min={1}
+                  max={5}
+                  step={1}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>1 - Need Less</span>
+                  <span>5 - Need More</span>
+                </div>
+              </div>
+
+              {/* Dynamic Questionnaire - Questions 2, 3, 4, etc. */}
               {questions.map((q, index) => {
                 const currentValue = answers[q.id] || 1;
                 const scaleLabels = q.placeholder.split('/');
@@ -279,7 +285,7 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
                   <div key={q.id} className="space-y-3">
                     <div className="flex items-center justify-between">
                       <label className="block text-sm font-medium text-foreground/80">
-                        {index + 1}. {q.question}
+                        {index + 2}. {q.question}
                       </label>
                       <span className="text-lg font-semibold text-primary">
                         {currentValue}/5
@@ -303,7 +309,6 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
                 );
               })}
             </div>
-          </div>
 
           {/* Actions */}
           <div className="flex gap-3 pt-4">
