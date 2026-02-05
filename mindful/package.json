@@ -9,7 +9,8 @@
     "web": "expo start --web",
     "build:web": "expo export --platform web",
     "build:extension": "expo export --platform web --output-dir extension/dist",
-    "build:popup": "esbuild extension/src/popup.tsx --bundle --platform=browser --format=iife --outfile=extension/popup.js --define:process.env.NODE_ENV=\\\"production\\\" --jsx=automatic --jsx-import-source=react"
+    "build:popup:css": "tailwindcss -i styles/globals.css -o extension/popup.css",
+    "build:popup": "npm run build:popup:css && esbuild extension/src/popup.tsx --bundle --platform=browser --format=iife --outfile=extension/popup.js --define:process.env.NODE_ENV=\\\"production\\\" --jsx=automatic --jsx-import-source=react"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.93.3",
