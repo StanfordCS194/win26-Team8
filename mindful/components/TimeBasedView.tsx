@@ -237,79 +237,75 @@ export function TimeBasedView({ items, onItemClick, onAddItem }: TimeBasedViewPr
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {timeBasedItems.map((item) => {
-            const waitDate = new Date(item.waitUntilDate || '');
-            const today = new Date();
-            const daysRemaining = Math.ceil((waitDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-            const isPast = daysRemaining < 0;
+              const waitDate = new Date(item.waitUntilDate || '');
+              const today = new Date();
+              const daysRemaining = Math.ceil((waitDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+              const isPast = daysRemaining < 0;
 
               return (
-              <div
-                key={item.id}
-                onClick={() => onItemClick(item.id)}
-                className="bg-card rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer border border-border/50 hover:border-primary/30 p-5"
-              >
-                <div className="flex gap-4">
-                  <div className="w-24 h-24 flex-shrink-0 bg-muted/30 rounded-xl overflow-hidden">
+                <div
+                  key={item.id}
+                  onClick={() => onItemClick(item.id)}
+                  className="bg-card rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden border border-border/50 hover:border-primary/30"
+                >
+                  <div className="aspect-square bg-muted/30 overflow-hidden">
                     {item.imageUrl ? (
                       <img
                         src={item.imageUrl}
                         alt={item.name}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                         onError={(e) => {
-                          e.currentTarget.src = 'https://via.placeholder.com/100/e5e7eb/9ca3af?text=No+Image';
+                          e.currentTarget.src = 'https://via.placeholder.com/400/e5e7eb/9ca3af?text=No+Image';
                         }}
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-muted/50">
-                        <Clock className="w-8 h-8 text-muted-foreground/30" />
+                        <Clock className="w-16 h-16 text-muted-foreground/30" />
                       </div>
                     )}
                   </div>
-
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-foreground mb-2 font-serif">
+                  <div className="p-5">
+                    <h3 className="font-medium text-foreground mb-3 line-clamp-2 font-serif">
                       {item.name}
                     </h3>
-                    
-                    <div className="flex items-center gap-4 mb-2">
-                      <div className="flex items-center gap-2 text-sm">
-                        <Calendar className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-foreground/80">
-                          {waitDate.toLocaleDateString('en-US', { 
-                            year: 'numeric', 
-                            month: 'short', 
-                            day: 'numeric' 
-                          })}
-                        </span>
-                      </div>
-                      
-                      <div className={`text-sm font-medium ${
-                        isPast ? 'text-primary' : 
-                        daysRemaining <= 7 ? 'text-accent' : 
-                        'text-muted-foreground'
-                      }`}>
-                        {isPast ? 
-                          'Ready to purchase' : 
-                          `${daysRemaining} day${daysRemaining !== 1 ? 's' : ''} remaining`
-                        }
-                      </div>
-                    </div>
 
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-muted-foreground">Score:</span>
-                      <span className={`font-semibold ${
-                        item.consumptionScore >= 7 ? 'text-destructive' : 
-                        item.consumptionScore >= 4 ? 'text-accent' : 
+                    <div className="flex items-center justify-between mb-3 pb-3 border-b border-border/50">
+                      <span className="text-sm text-muted-foreground">Score</span>
+                      <span className={`font-semibold text-lg ${
+                        item.consumptionScore >= 7 ? 'text-destructive' :
+                        item.consumptionScore >= 4 ? 'text-accent' :
                         'text-primary'
                       }`}>
                         {item.consumptionScore}/10
                       </span>
                     </div>
+
+                    <div className="flex flex-col gap-1.5 text-sm">
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Calendar className="w-4 h-4 flex-shrink-0" />
+                        <span>
+                          {waitDate.toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                          })}
+                        </span>
+                      </div>
+                      <div className={`font-medium ${
+                        isPast ? 'text-primary' :
+                        daysRemaining <= 7 ? 'text-accent' :
+                        'text-muted-foreground'
+                      }`}>
+                        {isPast ?
+                          'Ready to purchase' :
+                          `${daysRemaining} day${daysRemaining !== 1 ? 's' : ''} remaining`
+                        }
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
               );
             })}
           </div>
