@@ -11,13 +11,14 @@ interface AddItemFormProps {
 }
 
 export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [name, setName] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [constraintType, setConstraintType] = useState<'time' | 'goals'>('time');
   const [waitUntilDate, setWaitUntilDate] = useState('');
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
   const [consumptionScore, setConsumptionScore] = useState(1);
+  const [goalDescription, setGoalDescription] = useState('');
 
   // Dynamic questions state
   const [questions, setQuestions] = useState<GeneratedQuestion[]>([]);
@@ -34,6 +35,7 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
     setConsumptionScore(1);
     setQuestions([]);
     setAnswers({});
+    setGoalDescription('');
   };
 
   // Calculate mindfulness score from question answers and consumption score
@@ -159,6 +161,15 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
       })),
     ];
 
+    // If the user chose a goals-based constraint, capture their specific goal
+    if (constraintType === 'goals' && goalDescription.trim()) {
+      questionnaire.push({
+        id: 'goal',
+        question: `What ${difficulty} goal would you like to complete before purchasing this item?`,
+        answer: goalDescription.trim(),
+      });
+    }
+
     // Calculate mindfulness score from question answers
     const calculatedMindfulnessScore = calculateMindfulnessScore(answers);
 
@@ -183,9 +194,10 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
             {step === 1 && 'Add Item'}
             {step === 2 && 'Reflection Questions'}
             {step === 3 && 'Your Constraint Plan'}
+            {step === 4 && 'Your Goal Plan'}
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Step {step} of 3
+            Step {step} of 4
           </p>
         </div>
 
@@ -420,6 +432,60 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
               <button
                 type="button"
                 onClick={() => setStep(2)}
+                className="px-8 py-3 border border-border text-foreground rounded-full hover:bg-muted/30 transition-colors"
+              >
+                Back
+              </button>
+              {constraintType === 'time' ? (
+                <button
+                  type="submit"
+                  className="flex-1 bg-primary text-primary-foreground px-6 py-3 rounded-full hover:bg-primary/90 transition-all shadow-sm hover:shadow-md"
+                >
+                  Add to Reflection List
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setStep(4)}
+                  className="flex-1 bg-primary text-primary-foreground px-6 py-3 rounded-full hover:bg-primary/90 transition-all shadow-sm hover:shadow-md"
+                >
+                  Continue
+                </button>
+              )}
+            </div>
+          </form>
+        )}
+
+        {step === 4 && constraintType === 'goals' && (
+          <form onSubmit={handleFinalSubmit} className="space-y-6">
+            <div className="mb-4 space-y-2">
+              <p className="text-foreground/80">
+                <strong className="capitalize">{difficulty}</strong> goals-based constraint for{' '}
+                <strong>{name}</strong>.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                What is a <span className="font-medium capitalize">{difficulty}</span> goal you would like to complete
+                before purchasing this item?
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-foreground/80 mb-2">
+                Your goal
+              </label>
+              <textarea
+                value={goalDescription}
+                onChange={(e) => setGoalDescription(e.target.value)}
+                placeholder="For example: Save an extra $100, sell three unused items from my closet, or complete a month of tracking my spending."
+                rows={4}
+                className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground resize-none"
+              />
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <button
+                type="button"
+                onClick={() => setStep(3)}
                 className="px-8 py-3 border border-border text-foreground rounded-full hover:bg-muted/30 transition-colors"
               >
                 Back
