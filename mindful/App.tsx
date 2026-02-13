@@ -50,10 +50,31 @@ function AppContent() {
     }
   }, [user, loading]);
 
+  /**
+   * LOAD ITEMS FROM DATABASE
+   * 
+   * This function loads the user's items when they log in or refresh the page.
+   * 
+   * Two-step loading strategy:
+   * 1. FAST: Load from localStorage first (instant, works offline)
+   * 2. SYNC: Load from Supabase database (authoritative source, syncs across devices)
+   * 
+   * This approach ensures:
+   * - Users see their items immediately (localStorage)
+   * - Data stays synchronized with the database (Supabase)
+   * - App works even if Supabase is slow or offline
+   * 
+   * Database query details:
+   * - Calls fetchItems(user.id) from lib/database.ts
+   * - Fetches all items where user_id matches logged-in user
+   * - Returns items sorted by creation date (newest first)
+   * - RLS policies ensure users only see their own items
+   */
   const loadItems = async () => {
     if (!user) return;
     
-    // First, load from localStorage (instant)
+    // STEP 1: Load from localStorage (instant, offline-capable)
+    // This provides immediate UI feedback while we wait for Supabase
     console.log('💾 Loading from localStorage...');
     const localStorageKey = `secondThought_user_${user.id}_items`;
     const storedItems = localStorage.getItem(localStorageKey);
@@ -68,31 +89,60 @@ function AppContent() {
       }
     }
     
-    // Then, try to sync with Supabase (in background)
+    // STEP 2: Sync with Supabase database (authoritative source)
+    // This ensures we have the latest data from the server
+    // If user added items on another device, we'll get them here
     console.log('🌐 Syncing with Supabase...');
     const { items: loadedItems, error } = await fetchItems(user.id);
     
     if (!error && loadedItems) {
+      // Update UI with fresh data from database
       setItems(loadedItems);
-      // Update localStorage with Supabase data
+      // Update localStorage to match database (for next time)
       localStorage.setItem(localStorageKey, JSON.stringify(loadedItems));
       console.log('✅ Synced', loadedItems.length, 'items from Supabase');
     } else if (error) {
       console.warn('⚠️ Supabase sync failed (using localStorage):', error);
+      // If Supabase fails, we still have localStorage data from Step 1
     }
   };
 
+  /**
+   * ADD NEW ITEM TO DATABASE
+   * 
+   * This function handles adding a new item when the user completes the form.
+   * 
+   * Process:
+   * 1. Generate a unique ID (UUID) for the item
+   * 2. Create complete Item object with all fields
+   * 3. Optimistically update UI (show item immediately)
+   * 4. Save to Supabase database (wait for confirmation)
+   * 5. If success: Also save to localStorage as backup
+   * 6. If failure: Rollback UI and show error
+   * 
+   * Database operation:
+   * - Calls saveItem(newItem, user.id) from lib/database.ts
+   * - Inserts into 'items' table with all item data
+   * - user_id associates item with logged-in user
+   * - RLS policies ensure users can only insert their own items
+   * - Returns success/failure status
+   * 
+   * @param item - Item data from the form (without id and addedDate)
+   */
   const handleAddItem = async (item: Omit<Item, 'id' | 'addedDate'>) => {
     if (!user) return;
     
     console.log('➕ Adding item:', item.name);
-    setCurrentView('home');
+    setCurrentView('home'); // Navigate back to list view
     
-    // Generate UUID
+    // Generate a unique ID (UUID) for this item
+    // UUID format: "550e8400-e29b-41d4-a716-446655440000"
     const generateId = () => {
       if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        // Use browser's built-in UUID generator if available
         return crypto.randomUUID();
       }
+      // Fallback: Generate UUID manually
       return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
         const r = Math.random() * 16 | 0;
         const v = c === 'x' ? r : (r & 0x3 | 0x8);
@@ -100,34 +150,43 @@ function AppContent() {
       });
     };
     
+    // Create the complete item object with generated fields
     const newItem: Item = {
-      ...item,
-      id: generateId(),
-      addedDate: new Date().toISOString(),
+      ...item, // Spread all form data (name, imageUrl, constraintType, etc.)
+      id: generateId(), // Add unique ID
+      addedDate: new Date().toISOString(), // Add timestamp
     };
     
-    // Optimistic UI update
+    // OPTIMISTIC UI UPDATE
+    // Show the item immediately for better UX (we'll rollback if save fails)
     const updatedItems = [...items, newItem];
     setItems(updatedItems);
     
-    // Save to Supabase and wait for it
+    // SAVE TO DATABASE
+    // Wait for Supabase to confirm the item was saved
+    // Calls: INSERT INTO items (...) VALUES (...) in Supabase
     console.log('💾 Saving to Supabase (please wait)...');
     const { success, error } = await saveItem(newItem, user.id);
     
     if (success) {
+      // SUCCESS: Item is now in the database
       console.log('✅ Item saved to Supabase');
       
-      // Also save to localStorage as backup
+      // Also save to localStorage as backup/cache
+      // This allows offline access and faster loading
       localStorage.setItem('secondThought_items', JSON.stringify(updatedItems));
       localStorage.setItem(`secondThought_user_${user.id}_items`, JSON.stringify(updatedItems));
       console.log('✅ Also saved to localStorage');
     } else {
+      // FAILURE: Database save failed
       console.error('❌ Failed to save to Supabase:', error);
-      // Rollback UI
-      setItems(items);
+      
+      // Rollback the optimistic UI update
+      setItems(items); // Remove the item from the list
+      
       const errorMsg = error?.message || 'Unknown error';
       
-      // Show detailed error
+      // Show user-friendly error message
       if (errorMsg.includes('timeout')) {
         alert(`Supabase connection timeout.\n\nThis is a browser/network issue blocking API calls.\n\nTry:\n1. Different browser\n2. Disable VPN/extensions\n3. Different network\n\nYour items are saved in localStorage for now.`);
       } else {

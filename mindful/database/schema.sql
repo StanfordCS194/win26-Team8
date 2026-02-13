@@ -1,5 +1,8 @@
--- Second Thought Database Schema
+-- Second Thought Database Schema (UPDATED - Simplified with JSONB)
 -- Run this in your Supabase SQL Editor: https://mohgivduzthccoybnbnr.supabase.co/project/_/sql/new
+--
+-- NOTE: Use database-reset.sql in the root folder instead!
+-- This file is kept for reference only.
 
 -- Create profiles table
 CREATE TABLE IF NOT EXISTS public.profiles (
@@ -10,33 +13,22 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Drop existing items table if you want to recreate it
--- DROP TABLE IF EXISTS public.items CASCADE;
-
--- Create items table with all required fields for Second Thought app
+-- Create simplified items table (uses JSONB for questionnaire)
 CREATE TABLE IF NOT EXISTS public.items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   image_url TEXT,
-  url TEXT,
-  cost NUMERIC(10, 2),
   constraint_type TEXT NOT NULL CHECK (constraint_type IN ('time', 'goals')),
   consumption_score INTEGER NOT NULL CHECK (consumption_score >= 1 AND consumption_score <= 10),
   added_date TIMESTAMP WITH TIME ZONE NOT NULL,
   wait_until_date DATE,
   difficulty TEXT CHECK (difficulty IN ('easy', 'medium', 'hard')),
-  questionnaire_why TEXT NOT NULL,
-  questionnaire_alternatives TEXT NOT NULL,
-  questionnaire_impact TEXT NOT NULL,
-  questionnaire_urgency TEXT NOT NULL,
+  questionnaire JSONB NOT NULL DEFAULT '[]'::jsonb,  -- ← Simplified! Stores dynamic Q&A
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-<<<<<<< Updated upstream
-=======
--- Create profiles table
 -- Create item_reflections table (for future use)
 CREATE TABLE IF NOT EXISTS public.item_reflections (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
