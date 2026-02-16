@@ -5,6 +5,17 @@ import { generateQuestions, GeneratedQuestion } from '../services/questionGenera
 import { Loader2 } from 'lucide-react';
 import { Slider } from './ui/slider';
 
+// Generate a unique unlock password for friend verification
+function generateUnlockPassword(): string {
+  // Generate a 6-character alphanumeric password
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Excluding confusing characters
+  let password = '';
+  for (let i = 0; i < 6; i++) {
+    password += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return password;
+}
+
 // Generate intuitive explanation of how mindfulness score reflects the user's responses
 function generateMindfulnessExplanation(questionnaire: QuestionAnswer[], finalScore: number): string {
   const insights: string[] = [];
@@ -104,6 +115,9 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
   const [consumptionScore, setConsumptionScore] = useState(1);
   const [goalDescription, setGoalDescription] = useState('');
+  const [friendName, setFriendName] = useState('');
+  const [friendEmail, setFriendEmail] = useState('');
+  const [unlockPassword, setUnlockPassword] = useState('');
 
   // Dynamic questions state
   const [questions, setQuestions] = useState<GeneratedQuestion[]>([]);
@@ -121,6 +135,9 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
     setQuestions([]);
     setAnswers({});
     setGoalDescription('');
+    setFriendName('');
+    setFriendEmail('');
+    setUnlockPassword('');
   };
 
   // Calculate mindfulness score from question answers and consumption score
@@ -265,6 +282,12 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
       consumptionScore: calculatedMindfulnessScore,
       ...(constraintType === 'time' ? { waitUntilDate } : { difficulty }),
       questionnaire,
+      ...(constraintType === 'goals' && friendName.trim() ? {
+        friendName: friendName.trim(),
+        friendEmail: friendEmail.trim() || undefined,
+        unlockPassword: unlockPassword || generateUnlockPassword(),
+        isUnlocked: false,
+      } : {}),
     });
     
     // Reset form for next item
@@ -597,6 +620,64 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
                 rows={4}
                 className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground resize-none"
               />
+            </div>
+
+            <div className="border-t border-border/50 pt-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-foreground/80 mb-2">
+                  Choose a friend to unlock this item
+                </label>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Select someone who will verify you've completed your goal. They'll receive a unique password to unlock this item once you're ready.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground/80 mb-2">
+                  Friend's Name
+                </label>
+                <input
+                  type="text"
+                  value={friendName}
+                  onChange={(e) => {
+                    setFriendName(e.target.value);
+                    // Generate password when friend name is entered
+                    if (e.target.value.trim() && !unlockPassword) {
+                      const password = generateUnlockPassword();
+                      setUnlockPassword(password);
+                    }
+                  }}
+                  placeholder="Enter your friend's name"
+                  className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground/80 mb-2">
+                  Friend's Email
+                </label>
+                <input
+                  type="email"
+                  value={friendEmail}
+                  onChange={(e) => setFriendEmail(e.target.value)}
+                  placeholder="friend@example.com"
+                  className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
+                />
+              </div>
+
+              {unlockPassword && (
+                <div className="p-4 bg-primary/10 border border-primary/20 rounded-xl">
+                  <p className="text-sm font-medium text-foreground/80 mb-2">
+                    Unlock password will be sent to your friend
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    The unlock password has been generated and will be sent to <strong>{friendEmail || friendName}</strong> via email. They can enter it on the item detail page to unlock this item once you've completed your goal.
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Note: The password is hidden from you to ensure you complete your goal before unlocking.
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="flex gap-3 pt-4">

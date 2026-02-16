@@ -7,8 +7,10 @@ import { GoalsBasedView } from './components/GoalsBasedView';
 import { OurMission } from './components/OurMission';
 import { Auth } from './components/Auth';
 import { Profile } from './components/Profile';
+import { UnlockItem } from './components/UnlockItem';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { fetchItems, saveItem, deleteItem as deleteItemDb } from './lib/database';
+import { sendUnlockPasswordEmail } from './services/emailService';
 import { Plus, User } from 'lucide-react';
 import './styles/globals.css';
 import logoImage from './assets/logo.png';
@@ -31,15 +33,52 @@ export interface Item {
   difficulty?: 'easy' | 'medium' | 'hard';
   // Dynamic questionnaire answers
   questionnaire: QuestionAnswer[];
+  // Friend unlock for goals-based constraints
+  friendName?: string;
+  friendEmail?: string;
+  unlockPassword?: string;
+  isUnlocked?: boolean;
 }
 
-type View = 'home' | 'item' | 'add' | 'time' | 'goals' | 'mission' | 'profile';
+type View = 'home' | 'item' | 'add' | 'time' | 'goals' | 'mission' | 'profile' | 'unlock';
 
 function AppContent() {
   const { user, loading } = useAuth();
   const [items, setItems] = useState<Item[]>([]);
   const [currentView, setCurrentView] = useState<View>('mission');
+  
+  // Check URL for unlock view on mount and when URL changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('itemId')) {
+        setCurrentView('unlock');
+      }
+    }
+  }, []);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+
+  // Check URL for unlock view on mount and when URL changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const checkUnlockPage = () => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('itemId')) {
+          setCurrentView('unlock');
+        }
+      };
+      
+      // Check immediately
+      checkUnlockPage();
+      
+      // Also listen for popstate (back/forward navigation)
+      window.addEventListener('popstate', checkUnlockPage);
+      
+      return () => {
+        window.removeEventListener('popstate', checkUnlockPage);
+      };
+    }
+  }, []);
 
   // Load items when user logs in
   useEffect(() => {
@@ -117,6 +156,30 @@ function AppContent() {
     if (success) {
       console.log('✅ Item saved to Supabase');
       
+      // Send unlock password email if this is a goals-based constraint with a friend
+      if (item.constraintType === 'goals' && item.friendName && item.friendEmail && item.unlockPassword) {
+        // No unlock link needed - friend will enter password on item detail page
+        const itemDetailLink = typeof window !== 'undefined' 
+          ? `${window.location.origin}?view=item&id=${newItem.id}`
+          : `?view=item&id=${newItem.id}`;
+        
+        const emailResult = await sendUnlockPasswordEmail({
+          friendName: item.friendName,
+          friendEmail: item.friendEmail,
+          itemName: item.name,
+          unlockPassword: item.unlockPassword,
+          unlockLink: itemDetailLink, // Link to item detail page where they can enter password
+          userName: user.email || undefined,
+        });
+        
+        if (emailResult.success) {
+          console.log('✅ Unlock password email sent to friend');
+        } else {
+          console.warn('⚠️ Failed to send unlock password email:', emailResult.error);
+          // Still continue - the item is saved, just the email failed
+        }
+      }
+      
       // Also save to localStorage as backup
       localStorage.setItem('secondThought_items', JSON.stringify(updatedItems));
       localStorage.setItem(`secondThought_user_${user.id}_items`, JSON.stringify(updatedItems));
@@ -176,7 +239,37 @@ function AppContent() {
 
   const selectedItem = items.find(item => item.id === selectedItemId);
 
-  // Show loading spinner
+  // Check if we're on the unlock page - it should be accessible without login
+  // Check URL params to ensure we catch the unlock page even if currentView isn't set yet
+  const checkUnlockFromURL = () => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('itemId') !== null;
+    }
+    return false;
+  };
+  
+  const isUnlockPage = currentView === 'unlock' || checkUnlockFromURL();
+
+  // Show unlock page without requiring auth - must be before auth check
+  if (isUnlockPage) {
+    // Make sure currentView is set to unlock
+    if (currentView !== 'unlock') {
+      setCurrentView('unlock');
+    }
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <UnlockItem 
+          onUnlockSuccess={() => {
+            // After unlock, show success message
+            alert('Item unlocked successfully! The user can now purchase this item.');
+          }}
+        />
+      </div>
+    );
+  }
+
+  // Show loading spinner (but not for unlock page)
   if (loading) {
     return (
       <div className="w-full min-h-screen bg-background flex items-center justify-center">
@@ -188,7 +281,7 @@ function AppContent() {
     );
   }
 
-  // Show auth screen if not logged in
+  // Show auth screen if not logged in (for all other pages)
   if (!user) {
     return <Auth />;
   }

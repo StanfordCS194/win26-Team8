@@ -18,6 +18,11 @@ export interface DbItem {
   questionnaire_alternatives: string;
   questionnaire_impact: string;
   questionnaire_urgency: string;
+  // Friend unlock fields for goals-based constraints
+  friend_name?: string;
+  friend_email?: string;
+  unlock_password?: string;
+  is_unlocked?: boolean;
   created_at?: string;
   updated_at?: string;
 }
@@ -43,6 +48,11 @@ function itemToDb(item: Item, userId: string): Omit<DbItem, 'created_at' | 'upda
     questionnaire_alternatives: '',
     questionnaire_impact: '',
     questionnaire_urgency: '',
+    // Friend unlock fields
+    friend_name: item.friendName,
+    friend_email: item.friendEmail,
+    unlock_password: item.unlockPassword,
+    is_unlocked: item.isUnlocked || false,
   };
 }
 
@@ -84,6 +94,11 @@ function dbToItem(dbItem: DbItem): Item {
     waitUntilDate: dbItem.wait_until_date,
     difficulty: dbItem.difficulty,
     questionnaire,
+    // Friend unlock fields
+    friendName: dbItem.friend_name,
+    friendEmail: dbItem.friend_email,
+    unlockPassword: dbItem.unlock_password,
+    isUnlocked: dbItem.is_unlocked || false,
   };
 }
 
@@ -193,6 +208,76 @@ export async function deleteItem(itemId: string, userId: string): Promise<{ succ
     return { success: true, error: null };
   } catch (error) {
     console.error('❌ Delete exception:', error);
+    return { success: false, error };
+  }
+}
+
+export async function fetchItemForUnlock(itemId: string): Promise<{ name: string; unlockPassword: string | null } | null> {
+  try {
+    const { data, error } = await supabase
+      .from('items')
+      .select('name, unlock_password')
+      .eq('id', itemId)
+      .single();
+    
+    if (error || !data) {
+      console.error('❌ Fetch error:', error);
+      return null;
+    }
+    
+    return {
+      name: data.name,
+      unlockPassword: data.unlock_password || null,
+    };
+  } catch (error) {
+    console.error('❌ Fetch exception:', error);
+    return null;
+  }
+}
+
+export async function unlockItem(itemId: string, password: string): Promise<{ success: boolean; error: any }> {
+  try {
+    console.log('🔓 Attempting to unlock item:', itemId);
+    
+    // First, fetch the item to verify the password
+    const { data: items, error: fetchError } = await supabase
+      .from('items')
+      .select('id, unlock_password, is_unlocked')
+      .eq('id', itemId)
+      .single();
+    
+    if (fetchError) {
+      console.error('❌ Fetch error:', fetchError);
+      return { success: false, error: fetchError };
+    }
+    
+    if (!items) {
+      return { success: false, error: new Error('Item not found') };
+    }
+    
+    if (items.is_unlocked) {
+      return { success: false, error: new Error('Item is already unlocked') };
+    }
+    
+    if (items.unlock_password !== password) {
+      return { success: false, error: new Error('Incorrect password') };
+    }
+    
+    // Update the item to unlocked
+    const { error: updateError } = await supabase
+      .from('items')
+      .update({ is_unlocked: true })
+      .eq('id', itemId);
+    
+    if (updateError) {
+      console.error('❌ Update error:', updateError);
+      return { success: false, error: updateError };
+    }
+    
+    console.log('✅ Item unlocked successfully');
+    return { success: true, error: null };
+  } catch (error) {
+    console.error('❌ Unlock exception:', error);
     return { success: false, error };
   }
 }
