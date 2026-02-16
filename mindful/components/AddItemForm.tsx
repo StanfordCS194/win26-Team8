@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import type { Item, QuestionAnswer } from '../types/item';
 import { generateQuestions, GeneratedQuestion } from '../services/questionGenerator';
-import { Loader2 } from 'lucide-react';
+import { fetchUrlMetadata } from '../services/urlMetadata';
+import { generateProductImage } from '../services/imageGenerator';
+import { Loader2, Link } from 'lucide-react';
 
 interface AddItemFormProps {
   onSubmit: (item: Omit<Item, 'id' | 'addedDate'>) => void;
@@ -11,9 +13,9 @@ interface AddItemFormProps {
 
 export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps) {
   const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [productUrl, setProductUrl] = useState(initialUrl ?? '');
   const [name, setName] = useState('');
-  const [imageUrl, setImageUrl] = useState(initialUrl ?? '');
-  const [hasUrlTouched, setHasUrlTouched] = useState(false);
+  const [imageUrl, setImageUrl] = useState('');
   const [constraintType, setConstraintType] = useState<'time' | 'goals'>('time');
   const [waitUntilDate, setWaitUntilDate] = useState('');
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
@@ -24,17 +26,21 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
 
+  // URL metadata fetching state
+  const [isLoadingMetadata, setIsLoadingMetadata] = useState(false);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+
   useEffect(() => {
-    if (initialUrl && !hasUrlTouched) {
-      setImageUrl(initialUrl);
+    if (initialUrl) {
+      setProductUrl(initialUrl);
     }
-  }, [initialUrl, hasUrlTouched]);
+  }, [initialUrl]);
 
   const resetForm = () => {
     setStep(1);
+    setProductUrl(initialUrl ?? '');
     setName('');
-    setImageUrl(initialUrl ?? '');
-    setHasUrlTouched(false);
+    setImageUrl('');
     setConstraintType('time');
     setWaitUntilDate('');
     setDifficulty('medium');
@@ -43,13 +49,55 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
     setAnswers({});
   };
 
+  const handleFetchMetadata = async () => {
+    if (!productUrl) return;
+
+    setIsLoadingMetadata(true);
+    try {
+      const metadata = await fetchUrlMetadata(productUrl);
+
+      if (metadata.title) {
+        setName(metadata.title);
+      }
+
+      if (metadata.image) {
+        setImageUrl(metadata.image);
+      } else {
+        // No image from scraping — generate one with DALL-E
+        const itemName = metadata.title || name;
+        if (itemName) {
+          setIsGeneratingImage(true);
+          const generatedImage = await generateProductImage(itemName);
+          if (generatedImage) {
+            setImageUrl(generatedImage);
+          }
+          setIsGeneratingImage(false);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching metadata:', error);
+    } finally {
+      setIsLoadingMetadata(false);
+      setIsGeneratingImage(false);
+    }
+  };
+
   const handleStep1Submit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // If name is still empty, derive from URL hostname
+    const itemName = name.trim() || (() => {
+      try { return new URL(productUrl).hostname.replace('www.', ''); } catch { return 'Item'; }
+    })();
+    if (!name.trim()) {
+      setName(itemName);
+    }
+
     setIsLoadingQuestions(true);
 
     try {
       // Generate contextual questions based on the product name
-      const generatedQuestions = await generateQuestions(name);
+      const generatedQuestions = await generateQuestions(itemName);
       setQuestions(generatedQuestions);
 
       // Initialize answers object with empty strings for each question
@@ -129,42 +177,81 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
 
         {step === 1 && (
           <form onSubmit={handleStep1Submit} className="space-y-6">
-          {/* Basic Information */}
+          {/* Product URL - Required */}
           <div>
             <label className="block text-sm font-medium text-foreground/80 mb-2">
-              Item Name *
+              Product URL *
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="url"
+                value={productUrl}
+                onChange={(e) => setProductUrl(e.target.value)}
+                required
+                placeholder="https://amazon.com/product/..."
+                className="flex-1 px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
+              />
+              <button
+                type="button"
+                onClick={handleFetchMetadata}
+                disabled={!productUrl || isLoadingMetadata}
+                className="px-4 py-3 bg-secondary text-secondary-foreground rounded-xl hover:bg-secondary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {isLoadingMetadata ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Link className="w-5 h-5" />
+                )}
+                <span className="hidden sm:inline">Fetch</span>
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Paste a product link to auto-fill name and image
+            </p>
+          </div>
+
+          {/* Item Name - Optional, auto-filled */}
+          <div>
+            <label className="block text-sm font-medium text-foreground/80 mb-2">
+              Item Name
             </label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              required
-              placeholder="e.g., Wireless Headphones"
+              placeholder="Auto-filled from URL, or type manually"
               className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-foreground/80 mb-2">
-               URL
-            </label>
-            <input
-              type="url"
-              value={imageUrl}
-              onChange={(e) => {
-                setImageUrl(e.target.value);
-                setHasUrlTouched(true);
-              }}
-              placeholder="https://example.com/image.jpg"
-              className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
-            />
-          </div>
+          {/* Image Preview */}
+          {imageUrl && (
+            <div>
+              <label className="block text-sm font-medium text-foreground/80 mb-2">
+                Product Image
+              </label>
+              <img
+                src={imageUrl}
+                alt="Preview"
+                className="w-24 h-24 object-cover rounded-lg border border-border"
+                onError={(e) => (e.currentTarget.style.display = 'none')}
+              />
+            </div>
+          )}
+
+          {/* Image generation loading state */}
+          {isGeneratingImage && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Generating product image...
+            </div>
+          )}
 
           {/* Actions */}
           <div className="flex gap-3 pt-4">
             <button
               type="submit"
-              disabled={isLoadingQuestions}
+              disabled={isLoadingQuestions || !productUrl}
               className="flex-1 bg-primary text-primary-foreground px-6 py-3 rounded-full hover:bg-primary/90 transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isLoadingQuestions ? (
