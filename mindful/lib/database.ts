@@ -1,5 +1,5 @@
 import { supabase } from '../env';
-import type { Item, QuestionAnswer } from '../App';
+import type { Item, QuestionAnswer } from '../types/item';
 
 export interface DbItem {
   id: string;

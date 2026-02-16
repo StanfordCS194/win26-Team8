@@ -12254,42 +12254,617 @@
     }
   });
 
-  // extension/src/popup.jsx
-  var import_react = __toESM(require_react());
+  // node_modules/react/cjs/react-jsx-runtime.production.js
+  var require_react_jsx_runtime_production = __commonJS({
+    "node_modules/react/cjs/react-jsx-runtime.production.js"(exports) {
+      "use strict";
+      var REACT_ELEMENT_TYPE = Symbol.for("react.transitional.element");
+      var REACT_FRAGMENT_TYPE = Symbol.for("react.fragment");
+      function jsxProd(type, config, maybeKey) {
+        var key = null;
+        void 0 !== maybeKey && (key = "" + maybeKey);
+        void 0 !== config.key && (key = "" + config.key);
+        if ("key" in config) {
+          maybeKey = {};
+          for (var propName in config)
+            "key" !== propName && (maybeKey[propName] = config[propName]);
+        } else maybeKey = config;
+        config = maybeKey.ref;
+        return {
+          $$typeof: REACT_ELEMENT_TYPE,
+          type,
+          key,
+          ref: void 0 !== config ? config : null,
+          props: maybeKey
+        };
+      }
+      exports.Fragment = REACT_FRAGMENT_TYPE;
+      exports.jsx = jsxProd;
+      exports.jsxs = jsxProd;
+    }
+  });
+
+  // node_modules/react/jsx-runtime.js
+  var require_jsx_runtime = __commonJS({
+    "node_modules/react/jsx-runtime.js"(exports, module) {
+      "use strict";
+      if (true) {
+        module.exports = require_react_jsx_runtime_production();
+      } else {
+        module.exports = null;
+      }
+    }
+  });
+
+  // extension/src/popup.tsx
+  var import_react4 = __toESM(require_react());
   var import_client = __toESM(require_client());
+
+  // components/AddItemForm.tsx
+  var import_react3 = __toESM(require_react());
+
+  // services/questionGenerator.ts
+  var ANTHROPIC_API_KEY = typeof process !== "undefined" && process.env?.EXPO_PUBLIC_ANTHROPIC_API_KEY || "";
+  var DEFAULT_QUESTIONS = [
+    {
+      id: "why",
+      question: "Why do you want this item?",
+      placeholder: "Think about your motivations..."
+    },
+    {
+      id: "alternatives",
+      question: "What alternatives have you considered?",
+      placeholder: "Could you borrow it? Do you already have something similar?"
+    },
+    {
+      id: "impact",
+      question: "What impact will this purchase have?",
+      placeholder: "Consider financial, environmental, and personal impact..."
+    },
+    {
+      id: "urgency",
+      question: "How urgent is this purchase?",
+      placeholder: "Do you need it now or can it wait?"
+    }
+  ];
+  var SYSTEM_PROMPT = `You are a mindful consumption assistant helping people reflect before making purchases. Generate 4 thoughtful, contextual reflection questions for someone considering buying a specific product.
+
+The questions should:
+1. Help the person think about whether they really need this specific item
+2. Be specific to the product category/type
+3. Encourage mindful decision-making
+4. Be non-judgmental but thought-provoking
+
+Return your response as a JSON array with exactly 4 objects, each having:
+- "id": a short identifier (e.g., "ownership", "frequency", "alternatives", "timing")
+- "question": the reflection question
+- "placeholder": a helpful hint for answering (2-10 words)
+
+Example for "Tennis Racket":
+[
+  {"id": "ownership", "question": "Do you already own a tennis racket that still works?", "placeholder": "Think about what you currently have..."},
+  {"id": "frequency", "question": "How often do you realistically play tennis?", "placeholder": "Consider your actual playing frequency..."},
+  {"id": "alternatives", "question": "Could you borrow or rent a racket instead of buying?", "placeholder": "Think about temporary options..."},
+  {"id": "improvement", "question": "Will this new racket actually improve your game?", "placeholder": "Consider your skill level and needs..."}
+]
+
+Only respond with the JSON array, no other text.`;
+  async function generateQuestions(productName) {
+    if (!ANTHROPIC_API_KEY) {
+      console.warn("Anthropic API key not configured. Using default questions.");
+      return DEFAULT_QUESTIONS;
+    }
+    try {
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": ANTHROPIC_API_KEY,
+          "anthropic-version": "2023-06-01",
+          "anthropic-dangerous-direct-browser-access": "true"
+        },
+        body: JSON.stringify({
+          model: "claude-3-5-haiku-latest",
+          max_tokens: 500,
+          system: SYSTEM_PROMPT,
+          messages: [
+            {
+              role: "user",
+              content: `Generate 4 contextual reflection questions for someone considering buying: "${productName}"`
+            }
+          ]
+        })
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Anthropic API error: ${response.status} - ${errorText}`);
+      }
+      const data = await response.json();
+      const content = data.content?.[0]?.text;
+      if (!content) {
+        throw new Error("No content in API response");
+      }
+      const jsonMatch = content.match(/\[[\s\S]*\]/);
+      if (!jsonMatch) {
+        throw new Error("Could not parse JSON from response");
+      }
+      const questions = JSON.parse(jsonMatch[0]);
+      if (!Array.isArray(questions) || questions.length !== 4) {
+        throw new Error("Invalid response structure");
+      }
+      for (const q of questions) {
+        if (!q.id || !q.question || !q.placeholder) {
+          throw new Error("Invalid question structure");
+        }
+      }
+      return questions;
+    } catch (error) {
+      console.error("Error generating questions:", error);
+      return DEFAULT_QUESTIONS;
+    }
+  }
+
+  // node_modules/lucide-react/dist/esm/createLucideIcon.js
+  var import_react2 = __toESM(require_react());
+
+  // node_modules/lucide-react/dist/esm/shared/src/utils.js
+  var toKebabCase = (string) => string.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
+  var toCamelCase = (string) => string.replace(
+    /^([A-Z])|[\s-_]+(\w)/g,
+    (match, p1, p2) => p2 ? p2.toUpperCase() : p1.toLowerCase()
+  );
+  var toPascalCase = (string) => {
+    const camelCase = toCamelCase(string);
+    return camelCase.charAt(0).toUpperCase() + camelCase.slice(1);
+  };
+  var mergeClasses = (...classes) => classes.filter((className, index, array) => {
+    return Boolean(className) && className.trim() !== "" && array.indexOf(className) === index;
+  }).join(" ").trim();
+  var hasA11yProp = (props) => {
+    for (const prop in props) {
+      if (prop.startsWith("aria-") || prop === "role" || prop === "title") {
+        return true;
+      }
+    }
+  };
+
+  // node_modules/lucide-react/dist/esm/Icon.js
+  var import_react = __toESM(require_react());
+
+  // node_modules/lucide-react/dist/esm/defaultAttributes.js
+  var defaultAttributes = {
+    xmlns: "http://www.w3.org/2000/svg",
+    width: 24,
+    height: 24,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 2,
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  };
+
+  // node_modules/lucide-react/dist/esm/Icon.js
+  var Icon = (0, import_react.forwardRef)(
+    ({
+      color = "currentColor",
+      size = 24,
+      strokeWidth = 2,
+      absoluteStrokeWidth,
+      className = "",
+      children,
+      iconNode,
+      ...rest
+    }, ref) => (0, import_react.createElement)(
+      "svg",
+      {
+        ref,
+        ...defaultAttributes,
+        width: size,
+        height: size,
+        stroke: color,
+        strokeWidth: absoluteStrokeWidth ? Number(strokeWidth) * 24 / Number(size) : strokeWidth,
+        className: mergeClasses("lucide", className),
+        ...!children && !hasA11yProp(rest) && { "aria-hidden": "true" },
+        ...rest
+      },
+      [
+        ...iconNode.map(([tag, attrs]) => (0, import_react.createElement)(tag, attrs)),
+        ...Array.isArray(children) ? children : [children]
+      ]
+    )
+  );
+
+  // node_modules/lucide-react/dist/esm/createLucideIcon.js
+  var createLucideIcon = (iconName, iconNode) => {
+    const Component = (0, import_react2.forwardRef)(
+      ({ className, ...props }, ref) => (0, import_react2.createElement)(Icon, {
+        ref,
+        iconNode,
+        className: mergeClasses(
+          `lucide-${toKebabCase(toPascalCase(iconName))}`,
+          `lucide-${iconName}`,
+          className
+        ),
+        ...props
+      })
+    );
+    Component.displayName = toPascalCase(iconName);
+    return Component;
+  };
+
+  // node_modules/lucide-react/dist/esm/icons/loader-circle.js
+  var __iconNode = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
+  var LoaderCircle = createLucideIcon("loader-circle", __iconNode);
+
+  // components/AddItemForm.tsx
+  var import_jsx_runtime = __toESM(require_jsx_runtime());
+  function AddItemForm({ onSubmit, onCancel, initialUrl }) {
+    const [step, setStep] = (0, import_react3.useState)(1);
+    const [name, setName] = (0, import_react3.useState)("");
+    const [imageUrl, setImageUrl] = (0, import_react3.useState)(initialUrl ?? "");
+    const [hasUrlTouched, setHasUrlTouched] = (0, import_react3.useState)(false);
+    const [constraintType, setConstraintType] = (0, import_react3.useState)("time");
+    const [waitUntilDate, setWaitUntilDate] = (0, import_react3.useState)("");
+    const [difficulty, setDifficulty] = (0, import_react3.useState)("medium");
+    const [consumptionScore, setConsumptionScore] = (0, import_react3.useState)(5);
+    const [questions, setQuestions] = (0, import_react3.useState)([]);
+    const [answers, setAnswers] = (0, import_react3.useState)({});
+    const [isLoadingQuestions, setIsLoadingQuestions] = (0, import_react3.useState)(false);
+    (0, import_react3.useEffect)(() => {
+      if (initialUrl && !hasUrlTouched) {
+        setImageUrl(initialUrl);
+      }
+    }, [initialUrl, hasUrlTouched]);
+    const resetForm = () => {
+      setStep(1);
+      setName("");
+      setImageUrl(initialUrl ?? "");
+      setHasUrlTouched(false);
+      setConstraintType("time");
+      setWaitUntilDate("");
+      setDifficulty("medium");
+      setConsumptionScore(5);
+      setQuestions([]);
+      setAnswers({});
+    };
+    const handleStep1Submit = async (e) => {
+      e.preventDefault();
+      setIsLoadingQuestions(true);
+      try {
+        const generatedQuestions = await generateQuestions(name);
+        setQuestions(generatedQuestions);
+        const initialAnswers = {};
+        generatedQuestions.forEach((q) => {
+          initialAnswers[q.id] = "";
+        });
+        setAnswers(initialAnswers);
+        setStep(2);
+      } catch (error) {
+        console.error("Error generating questions:", error);
+      } finally {
+        setIsLoadingQuestions(false);
+      }
+    };
+    const handleStep2Submit = (e) => {
+      e.preventDefault();
+      const days = consumptionScore * 7;
+      const waitDate = /* @__PURE__ */ new Date();
+      waitDate.setDate(waitDate.getDate() + days);
+      setWaitUntilDate(waitDate.toISOString().split("T")[0]);
+      if (consumptionScore <= 3) {
+        setDifficulty("easy");
+      } else if (consumptionScore <= 7) {
+        setDifficulty("medium");
+      } else {
+        setDifficulty("hard");
+      }
+      setStep(3);
+    };
+    const handleFinalSubmit = (e) => {
+      e.preventDefault();
+      console.log("\u{1F4CB} Final submit - preparing item data");
+      const questionnaire = questions.map((q) => ({
+        id: q.id,
+        question: q.question,
+        answer: answers[q.id] || ""
+      }));
+      onSubmit({
+        name,
+        imageUrl: imageUrl || "",
+        constraintType,
+        consumptionScore,
+        ...constraintType === "time" ? { waitUntilDate } : { difficulty },
+        questionnaire
+      });
+      resetForm();
+    };
+    return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "max-w-2xl mx-auto pb-12", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "bg-card rounded-2xl shadow-sm border border-border/50 p-8", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "mb-6", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("h2", { className: "text-2xl font-serif text-foreground", children: [
+          step === 1 && "Add Item",
+          step === 2 && "Reflection Questions",
+          step === 3 && "Your Constraint Plan"
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "text-sm text-muted-foreground mt-1", children: [
+          "Step ",
+          step,
+          " of 3"
+        ] })
+      ] }),
+      step === 1 && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("form", { onSubmit: handleStep1Submit, className: "space-y-6", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", { className: "block text-sm font-medium text-foreground/80 mb-2", children: "Item Name *" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+            "input",
+            {
+              type: "text",
+              value: name,
+              onChange: (e) => setName(e.target.value),
+              required: true,
+              placeholder: "e.g., Wireless Headphones",
+              className: "w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
+            }
+          )
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", { className: "block text-sm font-medium text-foreground/80 mb-2", children: "URL" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+            "input",
+            {
+              type: "url",
+              value: imageUrl,
+              onChange: (e) => {
+                setImageUrl(e.target.value);
+                setHasUrlTouched(true);
+              },
+              placeholder: "https://example.com/image.jpg",
+              className: "w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
+            }
+          )
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex gap-3 pt-4", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+            "button",
+            {
+              type: "submit",
+              disabled: isLoadingQuestions,
+              className: "flex-1 bg-primary text-primary-foreground px-6 py-3 rounded-full hover:bg-primary/90 transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2",
+              children: isLoadingQuestions ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoaderCircle, { className: "w-5 h-5 animate-spin" }),
+                "Generating Questions..."
+              ] }) : "Continue to Reflection"
+            }
+          ),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+            "button",
+            {
+              type: "button",
+              onClick: onCancel,
+              disabled: isLoadingQuestions,
+              className: "px-8 py-3 border border-border text-foreground rounded-full hover:bg-muted/30 transition-colors disabled:opacity-50",
+              children: "Cancel"
+            }
+          )
+        ] })
+      ] }),
+      step === 2 && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("form", { onSubmit: handleStep2Submit, className: "space-y-6", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("label", { className: "block text-sm font-medium text-foreground/80 mb-3", children: [
+            "Consumption Score: ",
+            consumptionScore,
+            "/10"
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+            "input",
+            {
+              type: "range",
+              min: "1",
+              max: "10",
+              value: consumptionScore,
+              onChange: (e) => setConsumptionScore(Number(e.target.value)),
+              className: "w-full accent-primary"
+            }
+          ),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex justify-between text-xs text-muted-foreground mt-2", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Need Less" }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Need More" })
+          ] })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "border-t border-border/50 pt-6", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("h3", { className: "text-lg font-serif text-foreground mb-2", children: "Reflection Questions" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "text-sm text-muted-foreground mb-4", children: [
+            'These questions are tailored specifically for "',
+            name,
+            '"'
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "space-y-4", children: questions.map((q, index) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("label", { className: "block text-sm font-medium text-foreground/80 mb-2", children: [
+              index + 1,
+              ". ",
+              q.question,
+              " *"
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+              "textarea",
+              {
+                value: answers[q.id] || "",
+                onChange: (e) => setAnswers((prev) => ({ ...prev, [q.id]: e.target.value })),
+                required: true,
+                rows: 3,
+                placeholder: q.placeholder,
+                className: "w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none text-foreground placeholder:text-muted-foreground"
+              }
+            )
+          ] }, q.id)) })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex gap-3 pt-4", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+            "button",
+            {
+              type: "button",
+              onClick: () => setStep(1),
+              className: "px-8 py-3 border border-border text-foreground rounded-full hover:bg-muted/30 transition-colors",
+              children: "Back"
+            }
+          ),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+            "button",
+            {
+              type: "submit",
+              className: "flex-1 bg-primary text-primary-foreground px-6 py-3 rounded-full hover:bg-primary/90 transition-all shadow-sm hover:shadow-md",
+              children: "Continue to Constraint Selection"
+            }
+          )
+        ] })
+      ] }),
+      step === 3 && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("form", { onSubmit: handleFinalSubmit, className: "space-y-6", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "mb-4", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "text-foreground/80", children: [
+          "Based on your consumption score of ",
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("strong", { children: [
+            consumptionScore,
+            "/10"
+          ] }),
+          ", choose your preferred constraint approach:"
+        ] }) }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+          "label",
+          {
+            className: `block cursor-pointer rounded-xl border-2 p-6 transition-all ${constraintType === "time" ? "border-primary bg-primary/5" : "border-border hover:border-primary/50 hover:bg-muted/20"}`,
+            children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-start gap-4", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+                "input",
+                {
+                  type: "radio",
+                  value: "time",
+                  checked: constraintType === "time",
+                  onChange: (e) => setConstraintType(e.target.value),
+                  className: "mt-1 accent-primary"
+                }
+              ),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex-1", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-2 mb-2", children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-2xl", children: "\u23F0" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("h3", { className: "text-lg font-semibold text-foreground", children: "Time-based Constraint" })
+                ] }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-foreground/80 mb-3", children: "Wait a specific period before making your purchase decision." }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "bg-background/50 rounded-lg p-3", children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-sm text-muted-foreground", children: "Wait until:" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-lg font-semibold text-primary mt-1", children: new Date(waitUntilDate).toLocaleDateString("en-US", {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric"
+                  }) }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "text-sm text-muted-foreground mt-1", children: [
+                    "(",
+                    Math.ceil((new Date(waitUntilDate).getTime() - (/* @__PURE__ */ new Date()).getTime()) / (1e3 * 60 * 60 * 24)),
+                    " days from now)"
+                  ] })
+                ] })
+              ] })
+            ] })
+          }
+        ),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+          "label",
+          {
+            className: `block cursor-pointer rounded-xl border-2 p-6 transition-all ${constraintType === "goals" ? "border-primary bg-primary/5" : "border-border hover:border-primary/50 hover:bg-muted/20"}`,
+            children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-start gap-4", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+                "input",
+                {
+                  type: "radio",
+                  value: "goals",
+                  checked: constraintType === "goals",
+                  onChange: (e) => setConstraintType(e.target.value),
+                  className: "mt-1 accent-primary"
+                }
+              ),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex-1", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-2 mb-2", children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-2xl", children: "\u{1F3AF}" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("h3", { className: "text-lg font-semibold text-foreground", children: "Goals-based Constraint" })
+                ] }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-foreground/80 mb-3", children: "Complete meaningful tasks before earning your purchase." }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "bg-background/50 rounded-lg p-3", children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-sm text-muted-foreground", children: "Challenge difficulty:" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "text-lg font-semibold text-primary mt-1 capitalize", children: [
+                    difficulty === "easy" && "\u2728 Easy - Complete simple daily goals",
+                    difficulty === "medium" && "\u26A1 Medium - Complete moderate weekly goals",
+                    difficulty === "hard" && "\u{1F525} Hard - Complete challenging long-term goals"
+                  ] })
+                ] })
+              ] })
+            ] })
+          }
+        ),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex gap-3 pt-4", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+            "button",
+            {
+              type: "button",
+              onClick: () => setStep(2),
+              className: "px-8 py-3 border border-border text-foreground rounded-full hover:bg-muted/30 transition-colors",
+              children: "Back"
+            }
+          ),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+            "button",
+            {
+              type: "submit",
+              className: "flex-1 bg-primary text-primary-foreground px-6 py-3 rounded-full hover:bg-primary/90 transition-all shadow-sm hover:shadow-md",
+              children: "Add to Reflection List"
+            }
+          )
+        ] })
+      ] })
+    ] }) });
+  }
+
+  // extension/src/popup.tsx
+  var import_jsx_runtime2 = __toESM(require_jsx_runtime());
   var App = () => {
-    const [url, setUrl] = (0, import_react.useState)("Loading...");
-    const [showQuestions, setShowQuestions] = (0, import_react.useState)(false);
-    const questions = [
-      "Why do you want this item?",
-      "What alternatives have you considered?",
-      "What impact will this purchase have?",
-      "How urgent is this purchase?"
-    ];
-    (0, import_react.useEffect)(() => {
+    const [activeUrl, setActiveUrl] = (0, import_react4.useState)("");
+    const [urlStatus, setUrlStatus] = (0, import_react4.useState)("Loading...");
+    const [submitMessage, setSubmitMessage] = (0, import_react4.useState)("");
+    (0, import_react4.useEffect)(() => {
       if (typeof chrome !== "undefined" && chrome.tabs && chrome.tabs.query) {
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-          const activeUrl = tabs && tabs[0] && tabs[0].url;
-          setUrl(activeUrl || "Unable to read the active tab URL.");
+          const currentUrl = tabs && tabs[0] && tabs[0].url;
+          if (currentUrl) {
+            setActiveUrl(currentUrl);
+            setUrlStatus("");
+          } else {
+            setUrlStatus("Unable to read the active tab URL.");
+          }
         });
       } else {
-        setUrl("Chrome tabs API unavailable.");
+        setUrlStatus("Chrome tabs API unavailable.");
       }
     }, []);
-    return /* @__PURE__ */ import_react.default.createElement("div", null, /* @__PURE__ */ import_react.default.createElement("h1", null, "Second Thought"), /* @__PURE__ */ import_react.default.createElement("p", null, "Current product URL:"), /* @__PURE__ */ import_react.default.createElement("div", { className: "url" }, url), /* @__PURE__ */ import_react.default.createElement(
-      "button",
-      {
-        className: "button",
-        type: "button",
-        onClick: () => setShowQuestions(true)
-      },
-      "Add to Mindful Cart"
-    ), showQuestions && /* @__PURE__ */ import_react.default.createElement("div", { className: "questions" }, questions.map((question) => /* @__PURE__ */ import_react.default.createElement("label", { className: "question", key: question }, /* @__PURE__ */ import_react.default.createElement("span", null, question), /* @__PURE__ */ import_react.default.createElement("input", { type: "text" })))));
+    const handleSubmit = (item) => {
+      console.log("\u{1F9FE} Popup add item submission:", item);
+      setSubmitMessage("Item captured. Open the app to view it.");
+    };
+    return /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h1", { children: "Second Thought" }),
+      urlStatus && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: urlStatus }),
+      submitMessage && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: submitMessage }),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+        AddItemForm,
+        {
+          onSubmit: handleSubmit,
+          onCancel: () => window.close(),
+          initialUrl: activeUrl
+        }
+      )
+    ] });
   };
   var container = document.getElementById("root");
   if (container) {
     const root = (0, import_client.createRoot)(container);
-    root.render(/* @__PURE__ */ import_react.default.createElement(App, null));
+    root.render(/* @__PURE__ */ (0, import_jsx_runtime2.jsx)(App, {}));
   }
 })();
 /*! Bundled license information:
@@ -12336,5 +12911,29 @@ react-dom/cjs/react-dom-client.production.js:
    *
    * This source code is licensed under the MIT license found in the
    * LICENSE file in the root directory of this source tree.
+   *)
+
+react/cjs/react-jsx-runtime.production.js:
+  (**
+   * @license React
+   * react-jsx-runtime.production.js
+   *
+   * Copyright (c) Meta Platforms, Inc. and affiliates.
+   *
+   * This source code is licensed under the MIT license found in the
+   * LICENSE file in the root directory of this source tree.
+   *)
+
+lucide-react/dist/esm/shared/src/utils.js:
+lucide-react/dist/esm/defaultAttributes.js:
+lucide-react/dist/esm/Icon.js:
+lucide-react/dist/esm/createLucideIcon.js:
+lucide-react/dist/esm/icons/loader-circle.js:
+lucide-react/dist/esm/lucide-react.js:
+  (**
+   * @license lucide-react v0.562.0 - ISC
+   *
+   * This source code is licensed under the ISC license.
+   * See the LICENSE file in the root directory of this source tree.
    *)
 */
