@@ -95,7 +95,7 @@ interface AddItemFormProps {
   initialUrl?: string;
 }
 
-export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
+export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps) {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [name, setName] = useState('');
   const [imageUrl, setImageUrl] = useState(initialUrl ?? '');
