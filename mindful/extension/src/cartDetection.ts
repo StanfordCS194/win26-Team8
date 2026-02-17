@@ -1,9 +1,8 @@
 /**
- * Content script: activates when user clicks an "add to cart" (or similar) button
- * on any shopping site. Shows a simple Second Thought overlay (Honey-style).
+ * Add-to-cart detection for content script. No React dependency.
  */
 
-const ADD_TO_CART_PATTERNS = [
+export const ADD_TO_CART_PATTERNS = [
   /\badd\s+to\s+(cart|bag|basket)\b/i,
   /\badd\s+to\s+shopping\s+cart\b/i,
   /\bbuy\s+now\b/i,
@@ -17,7 +16,7 @@ const ADD_TO_CART_PATTERNS = [
   /\bpurchase\b/i,
 ];
 
-const ADD_TO_CART_SELECTORS = [
+export const ADD_TO_CART_SELECTORS = [
   '[id*="add-to-cart"]',
   '[id*="addToCart"]',
   '[id*="add-to-bag"]',
@@ -42,10 +41,6 @@ const ADD_TO_CART_SELECTORS = [
   '[title*="add to bag" i]',
 ];
 
-const OVERLAY_ID = 'second-thought-overlay';
-const DEBUG = false; // set true to log when add-to-cart is detected (check DevTools console)
-
-/** Patterns/selectors for remove, decrease quantity, minus, delete – do NOT trigger on these. */
 const REMOVE_DECREASE_PATTERNS = [
   /\bremove\b/i,
   /\bdelete\b/i,
@@ -58,7 +53,7 @@ const REMOVE_DECREASE_PATTERNS = [
   /\bempty\s+cart\b/i,
   /\bclear\s+cart\b/i,
   /\bquantity\s*[-–—]\s*$/i,
-  /^[-–—]$/, // just a minus character
+  /^[-–—]$/,
   /\bminus\s+one\b/i,
   /\bdecrease\s+quantity\b/i,
 ];
@@ -84,7 +79,7 @@ const REMOVE_DECREASE_SELECTORS = [
   '[data-action*="decrease"]',
 ];
 
-function isRemoveOrDecreaseControl(element: Element): boolean {
+export function isRemoveOrDecreaseControl(element: Element): boolean {
   const text = (element.textContent || '').trim();
   const value = element.getAttribute('value') || (element as HTMLInputElement).value || '';
   const ariaLabel = element.getAttribute('aria-label') || '';
@@ -101,7 +96,7 @@ function isRemoveOrDecreaseControl(element: Element): boolean {
   return false;
 }
 
-function matchesAddToCart(element: Element): boolean {
+export function matchesAddToCart(element: Element): boolean {
   const text = (element.textContent || '').trim();
   const value = element.getAttribute('value') || (element as HTMLInputElement).value || '';
   const ariaLabel = element.getAttribute('aria-label') || '';
@@ -128,15 +123,16 @@ function matchesAddToCart(element: Element): boolean {
   return false;
 }
 
-/** Walk from click target up the tree. Only return a match if the clicked element is NOT a remove/decrease/minus control. */
-function findAddToCartTarget(clickEvent: MouseEvent): Element | null {
+/**
+ * Returns the add-to-cart element if the click was on one (and not on remove/decrease).
+ */
+export function findAddToCartTarget(clickEvent: MouseEvent): Element | null {
   const path = clickEvent.composedPath ? clickEvent.composedPath() : [];
   for (let i = 0; i < path.length; i++) {
     const node = path[i];
     if (node && typeof (node as Element).nodeType !== 'undefined' && (node as Element).nodeType === Node.ELEMENT_NODE) {
       const el = node as Element;
       if (el === document.body) continue;
-      // If this element or any descendant in the path (closer to click target) is a remove/decrease control, skip.
       let hitRemove = false;
       for (let j = 0; j <= i; j++) {
         const n = path[j];
@@ -151,68 +147,11 @@ function findAddToCartTarget(clickEvent: MouseEvent): Element | null {
       if (matchesAddToCart(el)) return el;
     }
   }
-  // Fallback: parent chain (for pages that don't use shadow DOM)
   let current: Element | null = (clickEvent.target as Element) || null;
   while (current && current !== document.body) {
-    if (isRemoveOrDecreaseControl(current)) return null; // clicked on remove/decrease, don't trigger
+    if (isRemoveOrDecreaseControl(current)) return null;
     if (matchesAddToCart(current)) return current;
     current = current.parentElement;
   }
   return null;
 }
-
-function createOverlay(): HTMLDivElement {
-  const overlay = document.createElement('div');
-  overlay.id = OVERLAY_ID;
-
-  overlay.innerHTML = `
-    <div class="st-overlay-backdrop">
-      <div class="st-overlay-card">
-        <h1 class="st-overlay-title">Second Thought</h1>
-        <p class="st-overlay-message">You're adding something to your cart. We'll help you add it to your list later.</p>
-        <button type="button" class="st-overlay-close">Continue</button>
-      </div>
-    </div>
-  `;
-
-  const closeBtn = overlay.querySelector('.st-overlay-close');
-  const backdrop = overlay.querySelector('.st-overlay-backdrop');
-
-  function close() {
-    overlay.remove();
-    document.body.style.overflow = '';
-  }
-
-  closeBtn?.addEventListener('click', close);
-  backdrop?.addEventListener('click', (e) => {
-    if (e.target === backdrop) close();
-  });
-
-  overlay.addEventListener('click', (e) => e.stopPropagation());
-
-  return overlay;
-}
-
-function showOverlay() {
-  if (document.getElementById(OVERLAY_ID)) return;
-
-  const overlay = createOverlay();
-  document.body.style.overflow = 'hidden';
-  document.body.appendChild(overlay);
-}
-
-function onDocumentClick(e: MouseEvent) {
-  const addToCartEl = findAddToCartTarget(e);
-  if (!addToCartEl) return;
-  if (DEBUG) console.log('Second Thought: add-to-cart detected', addToCartEl);
-
-  // Show overlay after a short delay so the site's add-to-cart can still run
-  setTimeout(showOverlay, 100);
-}
-
-function init() {
-  document.addEventListener('click', onDocumentClick, true);
-  if (DEBUG) console.log('Second Thought: content script loaded');
-}
-
-init();

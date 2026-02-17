@@ -11,7 +11,8 @@
     "build:extension": "expo export --platform web --output-dir extension/dist",
     "build:popup:css": "tailwindcss -i extension/src/popup.css -o extension/popup.css",
     "build:popup": "npm run build:popup:css && esbuild extension/src/popup.tsx --bundle --platform=browser --format=iife --outfile=extension/popup.js --define:process.env.NODE_ENV=\\\"production\\\" --jsx=automatic --jsx-import-source=react",
-    "build:content": "esbuild extension/src/content.ts --bundle --platform=browser --format=iife --outfile=extension/content.js",
+    "build:content:css": "tailwindcss -i extension/src/content.css -o extension/content.css",
+    "build:content": "npm run build:content:css && esbuild extension/src/content.tsx --bundle --platform=browser --format=iife --outfile=extension/content.js --jsx=automatic --jsx-import-source=react",
     "build:extension:all": "npm run build:popup && npm run build:content"
   },
   "dependencies": {
