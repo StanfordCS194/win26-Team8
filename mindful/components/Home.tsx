@@ -1,5 +1,74 @@
-import type { Item } from '../types/item';
+import type { Item, ItemCategory } from '../types/item';
 import { Calendar, Target, ShoppingBag, Plus } from 'lucide-react';
+
+const CATEGORY_ORDER: ItemCategory[] = ['Food', 'Clothes', 'Sports', 'Electronics', 'Home', 'Other'];
+
+function ItemCard({
+  item,
+  onItemClick,
+}: {
+  item: Item;
+  onItemClick: (itemId: string) => void;
+}) {
+  return (
+    <div
+      onClick={() => onItemClick(item.id)}
+      className="bg-card rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden border border-border/50 hover:border-primary/30"
+    >
+      <div className="aspect-square bg-muted/30 overflow-hidden">
+        {item.imageUrl ? (
+          <img
+            src={item.imageUrl}
+            alt={item.name}
+            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+            onError={(e) => {
+              e.currentTarget.src = 'https://via.placeholder.com/400/e5e7eb/9ca3af?text=No+Image';
+            }}
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-muted/50">
+            <ShoppingBag className="w-16 h-16 text-muted-foreground/30" />
+          </div>
+        )}
+      </div>
+      <div className="p-5">
+        <h3 className="font-medium text-foreground mb-3 line-clamp-2 font-serif">
+          {item.name}
+        </h3>
+
+        <div className="flex items-center justify-between mb-3 pb-3 border-b border-border/50">
+          <span className="text-sm text-muted-foreground">Consumption Score</span>
+          <span
+            className={`font-semibold text-lg ${
+              item.consumptionScore >= 7
+                ? 'text-destructive'
+                : item.consumptionScore >= 4
+                  ? 'text-accent'
+                  : 'text-primary'
+            }`}
+          >
+            {item.consumptionScore}/10
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          {item.constraintType === 'time' && item.waitUntilDate && (
+            <>
+              <Calendar className="w-4 h-4 shrink-0" />
+              <span>Wait until {new Date(item.waitUntilDate).toLocaleDateString()}</span>
+            </>
+          )}
+          {item.constraintType === 'goals' && item.difficulty && (
+            <>
+              <Target className="w-4 h-4 shrink-0" />
+              <span className="capitalize">{item.difficulty} goal</span>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 interface HomeProps {
   items: Item[];
@@ -8,6 +77,13 @@ interface HomeProps {
 }
 
 export function Home({ items, onItemClick, onAddItem }: HomeProps) {
+  const itemsByCategory = items.reduce<Record<string, Item[]>>((acc, item) => {
+    const category = item.category || 'Other';
+    if (!acc[category]) acc[category] = [];
+    acc[category].push(item);
+    return acc;
+  }, {});
+
   return (
     <div>
       <div className="mb-8 flex items-center justify-between">
@@ -37,61 +113,21 @@ export function Home({ items, onItemClick, onAddItem }: HomeProps) {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {items.map((item) => (
-            <div
-              key={item.id}
-              onClick={() => onItemClick(item.id)}
-              className="bg-card rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden border border-border/50 hover:border-primary/30"
-            >
-              <div className="aspect-square bg-muted/30 overflow-hidden">
-                {item.imageUrl ? (
-                  <img
-                    src={item.imageUrl}
-                    alt={item.name}
-                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                    onError={(e) => {
-                      e.currentTarget.src = 'https://via.placeholder.com/400/e5e7eb/9ca3af?text=No+Image';
-                    }}
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-muted/50">
-                    <ShoppingBag className="w-16 h-16 text-muted-foreground/30" />
-                  </div>
-                )}
+        <div className="space-y-10">
+          {CATEGORY_ORDER.filter((cat) => (itemsByCategory[cat]?.length ?? 0) > 0).map((category) => (
+            <section key={category}>
+              <h3 className="text-lg font-semibold text-foreground font-serif mb-4 flex items-center gap-2">
+                <span className="text-primary">{category}</span>
+                <span className="text-sm font-normal text-muted-foreground">
+                  ({itemsByCategory[category].length} {itemsByCategory[category].length === 1 ? 'item' : 'items'})
+                </span>
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {itemsByCategory[category].map((item) => (
+                  <ItemCard key={item.id} item={item} onItemClick={onItemClick} />
+                ))}
               </div>
-              <div className="p-5">
-                <h3 className="font-medium text-foreground mb-3 line-clamp-2 font-serif">
-                  {item.name}
-                </h3>
-                
-                <div className="flex items-center justify-between mb-3 pb-3 border-b border-border/50">
-                  <span className="text-sm text-muted-foreground">Consumption Score</span>
-                  <span className={`font-semibold text-lg ${
-                    item.consumptionScore >= 7 ? 'text-destructive' : 
-                    item.consumptionScore >= 4 ? 'text-accent' : 
-                    'text-primary'
-                  }`}>
-                    {item.consumptionScore}/10
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  {item.constraintType === 'time' && item.waitUntilDate && (
-                    <>
-                      <Calendar className="w-4 h-4" />
-                      <span>Wait until {new Date(item.waitUntilDate).toLocaleDateString()}</span>
-                    </>
-                  )}
-                  {item.constraintType === 'goals' && item.difficulty && (
-                    <>
-                      <Target className="w-4 h-4" />
-                      <span className="capitalize">{item.difficulty} goal</span>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
+            </section>
           ))}
         </div>
       )}

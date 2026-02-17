@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import type { Item, QuestionAnswer } from '../types/item';
+import type { Item, ItemCategory, QuestionAnswer } from '../types/item';
+
+const ITEM_CATEGORIES: ItemCategory[] = ['Food', 'Clothes', 'Sports', 'Electronics', 'Home', 'Other'];
 import { generateQuestions, GeneratedQuestion } from '../services/questionGenerator';
 import { Loader2 } from 'lucide-react';
 import { Slider } from './ui/slider';
@@ -99,6 +101,7 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [name, setName] = useState('');
   const [imageUrl, setImageUrl] = useState(initialUrl ?? '');
+  const [category, setCategory] = useState<ItemCategory>('Other');
   const [hasUrlTouched, setHasUrlTouched] = useState(false);
   const [constraintType, setConstraintType] = useState<'time' | 'goals'>('time');
   const [waitUntilDate, setWaitUntilDate] = useState('');
@@ -121,6 +124,7 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
     setStep(1);
     setName('');
     setImageUrl(initialUrl ?? '');
+    setCategory('Other');
     setHasUrlTouched(false);
     setConstraintType('time');
     setWaitUntilDate('');
@@ -269,6 +273,7 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
     onSubmit({
       name,
       imageUrl: imageUrl || '',
+      category,
       constraintType,
       consumptionScore: calculatedMindfulnessScore,
       ...(constraintType === 'time' ? { waitUntilDate } : { difficulty }),
@@ -325,6 +330,24 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
               placeholder="https://example.com/image.jpg"
               className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-foreground/80 mb-2">
+              Category
+            </label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value as ItemCategory)}
+              className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground"
+            >
+              {ITEM_CATEGORIES.map((cat) => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+            <p className="text-xs text-muted-foreground mt-1">
+              Organize your items for easier browsing on the All Items page
+            </p>
           </div>
 
           {/* Actions */}
