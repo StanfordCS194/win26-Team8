@@ -1,0 +1,62 @@
+/* Second Thought overlay – shown when user clicks add-to-cart on a site */
+
+#second-thought-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
+}
+
+.st-overlay-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.st-overlay-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 28px 32px;
+  max-width: 380px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+}
+
+.st-overlay-title {
+  margin: 0 0 12px;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111;
+}
+
+.st-overlay-message {
+  margin: 0 0 20px;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: #444;
+}
+
+.st-overlay-close {
+  width: 100%;
+  padding: 12px 20px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+  background: #2563eb;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.st-overlay-close:hover {
+  background: #1d4ed8;
+}
+
+.st-overlay-close:active {
+  transform: scale(0.98);
+}
