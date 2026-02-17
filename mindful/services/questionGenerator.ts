@@ -82,16 +82,26 @@ Example for "Tennis Racket":
 
 Only respond with the JSON array, no other text.`;
 
+// Safe env access for both Expo (process.env) and browser/extension (no process)
+function getApiKey(): string {
+  if (typeof process !== 'undefined' && process.env) {
+    return process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY || '';
+  }
+  return '';
+}
+
 export async function generateQuestions(
   productName: string
 ): Promise<GeneratedQuestion[]> {
   // Check if API key is configured
   // Note: Expo automatically loads .env files, but you must restart the dev server after adding/changing .env
-  const apiKey = process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY || '';
-  
-  // Debug: Log what we're getting from environment
-  console.log('Environment check:');
-  console.log('   EXPO_PUBLIC_ANTHROPIC_API_KEY exists:', !!process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY);
+  const apiKey = getApiKey();
+
+  // Debug: Log what we're getting from environment (only when process exists)
+  if (typeof process !== 'undefined' && process.env) {
+    console.log('Environment check:');
+    console.log('   EXPO_PUBLIC_ANTHROPIC_API_KEY exists:', !!process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY);
+  }
   console.log('   API key length:', apiKey.length);
   if (apiKey) {
     console.log('   API key preview:', apiKey.substring(0, 10) + '...' + apiKey.substring(apiKey.length - 4));

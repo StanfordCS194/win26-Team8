@@ -34,7 +34,11 @@ export function ContentOverlay({ onClose, pageUrl }: ContentOverlayProps) {
     return (
       <div id={OVERLAY_ID} className="st-overlay-root" onClick={(e) => e.stopPropagation()}>
         <div className="st-overlay-backdrop st-overlay-backdrop-form" onClick={handleBackdropClick}>
-          <div className="st-overlay-card st-overlay-card-form">
+          <div
+            className="st-overlay-card st-overlay-card-form"
+            onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
             <AddItemForm
               onSubmit={handleSubmit}
               onCancel={handleFormCancel}
@@ -57,7 +61,15 @@ export function ContentOverlay({ onClose, pageUrl }: ContentOverlayProps) {
           <button type="button" className="st-overlay-btn-primary" onClick={handleAddToMindfulCart}>
             Add to mindful cart
           </button>
-          <button type="button" className="st-overlay-close" onClick={onClose}>
+          <button
+            type="button"
+            className="st-overlay-close"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onClose();
+            }}
+          >
             Continue without adding
           </button>
         </div>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Item, QuestionAnswer } from '../types/item';
-import { generateQuestions, GeneratedQuestion } from '../services/questionGenerator';
+import { generateQuestions, GeneratedQuestion, DEFAULT_QUESTIONS } from '../services/questionGenerator';
 import { Loader2 } from 'lucide-react';
 import { Slider } from './ui/slider';
 
@@ -206,6 +206,14 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
       setStep(2);
     } catch (error) {
       console.error('Error generating questions:', error);
+      // Still advance to step 2 with default questions (e.g. in extension content script when API fails)
+      setQuestions(DEFAULT_QUESTIONS);
+      const initialAnswers: Record<string, number> = {};
+      DEFAULT_QUESTIONS.forEach((q) => {
+        initialAnswers[q.id] = 1;
+      });
+      setAnswers(initialAnswers);
+      setStep(2);
     } finally {
       setIsLoadingQuestions(false);
     }

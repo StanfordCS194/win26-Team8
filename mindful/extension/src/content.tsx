@@ -9,10 +9,14 @@ import { findAddToCartTarget } from './cartDetection';
 import { ContentOverlay, OVERLAY_ID } from './ContentOverlay';
 
 const DEBUG = false;
+const CLOSE_COOLDOWN_MS = 800;
+
+let lastOverlayCloseTime = 0;
 
 function showOverlay() {
   const doc = document;
   if (doc.getElementById(OVERLAY_ID)) return;
+  if (Date.now() - lastOverlayCloseTime < CLOSE_COOLDOWN_MS) return;
 
   const container = doc.createElement('div');
   container.id = OVERLAY_ID;
@@ -22,8 +26,15 @@ function showOverlay() {
   const root = createRoot(container);
 
   function handleClose() {
-    root.unmount();
-    container.remove();
+    lastOverlayCloseTime = Date.now();
+    try {
+      root.unmount();
+    } catch (_) {
+      // ignore if already unmounted
+    }
+    if (container.parentNode) {
+      container.parentNode.removeChild(container);
+    }
     doc.body.style.overflow = '';
   }
 
@@ -33,7 +44,9 @@ function showOverlay() {
 }
 
 function onDocumentClick(e: MouseEvent) {
-  const addToCartEl = findAddToCartTarget(e);
+  if (Date.now() - lastOverlayCloseTime < CLOSE_COOLDOWN_MS) return;
+
+  const addToCartEl = findAddToCartTarget(e, OVERLAY_ID);
   if (!addToCartEl) return;
   if (DEBUG) console.log('Second Thought: add-to-cart detected', addToCartEl);
 

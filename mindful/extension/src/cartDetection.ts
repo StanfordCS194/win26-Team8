@@ -125,14 +125,18 @@ export function matchesAddToCart(element: Element): boolean {
 
 /**
  * Returns the add-to-cart element if the click was on one (and not on remove/decrease).
+ * Ignores clicks inside the extension overlay (so "Continue without adding" doesn't re-open it).
  */
-export function findAddToCartTarget(clickEvent: MouseEvent): Element | null {
+export function findAddToCartTarget(clickEvent: MouseEvent, overlayRootId?: string): Element | null {
+  const overlayRoot = overlayRootId ? document.getElementById(overlayRootId) : null;
+
   const path = clickEvent.composedPath ? clickEvent.composedPath() : [];
   for (let i = 0; i < path.length; i++) {
     const node = path[i];
     if (node && typeof (node as Element).nodeType !== 'undefined' && (node as Element).nodeType === Node.ELEMENT_NODE) {
       const el = node as Element;
       if (el === document.body) continue;
+      if (overlayRoot && (el === overlayRoot || overlayRoot.contains(el))) continue;
       let hitRemove = false;
       for (let j = 0; j <= i; j++) {
         const n = path[j];
@@ -149,6 +153,7 @@ export function findAddToCartTarget(clickEvent: MouseEvent): Element | null {
   }
   let current: Element | null = (clickEvent.target as Element) || null;
   while (current && current !== document.body) {
+    if (overlayRoot && (current === overlayRoot || overlayRoot.contains(current))) return null;
     if (isRemoveOrDecreaseControl(current)) return null;
     if (matchesAddToCart(current)) return current;
     current = current.parentElement;

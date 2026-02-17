@@ -19689,13 +19689,15 @@
     }
     return false;
   }
-  function findAddToCartTarget(clickEvent) {
+  function findAddToCartTarget(clickEvent, overlayRootId) {
+    const overlayRoot = overlayRootId ? document.getElementById(overlayRootId) : null;
     const path = clickEvent.composedPath ? clickEvent.composedPath() : [];
     for (let i = 0; i < path.length; i++) {
       const node = path[i];
       if (node && typeof node.nodeType !== "undefined" && node.nodeType === Node.ELEMENT_NODE) {
         const el = node;
         if (el === document.body) continue;
+        if (overlayRoot && (el === overlayRoot || overlayRoot.contains(el))) continue;
         let hitRemove = false;
         for (let j = 0; j <= i; j++) {
           const n = path[j];
@@ -19712,6 +19714,7 @@
     }
     let current = clickEvent.target || null;
     while (current && current !== document.body) {
+      if (overlayRoot && (current === overlayRoot || overlayRoot.contains(current))) return null;
       if (isRemoveOrDecreaseControl(current)) return null;
       if (matchesAddToCart(current)) return current;
       current = current.parentElement;
@@ -19796,10 +19799,18 @@ Example for "Tennis Racket":
 ]
 
 Only respond with the JSON array, no other text.`;
+  function getApiKey() {
+    if (typeof process !== "undefined" && process.env) {
+      return process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY || "";
+    }
+    return "";
+  }
   async function generateQuestions(productName) {
-    const apiKey = process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY || "";
-    console.log("Environment check:");
-    console.log("   EXPO_PUBLIC_ANTHROPIC_API_KEY exists:", !!process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY);
+    const apiKey = getApiKey();
+    if (typeof process !== "undefined" && process.env) {
+      console.log("Environment check:");
+      console.log("   EXPO_PUBLIC_ANTHROPIC_API_KEY exists:", !!process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY);
+    }
     console.log("   API key length:", apiKey.length);
     if (apiKey) {
       console.log("   API key preview:", apiKey.substring(0, 10) + "..." + apiKey.substring(apiKey.length - 4));
@@ -24200,6 +24211,13 @@ Requirements:
         setStep(2);
       } catch (error) {
         console.error("Error generating questions:", error);
+        setQuestions(DEFAULT_QUESTIONS);
+        const initialAnswers = {};
+        DEFAULT_QUESTIONS.forEach((q) => {
+          initialAnswers[q.id] = 1;
+        });
+        setAnswers(initialAnswers);
+        setStep(2);
       } finally {
         setIsLoadingQuestions(false);
       }
@@ -24609,37 +24627,66 @@ Requirements:
       setShowForm(false);
     };
     if (showForm) {
-      return /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { id: OVERLAY_ID, className: "st-overlay-root", onClick: (e) => e.stopPropagation(), children: /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { className: "st-overlay-backdrop st-overlay-backdrop-form", onClick: handleBackdropClick, children: /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { className: "st-overlay-card st-overlay-card-form", children: /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
-        AddItemForm,
+      return /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { id: OVERLAY_ID, className: "st-overlay-root", onClick: (e) => e.stopPropagation(), children: /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { className: "st-overlay-backdrop st-overlay-backdrop-form", onClick: handleBackdropClick, children: /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
+        "div",
         {
-          onSubmit: handleSubmit,
-          onCancel: handleFormCancel,
-          initialUrl: pageUrl
+          className: "st-overlay-card st-overlay-card-form",
+          onClick: (e) => e.stopPropagation(),
+          onMouseDown: (e) => e.stopPropagation(),
+          children: /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
+            AddItemForm,
+            {
+              onSubmit: handleSubmit,
+              onCancel: handleFormCancel,
+              initialUrl: pageUrl
+            }
+          )
         }
-      ) }) }) });
+      ) }) });
     }
     return /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { id: OVERLAY_ID, onClick: (e) => e.stopPropagation(), children: /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { className: "st-overlay-backdrop", onClick: handleBackdropClick, children: /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "st-overlay-card", children: [
       /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("h1", { className: "st-overlay-title", children: "Second Thought" }),
       /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("p", { className: "st-overlay-message", children: "Would you like to give this purchase a second thought?" }),
       /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("button", { type: "button", className: "st-overlay-btn-primary", onClick: handleAddToMindfulCart, children: "Add to mindful cart" }),
-      /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("button", { type: "button", className: "st-overlay-close", onClick: onClose, children: "Continue without adding" })
+      /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
+        "button",
+        {
+          type: "button",
+          className: "st-overlay-close",
+          onClick: (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onClose();
+          },
+          children: "Continue without adding"
+        }
+      )
     ] }) }) });
   }
 
   // extension/src/content.tsx
   var import_jsx_runtime11 = __toESM(require_jsx_runtime());
   var DEBUG = false;
+  var CLOSE_COOLDOWN_MS = 800;
+  var lastOverlayCloseTime = 0;
   function showOverlay() {
     const doc = document;
     if (doc.getElementById(OVERLAY_ID)) return;
+    if (Date.now() - lastOverlayCloseTime < CLOSE_COOLDOWN_MS) return;
     const container = doc.createElement("div");
     container.id = OVERLAY_ID;
     doc.body.style.overflow = "hidden";
     doc.body.appendChild(container);
     const root = (0, import_client.createRoot)(container);
     function handleClose() {
-      root.unmount();
-      container.remove();
+      lastOverlayCloseTime = Date.now();
+      try {
+        root.unmount();
+      } catch (_) {
+      }
+      if (container.parentNode) {
+        container.parentNode.removeChild(container);
+      }
       doc.body.style.overflow = "";
     }
     root.render(
@@ -24647,7 +24694,8 @@ Requirements:
     );
   }
   function onDocumentClick(e) {
-    const addToCartEl = findAddToCartTarget(e);
+    if (Date.now() - lastOverlayCloseTime < CLOSE_COOLDOWN_MS) return;
+    const addToCartEl = findAddToCartTarget(e, OVERLAY_ID);
     if (!addToCartEl) return;
     if (DEBUG) console.log("Second Thought: add-to-cart detected", addToCartEl);
     setTimeout(showOverlay, 100);
