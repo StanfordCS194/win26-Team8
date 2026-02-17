@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import type { Item, ItemCategory, QuestionAnswer } from '../types/item';
 
-const ITEM_CATEGORIES: ItemCategory[] = ['Food', 'Clothes', 'Sports', 'Electronics', 'Home', 'Other'];
+const ITEM_CATEGORIES: ItemCategory[] = ['Beauty', 'Clothes', 'Sports', 'Electronics', 'Home', 'Other'];
 import { generateQuestions, GeneratedQuestion } from '../services/questionGenerator';
+import { detectCategory } from '../services/categoryDetector';
 import { Loader2 } from 'lucide-react';
 import { Slider } from './ui/slider';
 
@@ -119,6 +120,45 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
       setImageUrl(initialUrl);
     }
   }, [initialUrl, hasUrlTouched]);
+
+  // Auto-detect category when item name changes (with debouncing for AI calls)
+  const categoryDetectionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [isDetectingCategory, setIsDetectingCategory] = useState(false);
+
+  useEffect(() => {
+    // Clear any pending detection
+    if (categoryDetectionTimeoutRef.current) {
+      clearTimeout(categoryDetectionTimeoutRef.current);
+    }
+
+    if (name.trim().length === 0) {
+      setCategory('Other');
+      setIsDetectingCategory(false);
+      return;
+    }
+
+    // Debounce AI calls - wait 500ms after user stops typing
+    setIsDetectingCategory(true);
+    categoryDetectionTimeoutRef.current = setTimeout(async () => {
+      try {
+        const detectedCategory = await detectCategory(name);
+        setCategory(detectedCategory);
+      } catch (error) {
+        console.error('Error detecting category:', error);
+        // Fallback to 'Other' on error
+        setCategory('Other');
+      } finally {
+        setIsDetectingCategory(false);
+      }
+    }, 500);
+
+    // Cleanup on unmount or when name changes
+    return () => {
+      if (categoryDetectionTimeoutRef.current) {
+        clearTimeout(categoryDetectionTimeoutRef.current);
+      }
+    };
+  }, [name]);
 
   const resetForm = () => {
     setStep(1);
@@ -333,20 +373,31 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-foreground/80 mb-2">
-              Category
+            <label className="block text-sm font-medium text-foreground/80 mb-2 flex items-center gap-2">
+              Category 
+              {isDetectingCategory && (
+                <Loader2 className="w-3 h-3 animate-spin text-primary" />
+              )}
+              {name.trim().length > 0 && !isDetectingCategory && (
+                <span className="text-xs font-normal text-primary">(AI-detected)</span>
+              )}
             </label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value as ItemCategory)}
-              className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground"
+              disabled={isDetectingCategory}
+              className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {ITEM_CATEGORIES.map((cat) => (
                 <option key={cat} value={cat}>{cat}</option>
               ))}
             </select>
             <p className="text-xs text-muted-foreground mt-1">
-              Organize your items for easier browsing on the All Items page
+              {isDetectingCategory 
+                ? 'Detecting category...'
+                : name.trim().length > 0 
+                  ? 'Category detected using AI. You can change it if needed.'
+                  : 'Organize your items for easier browsing on the All Items page'}
             </p>
           </div>
 

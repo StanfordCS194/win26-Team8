@@ -1,7 +1,7 @@
 import type { Item, ItemCategory } from '../types/item';
 import { Calendar, Target, ShoppingBag, Plus } from 'lucide-react';
 
-const CATEGORY_ORDER: ItemCategory[] = ['Food', 'Clothes', 'Sports', 'Electronics', 'Home', 'Other'];
+const CATEGORY_ORDER: ItemCategory[] = ['Beauty', 'Clothes', 'Sports', 'Electronics', 'Home', 'Other'];
 
 function ItemCard({
   item,

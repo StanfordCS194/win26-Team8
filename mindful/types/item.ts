@@ -4,7 +4,7 @@ export interface QuestionAnswer {
   answer: string;
 }
 
-export type ItemCategory = 'Food' | 'Clothes' | 'Sports' | 'Electronics' | 'Home' | 'Other';
+export type ItemCategory = 'Beauty' | 'Clothes' | 'Sports' | 'Electronics' | 'Home' | 'Other';
 
 export interface Item {
   id: string;

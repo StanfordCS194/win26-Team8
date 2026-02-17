@@ -81,7 +81,7 @@ function dbToItem(dbItem: DbItem): Item {
     id: dbItem.id,
     name: dbItem.name,
     imageUrl: dbItem.image_url,
-    category: category && ['Food', 'Clothes', 'Sports', 'Electronics', 'Home', 'Other'].includes(category) ? category : undefined,
+    category: category && ['Beauty', 'Clothes', 'Sports', 'Electronics', 'Home', 'Other'].includes(category) ? category : undefined,
     constraintType: dbItem.constraint_type,
     consumptionScore: dbItem.consumption_score,
     addedDate: dbItem.added_date,
