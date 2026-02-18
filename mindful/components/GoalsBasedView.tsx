@@ -1,4 +1,4 @@
-import { Item } from '../App';
+import type { Item } from '../types/item';
 import { Target, Plus } from 'lucide-react';
 
 interface GoalsBasedViewProps {

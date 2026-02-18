@@ -12,26 +12,7 @@ import { fetchItems, saveItem, deleteItem as deleteItemDb } from './lib/database
 import { Plus, User } from 'lucide-react';
 import './styles/globals.css';
 import logoImage from './assets/logo.png';
-
-// Question-answer pair for dynamic questionnaire
-export interface QuestionAnswer {
-  id: string;
-  question: string;
-  answer: string;
-}
-
-export interface Item {
-  id: string;
-  name: string;
-  imageUrl: string;
-  constraintType: 'time' | 'goals';
-  consumptionScore: number;
-  addedDate: string;
-  waitUntilDate?: string;
-  difficulty?: 'easy' | 'medium' | 'hard';
-  // Dynamic questionnaire answers
-  questionnaire: QuestionAnswer[];
-}
+import type { Item } from './types/item';
 
 type View = 'home' | 'item' | 'add' | 'time' | 'goals' | 'mission' | 'profile';
 

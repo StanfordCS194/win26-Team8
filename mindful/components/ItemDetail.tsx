@@ -1,4 +1,4 @@
-import { Item, QuestionAnswer } from '../App';
+import type { Item, QuestionAnswer } from '../types/item';
 import { ArrowLeft, Calendar, Target, Trash2 } from 'lucide-react';
 
 interface ItemDetailProps {

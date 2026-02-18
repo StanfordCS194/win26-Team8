@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Item } from '../App';
+import type { Item } from '../types/item';
 import { Calendar, Clock, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface TimeBasedViewProps {

@@ -1,5 +1,5 @@
 import { supabase, DbItem, ItemReflection } from '../lib/supabase';
-import { Item, QuestionAnswer } from '../App';
+import type { Item, QuestionAnswer } from '../types/item';
 
 // Transform database item + reflections to app item format
 export function dbItemToItem(dbItem: DbItem, reflections: ItemReflection[]): Item {

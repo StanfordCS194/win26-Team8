@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Item, QuestionAnswer } from '../App';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { fetchUrlMetadata } from '../services/urlMetadata';
@@ -93,13 +93,15 @@ function generateMindfulnessExplanation(questionnaire: QuestionAnswer[], finalSc
 interface AddItemFormProps {
   onSubmit: (item: Omit<Item, 'id' | 'addedDate'>) => void;
   onCancel: () => void;
+  initialUrl?: string;
 }
 
-export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
+export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps) {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [productUrl, setProductUrl] = useState('');
   const [name, setName] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
+  const [imageUrl, setImageUrl] = useState(initialUrl ?? '');
+  const [hasUrlTouched, setHasUrlTouched] = useState(false);
   const [constraintType, setConstraintType] = useState<'time' | 'goals'>('time');
   const [waitUntilDate, setWaitUntilDate] = useState('');
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
@@ -113,12 +115,18 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
 
   // URL metadata fetching state
   const [isLoadingMetadata, setIsLoadingMetadata] = useState(false);
+  useEffect(() => {
+    if (initialUrl && !hasUrlTouched) {
+      setImageUrl(initialUrl);
+    }
+  }, [initialUrl, hasUrlTouched]);
 
   const resetForm = () => {
     setStep(1);
     setProductUrl('');
     setName('');
-    setImageUrl('');
+    setImageUrl(initialUrl ?? '');
+    setHasUrlTouched(false);
     setConstraintType('time');
     setWaitUntilDate('');
     setDifficulty('medium');
@@ -335,7 +343,10 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
             <input
               type="url"
               value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
+              onChange={(e) => {
+                setImageUrl(e.target.value);
+                setHasUrlTouched(true);
+              }}
               placeholder="https://example.com/image.jpg"
               className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
             />
