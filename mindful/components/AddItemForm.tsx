@@ -11,11 +11,11 @@ import { Slider } from './ui/slider';
 function generateMindfulnessExplanation(questionnaire: QuestionAnswer[], finalScore: number): string {
   const insights: string[] = [];
   const areasForGrowth: string[] = [];
-  
+
   questionnaire.forEach((qa) => {
     const numericAnswer = parseInt(qa.answer, 10);
     if (isNaN(numericAnswer) || numericAnswer < 1 || numericAnswer > 5) return;
-    
+
     if (qa.id === 'consumption') {
       const needLevel = numericAnswer <= 2 ? 'low' : numericAnswer <= 3 ? 'moderate' : 'high';
       insights.push(`You indicated a ${needLevel} need for this item (${numericAnswer}/5), showing you've recognized your desire`);
@@ -30,12 +30,11 @@ function generateMindfulnessExplanation(questionnaire: QuestionAnswer[], finalSc
         areasForGrowth.push('allowing more time for reflection');
       }
     } else {
-      // Extract question meaning from text
       const qLower = qa.question.toLowerCase();
       let questionMeaning = '';
       let reflectionType = '';
       let growthArea = '';
-      
+
       if (qLower.includes('essential') || qLower.includes('important')) {
         questionMeaning = numericAnswer >= 4 ? 'very essential' : numericAnswer <= 2 ? 'not very essential' : 'moderately essential';
         reflectionType = 'thoughtful reflection about its importance';
@@ -69,18 +68,18 @@ function generateMindfulnessExplanation(questionnaire: QuestionAnswer[], finalSc
           growthArea = 'deeper consideration of this aspect';
         }
       }
-      
+
       insights.push(`You indicated ${questionMeaning} (${numericAnswer}/5), which demonstrates ${reflectionType}`);
       if (growthArea && numericAnswer <= 3) {
         areasForGrowth.push(growthArea);
       }
     }
   });
-  
+
   if (insights.length === 0) return '';
-  
+
   let explanation = `Your score of ${finalScore}/10 reflects your thoughtful decision-making process. ${insights.join('. ')}.`;
-  
+
   if (finalScore < 10 && areasForGrowth.length > 0) {
     explanation += ` You can reflect further on ${areasForGrowth[0]}${areasForGrowth.length > 1 ? `, as well as ${areasForGrowth.slice(1).join(', and ')}` : ''} to deepen your mindfulness around this decision.`;
   } else if (finalScore < 10) {
@@ -88,7 +87,7 @@ function generateMindfulnessExplanation(questionnaire: QuestionAnswer[], finalSc
   } else {
     explanation += ` Together, these responses demonstrate exceptional intentionality and awareness in your decision-making process.`;
   }
-  
+
   return explanation;
 }
 
@@ -100,6 +99,7 @@ interface AddItemFormProps {
 
 export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps) {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  const [productUrl, setProductUrl] = useState('');
   const [name, setName] = useState('');
   const [imageUrl, setImageUrl] = useState(initialUrl ?? '');
   const [category, setCategory] = useState<ItemCategory>('Other');
@@ -115,6 +115,8 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
 
+  // URL metadata fetching state
+  const [isLoadingMetadata, setIsLoadingMetadata] = useState(false);
   useEffect(() => {
     if (initialUrl && !hasUrlTouched) {
       setImageUrl(initialUrl);
@@ -162,6 +164,7 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
 
   const resetForm = () => {
     setStep(1);
+    setProductUrl('');
     setName('');
     setImageUrl(initialUrl ?? '');
     setCategory('Other');
@@ -175,58 +178,55 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
     setGoalDescription('');
   };
 
+  const handleFetchMetadata = async () => {
+    if (!productUrl) return;
+
+    setIsLoadingMetadata(true);
+    try {
+      const metadata = await fetchUrlMetadata(productUrl);
+      if (metadata.title) {
+        setName(metadata.title);
+      }
+      if (metadata.image) {
+        setImageUrl(metadata.image);
+      }
+    } catch (error) {
+      console.error('Error fetching metadata:', error);
+    } finally {
+      setIsLoadingMetadata(false);
+    }
+  };
+
   // Calculate mindfulness score from question answers and consumption score
-  // The mindfulness score measures intentional, aware decision-making, not the absence of need.
-  // It penalizes impulsivity and unexamined urgency, while rewarding reflection, flexibility, and impact awareness.
-  // Questions and consumption score are on 1-5 scale, we normalize to 1-10 scale
   const calculateMindfulnessScore = (questionAnswers: Record<string, number>): number => {
     const mindfulnessValues: number[] = [];
-    
-    // Include consumption score (neutral context: strong need can still be handled mindfully)
-    // Consumption score is 1-5, scale directly to 1-10: 1 = 2, 5 = 10
+
     const consumptionMindfulness = consumptionScore * 2;
     mindfulnessValues.push(consumptionMindfulness);
-    
-    // Process question answers if available
+
     if (questions.length > 0) {
       questions.forEach((q) => {
         const answer = questionAnswers[q.id] || 1;
-        
-        // Normalize answers based on question type for mindfulness
-        // Only urgency is inverted (high = impulsive/unexamined = less mindful)
-        // All other questions are direct (high = reflective/aware = more mindful)
-        // This rewards reflection, awareness, and thoughtful consideration regardless of the conclusion
+
         let mindfulnessValue: number;
-        
+
         switch (q.id) {
           case 'urgency':
-            // Invert: high urgency signals impulsivity and unexamined urgency
-            // Low urgency shows patience and reflection
-            // 1 (not urgent) = 10, 5 (very urgent) = 2
             mindfulnessValue = 12 - (answer * 2);
             break;
           case 'importance':
           case 'alternatives':
           case 'impact':
           default:
-            // Direct mapping: high scores indicate reflection and awareness
-            // For importance: recognizing something is essential through reflection is mindful
-            // For alternatives: considering alternatives (whether satisfied or not) shows reflection
-            // For impact: understanding outcomes shows awareness
-            // For other questions: any thoughtful consideration is rewarded
-            // 1 = 2, 5 = 10
             mindfulnessValue = (answer * 2);
             break;
         }
-        
-        // Ensure value is within 1-10 range
+
         mindfulnessValue = Math.max(1, Math.min(10, mindfulnessValue));
         mindfulnessValues.push(mindfulnessValue);
       });
     }
-    
-    // Calculate average and round to nearest integer
-    // All inputs normalized to 1-10 scale, averaged to produce final mindfulness score
+
     const average = mindfulnessValues.reduce((sum, val) => sum + val, 0) / mindfulnessValues.length;
     return Math.round(average);
   };
@@ -236,11 +236,9 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
     setIsLoadingQuestions(true);
 
     try {
-      // Generate contextual questions based on the product name
       const generatedQuestions = await generateQuestions(name);
       setQuestions(generatedQuestions);
 
-      // Initialize answers object with default value of 1 for each question
       const initialAnswers: Record<string, number> = {};
       generatedQuestions.forEach((q) => {
         initialAnswers[q.id] = 1;
@@ -257,17 +255,14 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
 
   const handleStep2Submit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Calculate mindfulness score from question answers
+
     const calculatedScore = calculateMindfulnessScore(answers);
-    
-    // Calculate time-based constraint based on mindfulness score
-    const days = calculatedScore * 7; // 1 week per score point
+
+    const days = calculatedScore * 7;
     const waitDate = new Date();
     waitDate.setDate(waitDate.getDate() + days);
     setWaitUntilDate(waitDate.toISOString().split('T')[0]);
-    
-    // Calculate goals-based difficulty based on mindfulness score
+
     if (calculatedScore <= 3) {
       setDifficulty('easy');
     } else if (calculatedScore <= 7) {
@@ -275,7 +270,7 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
     } else {
       setDifficulty('hard');
     }
-    
+
     setStep(3);
   };
 
@@ -283,8 +278,6 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
     e.preventDefault();
     console.log('Final submit - preparing item data');
 
-    // Convert questions and answers to QuestionAnswer array
-    // Consumption score as question 1
     const questionnaire: QuestionAnswer[] = [
       {
         id: 'consumption',
@@ -298,7 +291,6 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
       })),
     ];
 
-    // If the user chose a goals-based constraint, capture their specific goal
     if (constraintType === 'goals' && goalDescription.trim()) {
       questionnaire.push({
         id: 'goal',
@@ -307,7 +299,6 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
       });
     }
 
-    // Calculate mindfulness score from question answers
     const calculatedMindfulnessScore = calculateMindfulnessScore(answers);
 
     onSubmit({
@@ -319,8 +310,7 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
       ...(constraintType === 'time' ? { waitUntilDate } : { difficulty }),
       questionnaire,
     });
-    
-    // Reset form for next item
+
     resetForm();
   };
 
@@ -341,7 +331,39 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
 
         {step === 1 && (
           <form onSubmit={handleStep1Submit} className="space-y-6">
-          {/* Basic Information */}
+          {/* Product URL - Auto-fetch metadata */}
+          <div>
+            <label className="block text-sm font-medium text-foreground/80 mb-2">
+              Product URL
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="url"
+                value={productUrl}
+                onChange={(e) => setProductUrl(e.target.value)}
+                placeholder="https://amazon.com/product/..."
+                className="flex-1 px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
+              />
+              <button
+                type="button"
+                onClick={handleFetchMetadata}
+                disabled={!productUrl || isLoadingMetadata}
+                className="px-4 py-3 bg-secondary text-secondary-foreground rounded-xl hover:bg-secondary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {isLoadingMetadata ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Link className="w-5 h-5" />
+                )}
+                <span className="hidden sm:inline">Fetch</span>
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Paste a product link to auto-fill name and image
+            </p>
+          </div>
+
+          {/* Item Name */}
           <div>
             <label className="block text-sm font-medium text-foreground/80 mb-2">
               Item Name *
@@ -356,9 +378,10 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
             />
           </div>
 
+          {/* Image URL */}
           <div>
             <label className="block text-sm font-medium text-foreground/80 mb-2">
-               URL
+              Image URL
             </label>
             <input
               type="url"
@@ -370,6 +393,16 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
               placeholder="https://example.com/image.jpg"
               className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
             />
+            {imageUrl && (
+              <div className="mt-2">
+                <img
+                  src={imageUrl}
+                  alt="Preview"
+                  className="w-20 h-20 object-cover rounded-lg border border-border"
+                  onError={(e) => (e.currentTarget.style.display = 'none')}
+                />
+              </div>
+            )}
           </div>
 
           <div>
@@ -462,7 +495,7 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
                 const scaleLabels = q.placeholder.split('/');
                 const leftLabel = scaleLabels[0]?.trim() || 'Low';
                 const rightLabel = scaleLabels[1]?.trim() || 'High';
-                
+
                 return (
                   <div key={q.id} className="space-y-3">
                     <div className="flex items-center justify-between">
@@ -518,15 +551,14 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
                 <div className="flex items-center justify-between">
                   <span className="text-foreground/80 font-medium">Your Mindfulness Score</span>
                   <span className={`text-2xl font-semibold font-serif ${
-                    calculateMindfulnessScore(answers) >= 7 ? 'text-destructive' : 
-                    calculateMindfulnessScore(answers) >= 4 ? 'text-accent' : 
+                    calculateMindfulnessScore(answers) >= 7 ? 'text-destructive' :
+                    calculateMindfulnessScore(answers) >= 4 ? 'text-accent' :
                     'text-primary'
                   }`}>
                     {calculateMindfulnessScore(answers)}/10
                   </span>
                 </div>
                 {(() => {
-                  // Build questionnaire array for explanation
                   const tempQuestionnaire: QuestionAnswer[] = [
                     {
                       id: 'consumption',
@@ -552,10 +584,10 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
             </div>
 
             {/* Time-based option */}
-            <label 
+            <label
               className={`block cursor-pointer rounded-xl border-2 p-6 transition-all ${
-                constraintType === 'time' 
-                  ? 'border-primary bg-primary/5' 
+                constraintType === 'time'
+                  ? 'border-primary bg-primary/5'
                   : 'border-border hover:border-primary/50 hover:bg-muted/20'
               }`}
             >
@@ -578,11 +610,11 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
                   <div className="bg-background/50 rounded-lg p-3">
                     <p className="text-sm text-muted-foreground">Wait until:</p>
                     <p className="text-lg font-semibold text-primary mt-1">
-                      {new Date(waitUntilDate).toLocaleDateString('en-US', { 
-                        weekday: 'long', 
-                        year: 'numeric', 
-                        month: 'long', 
-                        day: 'numeric' 
+                      {new Date(waitUntilDate).toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
                       })}
                     </p>
                     <p className="text-sm text-muted-foreground mt-1">
@@ -594,10 +626,10 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
             </label>
 
             {/* Goals-based option */}
-            <label 
+            <label
               className={`block cursor-pointer rounded-xl border-2 p-6 transition-all ${
-                constraintType === 'goals' 
-                  ? 'border-primary bg-primary/5' 
+                constraintType === 'goals'
+                  ? 'border-primary bg-primary/5'
                   : 'border-border hover:border-primary/50 hover:bg-muted/20'
               }`}
             >
