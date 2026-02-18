@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import type { Item, ItemCategory, QuestionAnswer } from '../types/item';
 
-const ITEM_CATEGORIES: ItemCategory[] = ['Beauty', 'Clothes', 'Sports', 'Electronics', 'Home', 'Other'];
+const ITEM_CATEGORIES: ItemCategory[] = ['Beauty', 'Clothes', 'Accessories', 'Sports', 'Electronics', 'Home', 'Other'];
 import { generateQuestions, GeneratedQuestion } from '../services/questionGenerator';
 import { detectCategory } from '../services/categoryDetector';
 import { Loader2 } from 'lucide-react';

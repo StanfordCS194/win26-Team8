@@ -3,19 +3,20 @@
 
 import type { ItemCategory } from '../types/item';
 
-const CATEGORIES: ItemCategory[] = ['Beauty', 'Clothes', 'Sports', 'Electronics', 'Home', 'Other'];
+const CATEGORIES: ItemCategory[] = ['Beauty', 'Clothes', 'Accessories', 'Sports', 'Electronics', 'Home', 'Other'];
 
-const CATEGORY_SYSTEM_PROMPT = `You are a product categorization assistant. Your task is to classify product names into one of these categories: Beauty, Clothes, Sports, Electronics, Home, or Other.
+const CATEGORY_SYSTEM_PROMPT = `You are a product categorization assistant. Your task is to classify product names into one of these categories: Beauty, Clothes, Accessories, Sports, Electronics, Home, or Other.
 
 Categories:
-- Beauty: Skincare products, makeup, cosmetics, perfumes, hair care, beauty tools, nail polish, serums, creams, lotions, etc.
-- Clothes: Clothing items, shoes, accessories, jewelry, bags, fashion items
+- Beauty: Skincare products, makeup, cosmetics, perfumes, hair care, beauty tools, nail polish, serums, creams, lotions. Not jewelry or bags.
+- Clothes: Clothing and apparel only—shirts, pants, dresses, shoes, sneakers, jackets, sweaters, jeans, skirts, tops, suits, coats, socks, underwear. Not jewelry, purses, or bags.
+- Accessories: Jewelry (rings, necklaces, bracelets, earrings), purses, handbags, wallets, belts, watches (fashion watches), sunglasses, scarves, hats, backpacks (non-sport), totes, clutches—items that accessorize rather than being clothing or beauty products.
 - Sports: Sports equipment, fitness gear, athletic wear, workout equipment, outdoor gear
 - Electronics: Phones, computers, cameras, TVs, headphones, gadgets, tech devices
 - Home: Furniture, home decor, appliances, kitchen items, bedding, lighting, storage
 - Other: Anything that doesn't fit the above categories
 
-Return ONLY the category name (one word: Beauty, Clothes, Sports, Electronics, Home, or Other). Do not include any explanation or additional text.`;
+Return ONLY the category name (one word: Beauty, Clothes, Accessories, Sports, Electronics, Home, or Other). Do not include any explanation or additional text.`;
 
 // Safe env access for both Expo (process.env) and browser/extension (no process)
 function getApiKey(): string {
@@ -44,13 +45,20 @@ function detectCategoryFallback(itemName: string): ItemCategory {
     'cosmetic', 'beauty product', 'self-care', 'grooming', 'facial', 'treatment'
   ];
 
-  // Clothes keywords
+  // Accessories keywords (check before Clothes so jewelry/bags don't match clothes)
+  const accessoriesKeywords = [
+    'jewelry', 'jewellery', 'watch', 'ring', 'necklace', 'bracelet', 'earring',
+    'purse', 'handbag', 'bag', 'clutch', 'wallet', 'belt', 'sunglasses', 'tote',
+    'backpack', 'crossbody', 'satchel', 'scarf', 'hat', 'cap', 'hair clip',
+    'brooch', 'pendant', 'anklet', 'choker', 'accessory', 'accessories'
+  ];
+
+  // Clothes keywords (apparel only, no jewelry/bags)
   const clothesKeywords = [
     'shirt', 'pants', 'dress', 'shoes', 'sneakers', 'boots', 'jacket', 'coat',
     'sweater', 'hoodie', 'jeans', 'shorts', 'skirt', 'top', 'blouse', 'suit',
-    'tie', 'hat', 'cap', 'gloves', 'scarf', 'socks', 'underwear', 'lingerie',
-    'clothing', 'apparel', 'fashion', 'outfit', 'wardrobe', 'jewelry', 'watch',
-    'ring', 'necklace', 'bracelet', 'earrings', 'bag', 'purse', 'handbag', 'backpack'
+    'tie', 'gloves', 'socks', 'underwear', 'lingerie', 'clothing', 'apparel',
+    'fashion', 'outfit', 'wardrobe', 'blazer', 'cardigan', 'jumper', 'leggings'
   ];
 
   // Sports keywords
@@ -69,7 +77,7 @@ function detectCategoryFallback(itemName: string): ItemCategory {
     'tablet', 'ipad', 'camera', 'tv', 'television', 'headphone', 'earbud', 'airpod',
     'speaker', 'microphone', 'keyboard', 'mouse', 'monitor', 'screen', 'display',
     'charger', 'cable', 'usb', 'battery', 'power', 'electronic', 'device', 'gadget',
-    'smart', 'watch', 'fitbit', 'apple watch', 'nintendo', 'playstation', 'xbox',
+    'smart', 'smartwatch', 'smart watch', 'fitbit', 'apple watch', 'galaxy watch', 'nintendo', 'playstation', 'xbox',
     'console', 'game', 'drone', 'router', 'modem', 'printer', 'scanner'
   ];
 
@@ -83,12 +91,34 @@ function detectCategoryFallback(itemName: string): ItemCategory {
     'tool', 'shelf', 'cabinet', 'drawer', 'storage', 'organizer'
   ];
 
-  // Check each category (order matters - more specific first)
+  // Full string first so "apple watch" / "smartwatch" match Electronics before "watch" -> Accessories
+  if (electronicsKeywords.some(keyword => nameLower.includes(keyword))) {
+    return 'Electronics';
+  }
+  if (beautyKeywords.some(keyword => nameLower.includes(keyword))) {
+    return 'Beauty';
+  }
+  if (accessoriesKeywords.some(keyword => nameLower.includes(keyword))) {
+    return 'Accessories';
+  }
+  if (clothesKeywords.some(keyword => nameLower.includes(keyword))) {
+    return 'Clothes';
+  }
+  if (sportsKeywords.some(keyword => nameLower.includes(keyword))) {
+    return 'Sports';
+  }
+  if (homeKeywords.some(keyword => nameLower.includes(keyword))) {
+    return 'Home';
+  }
+
+  // Then check by word (order: Accessories before Clothes for jewelry/bags)
   const words = nameLower.split(/\s+/);
-  
   for (const word of words) {
     if (beautyKeywords.some(keyword => word.includes(keyword) || keyword.includes(word))) {
       return 'Beauty';
+    }
+    if (accessoriesKeywords.some(keyword => word.includes(keyword) || keyword.includes(word))) {
+      return 'Accessories';
     }
     if (clothesKeywords.some(keyword => word.includes(keyword) || keyword.includes(word))) {
       return 'Clothes';
@@ -102,23 +132,6 @@ function detectCategoryFallback(itemName: string): ItemCategory {
     if (homeKeywords.some(keyword => word.includes(keyword) || keyword.includes(word))) {
       return 'Home';
     }
-  }
-
-  // Check full string matches (for compound words/phrases)
-  if (beautyKeywords.some(keyword => nameLower.includes(keyword))) {
-    return 'Beauty';
-  }
-  if (clothesKeywords.some(keyword => nameLower.includes(keyword))) {
-    return 'Clothes';
-  }
-  if (sportsKeywords.some(keyword => nameLower.includes(keyword))) {
-    return 'Sports';
-  }
-  if (electronicsKeywords.some(keyword => nameLower.includes(keyword))) {
-    return 'Electronics';
-  }
-  if (homeKeywords.some(keyword => nameLower.includes(keyword))) {
-    return 'Home';
   }
 
   return 'Other';
