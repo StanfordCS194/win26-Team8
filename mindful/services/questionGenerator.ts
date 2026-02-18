@@ -106,7 +106,7 @@ export async function generateQuestions(
   if (apiKey) {
     console.log('   API key preview:', apiKey.substring(0, 10) + '...' + apiKey.substring(apiKey.length - 4));
   }
-  
+
   if (!apiKey || apiKey === 'your_api_key_here' || apiKey.trim() === '') {
     console.warn('Anthropic API key not configured. Using default questions.');
     console.warn('   Please:');
