@@ -2,92 +2,90 @@ import { useState } from 'react';
 import { Item, QuestionAnswer } from '../App';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { generateQuestions, GeneratedQuestion } from '../services/questionGenerator';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Calendar } from 'lucide-react';
+import { generateGoogleCalendarUrl } from '../services/googleCalendar';
 import { Slider } from './ui/slider';
 
-// Generate intuitive explanation of how mindfulness score reflects the user's responses
-function generateMindfulnessExplanation(questionnaire: QuestionAnswer[], finalScore: number): string {
-  const insights: string[] = [];
-  const areasForGrowth: string[] = [];
-  
-  questionnaire.forEach((qa) => {
-    const numericAnswer = parseInt(qa.answer, 10);
-    if (isNaN(numericAnswer) || numericAnswer < 1 || numericAnswer > 5) return;
-    
-    if (qa.id === 'consumption') {
-      const needLevel = numericAnswer <= 2 ? 'low' : numericAnswer <= 3 ? 'moderate' : 'high';
-      insights.push(`You indicated a ${needLevel} need for this item (${numericAnswer}/5), showing you've recognized your desire`);
-    } else if (qa.id === 'urgency') {
-      if (numericAnswer <= 2) {
-        insights.push(`You indicated low urgency (${numericAnswer}/5), demonstrating patience and thoughtful consideration rather than impulsive decision-making`);
-      } else if (numericAnswer >= 4) {
-        insights.push(`You indicated high urgency (${numericAnswer}/5), which suggests a more reactive approach that may limit reflection time`);
-        areasForGrowth.push('taking more time to reflect before acting');
-      } else {
-        insights.push(`You indicated moderate urgency (${numericAnswer}/5), showing some consideration of timing`);
-        areasForGrowth.push('allowing more time for reflection');
-      }
+// Get a short label for a question based on its id and text
+function getFactorLabel(id: string, questionText: string): string {
+  if (id === 'consumption') return 'Need Awareness';
+  if (id === 'urgency') return 'Patience';
+  const qLower = questionText.toLowerCase();
+  if (qLower.includes('essential') || qLower.includes('important')) return 'Importance';
+  if (qLower.includes('alternative') || qLower.includes('satisfied')) return 'Alternatives';
+  if (qLower.includes('impact') || qLower.includes('consequence') || qLower.includes('significant')) return 'Impact Awareness';
+  if (qLower.includes('integrat') || qLower.includes('confident') || qLower.includes('expect')) return 'Confidence';
+  // Fallback: use first few words of the question
+  return questionText.split(' ').slice(0, 3).join(' ');
+}
+
+// Score breakdown component showing per-factor contribution
+function ScoreBreakdown({
+  consumptionScore,
+  questions,
+  answers,
+  finalScore
+}: {
+  consumptionScore: number;
+  questions: GeneratedQuestion[];
+  answers: Record<string, number>;
+  finalScore: number;
+}) {
+  // Build per-factor data (same logic as calculateMindfulnessScore)
+  const factors: { label: string; value: number; delta: number }[] = [];
+
+  // Consumption score
+  const consumptionValue = consumptionScore * 2;
+  factors.push({ label: 'Need Awareness', value: consumptionValue, delta: consumptionValue - finalScore });
+
+  // Question-based factors
+  questions.forEach((q) => {
+    const answer = answers[q.id] || 1;
+    let value: number;
+    if (q.id === 'urgency') {
+      value = 12 - (answer * 2);
     } else {
-      // Extract question meaning from text
-      const qLower = qa.question.toLowerCase();
-      let questionMeaning = '';
-      let reflectionType = '';
-      let growthArea = '';
-      
-      if (qLower.includes('essential') || qLower.includes('important')) {
-        questionMeaning = numericAnswer >= 4 ? 'very essential' : numericAnswer <= 2 ? 'not very essential' : 'moderately essential';
-        reflectionType = 'thoughtful reflection about its importance';
-        if (numericAnswer <= 3) {
-          growthArea = 'deeper consideration of whether this truly meets your needs';
-        }
-      } else if (qLower.includes('alternative') || qLower.includes('satisfied')) {
-        questionMeaning = numericAnswer >= 4 ? 'high satisfaction with alternatives' : numericAnswer <= 2 ? 'low satisfaction with alternatives' : 'moderate satisfaction with alternatives';
-        reflectionType = numericAnswer >= 4 ? 'openness to alternatives and flexibility' : 'you\'ve considered alternatives and determined they don\'t meet your needs';
-        if (numericAnswer <= 2) {
-          growthArea = 'exploring whether any alternatives could work with some adjustment';
-        } else if (numericAnswer <= 3) {
-          growthArea = 'further exploration of alternative options';
-        }
-      } else if (qLower.includes('impact') || qLower.includes('consequence') || qLower.includes('significant')) {
-        questionMeaning = numericAnswer >= 4 ? 'significant positive impact' : numericAnswer <= 2 ? 'limited impact' : 'moderate impact';
-        reflectionType = 'awareness of the purchase\'s consequences';
-        if (numericAnswer <= 3) {
-          growthArea = 'deeper reflection on the broader impact of this purchase';
-        }
-      } else if (qLower.includes('integrat') || qLower.includes('confident') || qLower.includes('expect')) {
-        questionMeaning = numericAnswer >= 4 ? 'high confidence' : numericAnswer <= 2 ? 'low confidence' : 'moderate confidence';
-        reflectionType = 'thoughtful evaluation of how this item fits into your life';
-        if (numericAnswer <= 3) {
-          growthArea = 'more thorough evaluation of how this integrates with your lifestyle';
-        }
-      } else {
-        questionMeaning = numericAnswer >= 4 ? 'strong agreement' : numericAnswer <= 2 ? 'limited agreement' : 'moderate agreement';
-        reflectionType = 'reflection on this aspect';
-        if (numericAnswer <= 3) {
-          growthArea = 'deeper consideration of this aspect';
-        }
-      }
-      
-      insights.push(`You indicated ${questionMeaning} (${numericAnswer}/5), which demonstrates ${reflectionType}`);
-      if (growthArea && numericAnswer <= 3) {
-        areasForGrowth.push(growthArea);
-      }
+      value = answer * 2;
     }
+    value = Math.max(1, Math.min(10, value));
+    const label = getFactorLabel(q.id, q.question);
+    factors.push({ label, value, delta: value - finalScore });
   });
-  
-  if (insights.length === 0) return '';
-  
-  let explanation = `Your score of ${finalScore}/10 reflects your thoughtful decision-making process. ${insights.join('. ')}.`;
-  
-  if (finalScore < 10 && areasForGrowth.length > 0) {
-    explanation += ` You can reflect further on ${areasForGrowth[0]}${areasForGrowth.length > 1 ? `, as well as ${areasForGrowth.slice(1).join(', and ')}` : ''} to deepen your mindfulness around this decision.`;
-  } else if (finalScore < 10) {
-    explanation += ` You can reflect further across all dimensions of this decision to deepen your mindfulness.`;
-  } else {
-    explanation += ` Together, these responses demonstrate exceptional intentionality and awareness in your decision-making process.`;
-  }
-  
-  return explanation;
+
+  return (
+    <div className="space-y-3 pt-2 border-t border-border/30">
+      {factors.map((factor, i) => {
+        const barPercent = (factor.value / 10) * 100;
+        const isPositive = factor.delta > 0;
+        const isNeutral = factor.delta === 0;
+        const barColor = isPositive ? 'bg-primary' : isNeutral ? 'bg-muted-foreground' : 'bg-destructive';
+        const deltaColor = isPositive ? 'text-primary' : isNeutral ? 'text-muted-foreground' : 'text-destructive';
+
+        return (
+          <div key={i} className="space-y-1">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-foreground/80 font-medium">{factor.label}</span>
+              <div className="flex items-center gap-3">
+                <span className="text-foreground/60 text-xs">{factor.value}/10</span>
+                <span className={`font-semibold text-xs min-w-[40px] text-right ${deltaColor}`}>
+                  {isPositive ? '+' : ''}{factor.delta}
+                </span>
+              </div>
+            </div>
+            <div className="h-2 bg-muted/40 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all ${barColor}`}
+                style={{ width: `${barPercent}%` }}
+              />
+            </div>
+          </div>
+        );
+      })}
+      <p className="text-xs text-muted-foreground pt-1">
+        +/- shows each factor's deviation from your overall score
+      </p>
+    </div>
+  );
 }
 
 interface AddItemFormProps {
@@ -440,26 +438,12 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
                     {calculateMindfulnessScore(answers)}/10
                   </span>
                 </div>
-                {(() => {
-                  // Build questionnaire array for explanation
-                  const tempQuestionnaire: QuestionAnswer[] = [
-                    {
-                      id: 'consumption',
-                      question: 'Rank your need for this item',
-                      answer: String(consumptionScore),
-                    },
-                    ...questions.map((q) => ({
-                      id: q.id,
-                      question: q.question,
-                      answer: String(answers[q.id] || 1),
-                    })),
-                  ];
-                  return (
-                    <p className="text-sm text-foreground/70 leading-relaxed pt-2 border-t border-border/30">
-                      {generateMindfulnessExplanation(tempQuestionnaire, calculateMindfulnessScore(answers))}
-                    </p>
-                  );
-                })()}
+                <ScoreBreakdown
+                  consumptionScore={consumptionScore}
+                  questions={questions}
+                  answers={answers}
+                  finalScore={calculateMindfulnessScore(answers)}
+                />
               </div>
               <p className="text-foreground/80">
                 Based on your mindfulness score, choose your preferred constraint approach:
@@ -503,6 +487,18 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
                     <p className="text-sm text-muted-foreground mt-1">
                       ({Math.ceil((new Date(waitUntilDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days from now)
                     </p>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        window.open(generateGoogleCalendarUrl(name, waitUntilDate), '_blank', 'noopener,noreferrer');
+                      }}
+                      className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-primary/30 text-primary rounded-xl hover:bg-primary/10 transition-colors text-sm font-medium"
+                    >
+                      <Calendar className="w-4 h-4" />
+                      Add to Google Calendar
+                    </button>
                   </div>
                 </div>
               </div>
