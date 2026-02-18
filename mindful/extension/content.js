@@ -19590,29 +19590,41 @@
     /^add\s+to\s+cart$/i,
     /\badd\s+cart\b/i,
     /\badd\s+bag\b/i,
-    /\bpurchase\b/i
+    /\bpurchase\b/i,
+    /^add\s+to\s+bag\s*$/i,
+    /^add\s+to\s+cart\s*$/i
   ];
   var ADD_TO_CART_SELECTORS = [
     '[id*="add-to-cart"]',
     '[id*="addToCart"]',
     '[id*="add-to-bag"]',
     '[id*="add_to_cart"]',
+    '[id*="add_to_bag"]',
     '[id="add-to-cart-button"]',
     '[id="addToCart"]',
     '[data-action*="add-to-cart"]',
+    '[data-action*="add-to-bag"]',
     '[data-testid*="add-to-cart"]',
     '[data-testid*="addToCart"]',
     '[data-name*="add-to-cart" i]',
+    "[data-add-to-cart]",
+    "[data-add-to-cart-trigger]",
     '[class*="add-to-cart"]',
     '[class*="add_to_cart"]',
     '[class*="addToCart"]',
     '[class*="add-to-bag"]',
+    '[class*="add_to_bag"]',
+    '[class*="product-form__submit"]',
+    '[class*="btn--add-to-cart"]',
+    '[name="add"]',
     '[name*="add-to-cart"]',
     '[name*="addToCart"]',
     '[value*="add to cart" i]',
     '[value*="add to bag" i]',
+    '[value*="add to basket" i]',
     '[aria-label*="add to cart" i]',
     '[aria-label*="add to bag" i]',
+    '[aria-label*="add to basket" i]',
     '[title*="add to cart" i]',
     '[title*="add to bag" i]'
   ];
@@ -19667,7 +19679,27 @@
     }
     return false;
   }
+  function isCartAddSubmitButton(element) {
+    const tag = (element.tagName || "").toLowerCase();
+    const type = (element.getAttribute("type") || element.type || "").toLowerCase();
+    if (tag === "button" && type === "submit") {
+      const form = element.form;
+      if (form && form.action) {
+        const action = form.action.toLowerCase();
+        if (action.includes("/cart/add") || action.includes("cart/add.js")) return true;
+      }
+    }
+    if (tag === "input" && type === "submit") {
+      const form = element.form;
+      if (form && form.action) {
+        const action = form.action.toLowerCase();
+        if (action.includes("/cart/add") || action.includes("cart/add.js")) return true;
+      }
+    }
+    return false;
+  }
   function matchesAddToCart(element) {
+    if (isCartAddSubmitButton(element)) return true;
     const text = (element.textContent || "").trim();
     const value = element.getAttribute("value") || element.value || "";
     const ariaLabel = element.getAttribute("aria-label") || "";
@@ -19727,6 +19759,37 @@
 
   // components/AddItemForm.tsx
   var import_react5 = __toESM(require_react());
+
+  // services/urlMetadata.ts
+  async function fetchUrlMetadata(url) {
+    try {
+      const apiUrl = `https://api.microlink.io?url=${encodeURIComponent(url)}`;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 1e4);
+      const response = await fetch(apiUrl, {
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch: ${response.status}`);
+      }
+      const data = await response.json();
+      if (data.status !== "success") {
+        throw new Error("API returned non-success status");
+      }
+      return {
+        title: data.data.title || null,
+        image: data.data.image?.url || null
+      };
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        console.error("Request timed out");
+      } else {
+        console.error("Error fetching URL metadata:", error);
+      }
+      return { title: null, image: null };
+    }
+  }
 
   // services/questionGenerator.ts
   var DEFAULT_QUESTIONS = [
@@ -19982,9 +20045,16 @@ Requirements:
     return Component;
   };
 
+  // node_modules/lucide-react/dist/esm/icons/link.js
+  var __iconNode = [
+    ["path", { d: "M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71", key: "1cjeqo" }],
+    ["path", { d: "M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71", key: "19qd67" }]
+  ];
+  var Link = createLucideIcon("link", __iconNode);
+
   // node_modules/lucide-react/dist/esm/icons/loader-circle.js
-  var __iconNode = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
-  var LoaderCircle = createLucideIcon("loader-circle", __iconNode);
+  var __iconNode2 = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
+  var LoaderCircle = createLucideIcon("loader-circle", __iconNode2);
 
   // components/ui/slider.tsx
   var React12 = __toESM(require_react());
@@ -24142,8 +24212,10 @@ Requirements:
   }
   function AddItemForm({ onSubmit, onCancel, initialUrl }) {
     const [step, setStep] = (0, import_react5.useState)(1);
+    const [productUrl, setProductUrl] = (0, import_react5.useState)(initialUrl ?? "");
     const [name, setName] = (0, import_react5.useState)("");
-    const [imageUrl, setImageUrl] = (0, import_react5.useState)(initialUrl ?? "");
+    const [imageUrl, setImageUrl] = (0, import_react5.useState)("");
+    const [hasProductUrlTouched, setHasProductUrlTouched] = (0, import_react5.useState)(false);
     const [hasUrlTouched, setHasUrlTouched] = (0, import_react5.useState)(false);
     const [constraintType, setConstraintType] = (0, import_react5.useState)("time");
     const [waitUntilDate, setWaitUntilDate] = (0, import_react5.useState)("");
@@ -24153,15 +24225,18 @@ Requirements:
     const [questions, setQuestions] = (0, import_react5.useState)([]);
     const [answers, setAnswers] = (0, import_react5.useState)({});
     const [isLoadingQuestions, setIsLoadingQuestions] = (0, import_react5.useState)(false);
+    const [isLoadingMetadata, setIsLoadingMetadata] = (0, import_react5.useState)(false);
     (0, import_react5.useEffect)(() => {
-      if (initialUrl && !hasUrlTouched) {
-        setImageUrl(initialUrl);
+      if (initialUrl && !hasProductUrlTouched) {
+        setProductUrl(initialUrl);
       }
-    }, [initialUrl, hasUrlTouched]);
+    }, [initialUrl, hasProductUrlTouched]);
     const resetForm = () => {
       setStep(1);
+      setProductUrl(initialUrl ?? "");
       setName("");
-      setImageUrl(initialUrl ?? "");
+      setImageUrl("");
+      setHasProductUrlTouched(false);
       setHasUrlTouched(false);
       setConstraintType("time");
       setWaitUntilDate("");
@@ -24170,6 +24245,23 @@ Requirements:
       setQuestions([]);
       setAnswers({});
       setGoalDescription("");
+    };
+    const handleFetchMetadata = async () => {
+      if (!productUrl) return;
+      setIsLoadingMetadata(true);
+      try {
+        const metadata = await fetchUrlMetadata(productUrl);
+        if (metadata.title) {
+          setName(metadata.title);
+        }
+        if (metadata.image) {
+          setImageUrl(metadata.image);
+        }
+      } catch (error) {
+        console.error("Error fetching metadata:", error);
+      } finally {
+        setIsLoadingMetadata(false);
+      }
     };
     const calculateMindfulnessScore = (questionAnswers) => {
       const mindfulnessValues = [];
@@ -24287,6 +24379,38 @@ Requirements:
       ] }),
       step === 1 && /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("form", { onSubmit: handleStep1Submit, className: "space-y-6", children: [
         /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { className: "block text-sm font-medium text-foreground/80 mb-2", children: "Product URL" }),
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "flex gap-2", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+              "input",
+              {
+                type: "url",
+                value: productUrl,
+                onChange: (e) => {
+                  setProductUrl(e.target.value);
+                  setHasProductUrlTouched(true);
+                },
+                placeholder: "https://amazon.com/product/...",
+                className: "flex-1 px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
+              }
+            ),
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)(
+              "button",
+              {
+                type: "button",
+                onClick: handleFetchMetadata,
+                disabled: !productUrl || isLoadingMetadata,
+                className: "px-4 py-3 bg-secondary text-secondary-foreground rounded-xl hover:bg-secondary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2",
+                children: [
+                  isLoadingMetadata ? /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(LoaderCircle, { className: "w-5 h-5 animate-spin" }) : /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(Link, { className: "w-5 h-5" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "hidden sm:inline", children: "Fetch" })
+                ]
+              }
+            )
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("p", { className: "text-xs text-muted-foreground mt-1", children: "Paste a product link to auto-fill name and image" })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { children: [
           /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { className: "block text-sm font-medium text-foreground/80 mb-2", children: "Item Name *" }),
           /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
             "input",
@@ -24301,7 +24425,7 @@ Requirements:
           )
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { className: "block text-sm font-medium text-foreground/80 mb-2", children: "URL" }),
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { className: "block text-sm font-medium text-foreground/80 mb-2", children: "Image URL" }),
           /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
             "input",
             {
@@ -24314,7 +24438,16 @@ Requirements:
               placeholder: "https://example.com/image.jpg",
               className: "w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
             }
-          )
+          ),
+          imageUrl && /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "mt-2", children: /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+            "img",
+            {
+              src: imageUrl,
+              alt: "Preview",
+              className: "w-20 h-20 object-cover rounded-lg border border-border",
+              onError: (e) => e.currentTarget.style.display = "none"
+            }
+          ) })
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "flex gap-3 pt-4", children: [
           /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
@@ -24767,6 +24900,7 @@ lucide-react/dist/esm/shared/src/utils.js:
 lucide-react/dist/esm/defaultAttributes.js:
 lucide-react/dist/esm/Icon.js:
 lucide-react/dist/esm/createLucideIcon.js:
+lucide-react/dist/esm/icons/link.js:
 lucide-react/dist/esm/icons/loader-circle.js:
 lucide-react/dist/esm/lucide-react.js:
   (**

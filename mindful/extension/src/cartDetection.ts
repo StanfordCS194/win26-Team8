@@ -14,6 +14,8 @@ export const ADD_TO_CART_PATTERNS = [
   /\badd\s+cart\b/i,
   /\badd\s+bag\b/i,
   /\bpurchase\b/i,
+  /^add\s+to\s+bag\s*$/i,
+  /^add\s+to\s+cart\s*$/i,
 ];
 
 export const ADD_TO_CART_SELECTORS = [
@@ -21,22 +23,32 @@ export const ADD_TO_CART_SELECTORS = [
   '[id*="addToCart"]',
   '[id*="add-to-bag"]',
   '[id*="add_to_cart"]',
+  '[id*="add_to_bag"]',
   '[id="add-to-cart-button"]',
   '[id="addToCart"]',
   '[data-action*="add-to-cart"]',
+  '[data-action*="add-to-bag"]',
   '[data-testid*="add-to-cart"]',
   '[data-testid*="addToCart"]',
   '[data-name*="add-to-cart" i]',
+  '[data-add-to-cart]',
+  '[data-add-to-cart-trigger]',
   '[class*="add-to-cart"]',
   '[class*="add_to_cart"]',
   '[class*="addToCart"]',
   '[class*="add-to-bag"]',
+  '[class*="add_to_bag"]',
+  '[class*="product-form__submit"]',
+  '[class*="btn--add-to-cart"]',
+  '[name="add"]',
   '[name*="add-to-cart"]',
   '[name*="addToCart"]',
   '[value*="add to cart" i]',
   '[value*="add to bag" i]',
+  '[value*="add to basket" i]',
   '[aria-label*="add to cart" i]',
   '[aria-label*="add to bag" i]',
+  '[aria-label*="add to basket" i]',
   '[title*="add to cart" i]',
   '[title*="add to bag" i]',
 ];
@@ -96,7 +108,30 @@ export function isRemoveOrDecreaseControl(element: Element): boolean {
   return false;
 }
 
+/** True if element is a submit button for a Shopify-style cart add form */
+function isCartAddSubmitButton(element: Element): boolean {
+  const tag = (element.tagName || '').toLowerCase();
+  const type = (element.getAttribute('type') || (element as HTMLInputElement).type || '').toLowerCase();
+  if (tag === 'button' && type === 'submit') {
+    const form = (element as HTMLButtonElement).form;
+    if (form && form.action) {
+      const action = form.action.toLowerCase();
+      if (action.includes('/cart/add') || action.includes('cart/add.js')) return true;
+    }
+  }
+  if (tag === 'input' && type === 'submit') {
+    const form = (element as HTMLInputElement).form;
+    if (form && form.action) {
+      const action = form.action.toLowerCase();
+      if (action.includes('/cart/add') || action.includes('cart/add.js')) return true;
+    }
+  }
+  return false;
+}
+
 export function matchesAddToCart(element: Element): boolean {
+  if (isCartAddSubmitButton(element)) return true;
+
   const text = (element.textContent || '').trim();
   const value = element.getAttribute('value') || (element as HTMLInputElement).value || '';
   const ariaLabel = element.getAttribute('aria-label') || '';

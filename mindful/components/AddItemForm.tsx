@@ -98,9 +98,10 @@ interface AddItemFormProps {
 
 export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps) {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
-  const [productUrl, setProductUrl] = useState('');
+  const [productUrl, setProductUrl] = useState(initialUrl ?? '');
   const [name, setName] = useState('');
-  const [imageUrl, setImageUrl] = useState(initialUrl ?? '');
+  const [imageUrl, setImageUrl] = useState('');
+  const [hasProductUrlTouched, setHasProductUrlTouched] = useState(false);
   const [hasUrlTouched, setHasUrlTouched] = useState(false);
   const [constraintType, setConstraintType] = useState<'time' | 'goals'>('time');
   const [waitUntilDate, setWaitUntilDate] = useState('');
@@ -116,16 +117,17 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
   // URL metadata fetching state
   const [isLoadingMetadata, setIsLoadingMetadata] = useState(false);
   useEffect(() => {
-    if (initialUrl && !hasUrlTouched) {
-      setImageUrl(initialUrl);
+    if (initialUrl && !hasProductUrlTouched) {
+      setProductUrl(initialUrl);
     }
-  }, [initialUrl, hasUrlTouched]);
+  }, [initialUrl, hasProductUrlTouched]);
 
   const resetForm = () => {
     setStep(1);
-    setProductUrl('');
+    setProductUrl(initialUrl ?? '');
     setName('');
-    setImageUrl(initialUrl ?? '');
+    setImageUrl('');
+    setHasProductUrlTouched(false);
     setHasUrlTouched(false);
     setConstraintType('time');
     setWaitUntilDate('');
@@ -305,7 +307,10 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
               <input
                 type="url"
                 value={productUrl}
-                onChange={(e) => setProductUrl(e.target.value)}
+                onChange={(e) => {
+                  setProductUrl(e.target.value);
+                  setHasProductUrlTouched(true);
+                }}
                 placeholder="https://amazon.com/product/..."
                 className="flex-1 px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
               />
