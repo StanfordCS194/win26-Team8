@@ -1,33 +1,37 @@
 import { supabase, DbItem, ItemReflection } from '../lib/supabase';
-import { Item } from '../App';
-
-// Reflection question IDs
-const REFLECTION_QUESTIONS = {
-  why: 'why',
-  alternatives: 'alternatives',
-  impact: 'impact',
-  urgency: 'urgency',
-} as const;
+import { Item, QuestionAnswer } from '../App';
 
 // Transform database item + reflections to app item format
 export function dbItemToItem(dbItem: DbItem, reflections: ItemReflection[]): Item {
-  // Extract reflection responses by question
-  const getReflectionResponse = (questionId: string): string => {
-    const reflection = reflections.find(r => r.question === questionId);
-    return reflection ? String(reflection.response) : '';
-  };
+  // Extract reflection responses and convert to QuestionAnswer array
+  const questionnaire: QuestionAnswer[] = reflections.map(r => ({
+    id: r.question,
+    question: r.question,
+    answer: String(r.response),
+  }));
+
+  // If no reflections, provide empty array
+  if (questionnaire.length === 0) {
+    // Create default empty questions for backwards compatibility
+    questionnaire.push(
+      { id: 'why', question: 'Why do you want this item?', answer: '' },
+      { id: 'alternatives', question: 'What alternatives have you considered?', answer: '' },
+      { id: 'impact', question: 'What impact will this have?', answer: '' },
+      { id: 'urgency', question: 'How urgent is this purchase?', answer: '' }
+    );
+  }
 
   // Determine constraint type and related fields from cost
   // If cost is 0 or null, use time-based, otherwise goals-based
   const constraintType: 'time' | 'goals' = (dbItem.cost && dbItem.cost > 0) ? 'goals' : 'time';
-  
+
   // Calculate consumption score from cost (1-10 scale)
   const consumptionScore = dbItem.cost ? Math.min(Math.max(Math.ceil(dbItem.cost / 10), 1), 10) : 5;
-  
+
   // For time-based: calculate wait date based on score
   let waitUntilDate: string | undefined;
   let difficulty: 'easy' | 'medium' | 'hard' | undefined;
-  
+
   if (constraintType === 'time') {
     const days = consumptionScore * 7;
     const date = new Date(dbItem.created_at);
@@ -47,12 +51,7 @@ export function dbItemToItem(dbItem: DbItem, reflections: ItemReflection[]): Ite
     addedDate: dbItem.created_at,
     waitUntilDate,
     difficulty,
-    questionnaire: {
-      why: getReflectionResponse(REFLECTION_QUESTIONS.why),
-      alternatives: getReflectionResponse(REFLECTION_QUESTIONS.alternatives),
-      impact: getReflectionResponse(REFLECTION_QUESTIONS.impact),
-      urgency: getReflectionResponse(REFLECTION_QUESTIONS.urgency),
-    },
+    questionnaire,
   };
 }
 
@@ -67,14 +66,14 @@ export function itemToDbItem(item: Omit<Item, 'id' | 'addedDate'>, userId: strin
   };
 }
 
-// Create reflection entries with 1-5 ratings
-export function createReflectionEntries(itemId: string, questionnaire: Item['questionnaire']) {
-  return [
-    { item_id: itemId, question: REFLECTION_QUESTIONS.why, response: parseInt(questionnaire.why) || 3 },
-    { item_id: itemId, question: REFLECTION_QUESTIONS.alternatives, response: parseInt(questionnaire.alternatives) || 3 },
-    { item_id: itemId, question: REFLECTION_QUESTIONS.impact, response: parseInt(questionnaire.impact) || 3 },
-    { item_id: itemId, question: REFLECTION_QUESTIONS.urgency, response: parseInt(questionnaire.urgency) || 3 },
-  ];
+// Create reflection entries from dynamic questionnaire
+export function createReflectionEntries(itemId: string, questionnaire: QuestionAnswer[]) {
+  return questionnaire.map(qa => ({
+    item_id: itemId,
+    question: qa.id,
+    // Try to parse as number for rating, default to 3
+    response: parseInt(qa.answer) || 3,
+  }));
 }
 
 // Fetch all items for the current user with their reflections

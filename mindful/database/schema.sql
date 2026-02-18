@@ -1,7 +1,6 @@
 -- Second Thought Database Schema
 -- Run this in your Supabase SQL Editor: https://mohgivduzthccoybnbnr.supabase.co/project/_/sql/new
 
-<<<<<<< Updated upstream
 -- Create profiles table
 CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -11,23 +10,17 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create items table
-=======
 -- Drop existing items table if you want to recreate it
 -- DROP TABLE IF EXISTS public.items CASCADE;
 
 -- Create items table with all required fields for Second Thought app
->>>>>>> Stashed changes
 CREATE TABLE IF NOT EXISTS public.items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   image_url TEXT,
-<<<<<<< Updated upstream
-=======
   url TEXT,
   cost NUMERIC(10, 2),
->>>>>>> Stashed changes
   constraint_type TEXT NOT NULL CHECK (constraint_type IN ('time', 'goals')),
   consumption_score INTEGER NOT NULL CHECK (consumption_score >= 1 AND consumption_score <= 10),
   added_date TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -44,15 +37,6 @@ CREATE TABLE IF NOT EXISTS public.items (
 <<<<<<< Updated upstream
 =======
 -- Create profiles table
-CREATE TABLE IF NOT EXISTS public.profiles (
-  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  first_name TEXT NOT NULL,
-  last_name TEXT NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
->>>>>>> Stashed changes
 -- Create item_reflections table (for future use)
 CREATE TABLE IF NOT EXISTS public.item_reflections (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -88,17 +72,12 @@ CREATE TRIGGER update_items_updated_at
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-<<<<<<< Updated upstream
-  INSERT INTO public.profiles (id)
-  VALUES (NEW.id)
-=======
   INSERT INTO public.profiles (id, first_name, last_name)
   VALUES (
     NEW.id,
     COALESCE(NEW.raw_user_meta_data->>'first_name', 'User'),
     COALESCE(NEW.raw_user_meta_data->>'last_name', 'User')
   )
->>>>>>> Stashed changes
   ON CONFLICT (id) DO NOTHING;
   RETURN NEW;
 END;
