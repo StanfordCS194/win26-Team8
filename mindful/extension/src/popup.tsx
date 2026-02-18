@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { AddItemForm } from '../../components/AddItemForm';
+import { Auth } from '../../components/Auth';
 import { supabase } from './supabaseClient';
 import type { Item, QuestionAnswer } from '../../types/item';
 import type { Session } from '@supabase/supabase-js';
@@ -29,86 +30,6 @@ function createReflectionEntries(itemId: string, questionnaire: QuestionAnswer[]
     question: qa.id,
     response: parseInt(qa.answer) || 3,
   }));
-}
-
-// --- Login form ---
-
-function LoginForm({ onSignedIn }: { onSignedIn: () => void }) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        setError(error.message);
-      } else {
-        onSignedIn();
-      }
-    } catch (err: any) {
-      setError(err.message || 'An error occurred');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div>
-      <div className="text-center mb-6">
-        <h1 className="text-2xl font-bold text-foreground mb-1">Second Thought</h1>
-        <p className="text-sm text-muted-foreground">Sign in to save items</p>
-      </div>
-
-      <div className="bg-card rounded-2xl shadow-sm border border-border/50 p-6">
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-foreground/80 mb-1">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              placeholder="your@email.com"
-              className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-foreground/80 mb-1">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              placeholder="••••••••"
-              minLength={6}
-              className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
-            />
-          </div>
-
-          {error && (
-            <div className="bg-destructive/10 border border-destructive/20 text-destructive rounded-xl p-3 text-sm">
-              {error}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-primary text-primary-foreground px-6 py-3 rounded-full hover:bg-primary/90 transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
-          >
-            {loading ? 'Signing in...' : 'Sign In'}
-          </button>
-        </form>
-      </div>
-    </div>
-  );
 }
 
 // --- Main app ---
@@ -202,7 +123,11 @@ const App = () => {
   }
 
   if (!session) {
-    return <LoginForm onSignedIn={() => {}} />;
+    const handleSignIn = async (email: string, password: string) => {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      return { error };
+    };
+    return <Auth onSignIn={handleSignIn} compact />;
   }
 
   return (

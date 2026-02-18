@@ -17,7 +17,7 @@ import type { Item } from './types/item';
 type View = 'home' | 'item' | 'add' | 'time' | 'goals' | 'mission' | 'profile';
 
 function AppContent() {
-  const { user, loading } = useAuth();
+  const { user, loading, signIn, signUp } = useAuth();
   const [items, setItems] = useState<Item[]>([]);
   const [currentView, setCurrentView] = useState<View>('mission');
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
@@ -171,7 +171,7 @@ function AppContent() {
 
   // Show auth screen if not logged in
   if (!user) {
-    return <Auth />;
+    return <Auth onSignIn={signIn} onSignUp={signUp} />;
   }
 
   return (
