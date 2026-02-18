@@ -29,6 +29,7 @@ function AppContent() {
       loadItems();
     } else if (!loading) {
       setItems([]);
+      setCurrentView('mission');
     }
   }, [user, loading]);
 
@@ -179,10 +180,26 @@ function AppContent() {
     );
   }
 
-  // Show auth screen if not logged in
-  if (!user) {
-    return <Auth />;
-  }
+  // Sign In Required Message Component
+  const SignInRequired = () => (
+    <div className="flex flex-col items-center justify-center py-16 px-4">
+      <div className="max-w-md text-center space-y-4">
+        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+          <User className="w-8 h-8 text-primary" />
+        </div>
+        <h2 className="text-2xl font-bold text-foreground">Sign In Required</h2>
+        <p className="text-muted-foreground">
+          You need to be logged in to access this feature. Please sign in or create an account to continue.
+        </p>
+        <button
+          onClick={() => setCurrentView('mission')}
+          className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-full hover:bg-primary/90 transition-all shadow-md mt-4"
+        >
+          Go to Sign In
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <div className="w-full min-h-screen bg-background overflow-y-auto">
@@ -242,18 +259,28 @@ function AppContent() {
               </nav>
 
               {/* Profile Button */}
-              <button
-                onClick={() => setCurrentView('profile')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all shadow-sm hover:shadow-md ${
-                  currentView === 'profile'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-primary text-primary-foreground hover:bg-primary/90'
-                }`}
-                title="View Profile"
-              >
-                <User className="w-5 h-5" />
-                <span className="hidden sm:inline">Profile</span>
-              </button>
+              {user ? (
+                <button
+                  onClick={() => setCurrentView('profile')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all shadow-sm hover:shadow-md ${
+                    currentView === 'profile'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                  }`}
+                  title="View Profile"
+                >
+                  <User className="w-5 h-5" />
+                  <span className="hidden sm:inline">Profile</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => setCurrentView('mission')}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-sm hover:shadow-md"
+                >
+                  <User className="w-5 h-5" />
+                  <span className="hidden sm:inline">Sign In</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -261,45 +288,69 @@ function AppContent() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-16">
-        {currentView === 'home' && (
-          <Home 
-            items={items} 
-            onItemClick={handleItemClick}
-            onAddItem={() => setCurrentView('add')}
-          />
+        {currentView === 'mission' && (
+          <OurMission onGetStarted={() => setCurrentView('home')} userEmail={user?.email} />
         )}
-        {currentView === 'item' && selectedItem && (
-          <ItemDetail 
-            item={selectedItem} 
-            onBack={() => setCurrentView('home')}
-            onDelete={handleDeleteItem}
-          />
+        {currentView === 'home' && (
+          user ? (
+            <Home 
+              items={items} 
+              onItemClick={handleItemClick}
+              onAddItem={() => setCurrentView('add')}
+            />
+          ) : (
+            <SignInRequired />
+          )
+        )}
+        {currentView === 'item' && (
+          user && selectedItem ? (
+            <ItemDetail 
+              item={selectedItem} 
+              onBack={() => setCurrentView('home')}
+              onDelete={handleDeleteItem}
+            />
+          ) : (
+            <SignInRequired />
+          )
         )}
         {currentView === 'add' && (
-          <AddItemForm 
-            onSubmit={handleAddItem}
-            onCancel={() => setCurrentView('home')}
-          />
+          user ? (
+            <AddItemForm 
+              onSubmit={handleAddItem}
+              onCancel={() => setCurrentView('home')}
+            />
+          ) : (
+            <SignInRequired />
+          )
         )}
         {currentView === 'time' && (
-          <TimeBasedView 
-            items={items} 
-            onItemClick={handleItemClick}
-            onAddItem={() => setCurrentView('add')}
-          />
+          user ? (
+            <TimeBasedView 
+              items={items} 
+              onItemClick={handleItemClick}
+              onAddItem={() => setCurrentView('add')}
+            />
+          ) : (
+            <SignInRequired />
+          )
         )}
         {currentView === 'goals' && (
-          <GoalsBasedView 
-            items={items} 
-            onItemClick={handleItemClick}
-            onAddItem={() => setCurrentView('add')}
-          />
-        )}
-        {currentView === 'mission' && (
-          <OurMission onGetStarted={() => setCurrentView('home')} />
+          user ? (
+            <GoalsBasedView 
+              items={items} 
+              onItemClick={handleItemClick}
+              onAddItem={() => setCurrentView('add')}
+            />
+          ) : (
+            <SignInRequired />
+          )
         )}
         {currentView === 'profile' && (
-          <Profile items={items} />
+          user ? (
+            <Profile items={items} />
+          ) : (
+            <SignInRequired />
+          )
         )}
       </main>
     </div>
