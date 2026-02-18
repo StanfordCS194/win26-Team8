@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
-import { Item, QuestionAnswer } from '../App';
-import { ImageWithFallback } from './figma/ImageWithFallback';
-import { fetchUrlMetadata } from '../services/urlMetadata';
+import { useEffect, useState, useRef } from 'react';
+import type { Item, ItemCategory, QuestionAnswer } from '../types/item';
+
+const ITEM_CATEGORIES: ItemCategory[] = ['Beauty', 'Clothes', 'Accessories', 'Sports', 'Electronics', 'Home', 'Other'];
 import { generateQuestions, GeneratedQuestion } from '../services/questionGenerator';
-import { Loader2, Link } from 'lucide-react';
+import { detectCategory } from '../services/categoryDetector';
+import { Loader2 } from 'lucide-react';
 import { Slider } from './ui/slider';
 
 // Generate intuitive explanation of how mindfulness score reflects the user's responses
@@ -101,6 +102,7 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
   const [productUrl, setProductUrl] = useState('');
   const [name, setName] = useState('');
   const [imageUrl, setImageUrl] = useState(initialUrl ?? '');
+  const [category, setCategory] = useState<ItemCategory>('Other');
   const [hasUrlTouched, setHasUrlTouched] = useState(false);
   const [constraintType, setConstraintType] = useState<'time' | 'goals'>('time');
   const [waitUntilDate, setWaitUntilDate] = useState('');
@@ -121,11 +123,51 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
     }
   }, [initialUrl, hasUrlTouched]);
 
+  // Auto-detect category when item name changes (with debouncing for AI calls)
+  const categoryDetectionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [isDetectingCategory, setIsDetectingCategory] = useState(false);
+
+  useEffect(() => {
+    // Clear any pending detection
+    if (categoryDetectionTimeoutRef.current) {
+      clearTimeout(categoryDetectionTimeoutRef.current);
+    }
+
+    if (name.trim().length === 0) {
+      setCategory('Other');
+      setIsDetectingCategory(false);
+      return;
+    }
+
+    // Debounce AI calls - wait 500ms after user stops typing
+    setIsDetectingCategory(true);
+    categoryDetectionTimeoutRef.current = setTimeout(async () => {
+      try {
+        const detectedCategory = await detectCategory(name);
+        setCategory(detectedCategory);
+      } catch (error) {
+        console.error('Error detecting category:', error);
+        // Fallback to 'Other' on error
+        setCategory('Other');
+      } finally {
+        setIsDetectingCategory(false);
+      }
+    }, 500);
+
+    // Cleanup on unmount or when name changes
+    return () => {
+      if (categoryDetectionTimeoutRef.current) {
+        clearTimeout(categoryDetectionTimeoutRef.current);
+      }
+    };
+  }, [name]);
+
   const resetForm = () => {
     setStep(1);
     setProductUrl('');
     setName('');
     setImageUrl(initialUrl ?? '');
+    setCategory('Other');
     setHasUrlTouched(false);
     setConstraintType('time');
     setWaitUntilDate('');
@@ -262,6 +304,7 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
     onSubmit({
       name,
       imageUrl: imageUrl || '',
+      category,
       constraintType,
       consumptionScore: calculatedMindfulnessScore,
       ...(constraintType === 'time' ? { waitUntilDate } : { difficulty }),
@@ -360,6 +403,35 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
                 />
               </div>
             )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-foreground/80 mb-2 flex items-center gap-2">
+              Category 
+              {isDetectingCategory && (
+                <Loader2 className="w-3 h-3 animate-spin text-primary" />
+              )}
+              {name.trim().length > 0 && !isDetectingCategory && (
+                <span className="text-xs font-normal text-primary">(AI-detected)</span>
+              )}
+            </label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value as ItemCategory)}
+              disabled={isDetectingCategory}
+              className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {ITEM_CATEGORIES.map((cat) => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+            <p className="text-xs text-muted-foreground mt-1">
+              {isDetectingCategory 
+                ? 'Detecting category...'
+                : name.trim().length > 0 
+                  ? 'Category detected using AI. You can change it if needed.'
+                  : 'Organize your items for easier browsing on the All Items page'}
+            </p>
           </div>
 
           {/* Actions */}

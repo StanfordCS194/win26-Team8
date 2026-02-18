@@ -1,11 +1,12 @@
 import { supabase } from '../env';
-import type { Item, QuestionAnswer } from '../types/item';
+import type { Item, ItemCategory, QuestionAnswer } from '../types/item';
 
 export interface DbItem {
   id: string;
   user_id: string;
   name: string;
   image_url: string;
+  category?: string;
   url?: string;
   cost?: number;
   constraint_type: 'time' | 'goals';
@@ -31,6 +32,7 @@ function itemToDb(item: Item, userId: string): Omit<DbItem, 'created_at' | 'upda
     user_id: userId,
     name: item.name,
     image_url: item.imageUrl,
+    category: item.category,
     url: undefined,
     cost: undefined,
     constraint_type: item.constraintType,
@@ -74,10 +76,12 @@ function dbToItem(dbItem: DbItem): Item {
     ];
   }
 
+  const category = dbItem.category as ItemCategory | undefined;
   return {
     id: dbItem.id,
     name: dbItem.name,
     imageUrl: dbItem.image_url,
+    category: category && ['Beauty', 'Clothes', 'Accessories', 'Sports', 'Electronics', 'Home', 'Other'].includes(category) ? category : undefined,
     constraintType: dbItem.constraint_type,
     consumptionScore: dbItem.consumption_score,
     addedDate: dbItem.added_date,
