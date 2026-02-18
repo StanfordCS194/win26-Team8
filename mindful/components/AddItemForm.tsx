@@ -1,11 +1,14 @@
 import { useEffect, useState, useRef } from 'react';
 import type { Item, ItemCategory, QuestionAnswer } from '../types/item';
-
-const ITEM_CATEGORIES: ItemCategory[] = ['Beauty', 'Clothes', 'Accessories', 'Sports', 'Electronics', 'Home', 'Other'];
 import { generateQuestions, GeneratedQuestion } from '../services/questionGenerator';
 import { detectCategory } from '../services/categoryDetector';
-import { Loader2 } from 'lucide-react';
+import { fetchUrlMetadata } from '../services/urlMetadata';
+import { Loader2, Link } from 'lucide-react';
 import { Slider } from './ui/slider';
+
+const ITEM_CATEGORIES: ItemCategory[] = ['Beauty', 'Clothes', 'Accessories', 'Sports', 'Electronics', 'Home', 'Other'];
+
+
 
 // Generate intuitive explanation of how mindfulness score reflects the user's responses
 function generateMindfulnessExplanation(questionnaire: QuestionAnswer[], finalScore: number): string {
