@@ -22,7 +22,7 @@ export interface DbItem {
   updated_at?: string;
 }
 
-function itemToDb(item: Item, userId: string): Omit<DbItem, 'created_at' | 'updated_at'> {
+export function itemToDb(item: Item, userId: string): Omit<DbItem, 'created_at' | 'updated_at'> {
   // Serialize the dynamic questionnaire array as JSON
   const questionnaireJson = JSON.stringify(item.questionnaire);
 
@@ -46,7 +46,7 @@ function itemToDb(item: Item, userId: string): Omit<DbItem, 'created_at' | 'upda
   };
 }
 
-function dbToItem(dbItem: DbItem): Item {
+export function dbToItem(dbItem: DbItem): Item {
   // Try to parse questionnaire_why as JSON array (new format)
   // Fall back to old fixed format if parsing fails
   let questionnaire: QuestionAnswer[];
