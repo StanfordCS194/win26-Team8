@@ -9,6 +9,7 @@ import { Auth } from './components/Auth';
 import { Profile } from './components/Profile';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { fetchItems, saveItem, deleteItem as deleteItemDb } from './lib/database';
+import { saveItemDirect } from './lib/database-alt';
 import { Plus, User } from 'lucide-react';
 import './styles/globals.css';
 import logoImage from './assets/logo.png';
@@ -64,10 +65,17 @@ function AppContent() {
   };
 
   const handleAddItem = async (item: Omit<Item, 'id' | 'addedDate'>) => {
-    if (!user) return;
+    if (!user) {
+      alert('You must be logged in to add items');
+      return;
+    }
     
     console.log('➕ Adding item:', item.name);
-    setCurrentView('home');
+    console.log('📋 Constraint type:', item.constraintType);
+    console.log('📋 Image URL:', item.imageUrl);
+    console.log('📋 Image URL length:', item.imageUrl?.length || 0);
+    console.log('📋 Questions:', item.questionnaire.length);
+    console.log('📋 Full item from form:', JSON.stringify(item, null, 2));
     
     // Generate UUID
     const generateId = () => {
@@ -81,39 +89,42 @@ function AppContent() {
       });
     };
     
+    // Create complete item
     const newItem: Item = {
       ...item,
       id: generateId(),
       addedDate: new Date().toISOString(),
     };
     
+    console.log('🆕 Created item (full):', JSON.stringify(newItem, null, 2));
+    
     // Optimistic UI update
     const updatedItems = [...items, newItem];
     setItems(updatedItems);
+    setCurrentView('home');
     
-    // Save to Supabase and wait for it
-    console.log('💾 Saving to Supabase (please wait)...');
-    const { success, error } = await saveItem(newItem, user.id);
+    // Save to Supabase - Using direct REST API (bypasses hanging client issue)
+    console.log('💾 Saving to Supabase using direct REST API...');
+    const { success, error } = await saveItemDirect(newItem, user.id);
     
     if (success) {
       console.log('✅ Item saved to Supabase');
       
-      // Also save to localStorage as backup
-      localStorage.setItem('secondThought_items', JSON.stringify(updatedItems));
-      localStorage.setItem(`secondThought_user_${user.id}_items`, JSON.stringify(updatedItems));
-      console.log('✅ Also saved to localStorage');
+      // Update localStorage
+      const localKey = `secondThought_user_${user.id}_items`;
+      localStorage.setItem(localKey, JSON.stringify(updatedItems));
+      console.log('✅ Saved to localStorage');
+      
+      alert(`✅ ${item.name} added successfully!`);
     } else {
-      console.error('❌ Failed to save to Supabase:', error);
+      console.error('❌ Failed to save:', error);
+      
       // Rollback UI
       setItems(items);
-      const errorMsg = error?.message || 'Unknown error';
       
-      // Show detailed error
-      if (errorMsg.includes('timeout')) {
-        alert(`Supabase connection timeout.\n\nThis is a browser/network issue blocking API calls.\n\nTry:\n1. Different browser\n2. Disable VPN/extensions\n3. Different network\n\nYour items are saved in localStorage for now.`);
-      } else {
-        alert(`Failed to save item: ${errorMsg}\n\nCheck the console (F12) for details.`);
-      }
+      // Show error details
+      const errorMsg = error?.message || error?.toString() || 'Unknown error';
+      alert(`Failed to save item\n\nError: ${errorMsg}\n\nCheck console (F12) for details.`);
     }
   };
 
@@ -125,33 +136,32 @@ function AppContent() {
   const handleDeleteItem = async (itemId: string) => {
     if (!user) return;
     
-    console.log('🗑️ Deleting item from Supabase...');
+    if (!confirm('Are you sure you want to delete this item?')) {
+      return;
+    }
     
-    // Delete from Supabase first (with longer timeout)
+    console.log('🗑️ Deleting item:', itemId);
+    
+    // Delete from Supabase
     const { success, error } = await deleteItemDb(itemId, user.id);
     
     if (success) {
       console.log('✅ Item deleted from Supabase');
       
-      // Update UI after successful delete
+      // Update UI
       const updatedItems = items.filter(item => item.id !== itemId);
       setItems(updatedItems);
       
       // Update localStorage
-      const localStorageKey = `secondThought_user_${user.id}_items`;
-      localStorage.setItem(localStorageKey, JSON.stringify(updatedItems));
-      console.log('✅ Item deleted from localStorage');
+      const localKey = `secondThought_user_${user.id}_items`;
+      localStorage.setItem(localKey, JSON.stringify(updatedItems));
       
       setCurrentView('home');
+      alert('✅ Item deleted successfully!');
     } else {
-      console.error('❌ Failed to delete from Supabase:', error);
-      const errorMsg = error?.message || 'Unknown error';
-      
-      if (errorMsg.includes('timeout')) {
-        alert(`Supabase connection timeout.\n\nThis is a browser/network issue.\n\nThe item is still in localStorage.\n\nTry a different browser or network.`);
-      } else {
-        alert(`Failed to delete item: ${errorMsg}`);
-      }
+      console.error('❌ Delete failed:', error);
+      const errorMsg = error?.message || error?.toString() || 'Unknown error';
+      alert(`Failed to delete item\n\nError: ${errorMsg}`);
     }
   };
 

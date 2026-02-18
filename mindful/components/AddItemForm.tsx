@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { Item, QuestionAnswer } from '../types/item';
 import { generateQuestions, GeneratedQuestion } from '../services/questionGenerator';
 import { Loader2 } from 'lucide-react';
@@ -92,14 +92,11 @@ function generateMindfulnessExplanation(questionnaire: QuestionAnswer[], finalSc
 interface AddItemFormProps {
   onSubmit: (item: Omit<Item, 'id' | 'addedDate'>) => void;
   onCancel: () => void;
-  initialUrl?: string;
 }
 
-export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps) {
+export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [name, setName] = useState('');
-  const [imageUrl, setImageUrl] = useState(initialUrl ?? '');
-  const [hasUrlTouched, setHasUrlTouched] = useState(false);
   const [constraintType, setConstraintType] = useState<'time' | 'goals'>('time');
   const [waitUntilDate, setWaitUntilDate] = useState('');
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
@@ -111,17 +108,9 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
 
-  useEffect(() => {
-    if (initialUrl && !hasUrlTouched) {
-      setImageUrl(initialUrl);
-    }
-  }, [initialUrl, hasUrlTouched]);
-
   const resetForm = () => {
     setStep(1);
     setName('');
-    setImageUrl(initialUrl ?? '');
-    setHasUrlTouched(false);
     setConstraintType('time');
     setWaitUntilDate('');
     setDifficulty('medium');
@@ -268,7 +257,7 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
 
     onSubmit({
       name,
-      imageUrl: imageUrl || '',
+      imageUrl: '', // No image URL support
       constraintType,
       consumptionScore: calculatedMindfulnessScore,
       ...(constraintType === 'time' ? { waitUntilDate } : { difficulty }),
@@ -307,22 +296,6 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
               onChange={(e) => setName(e.target.value)}
               required
               placeholder="e.g., Wireless Headphones"
-              className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-foreground/80 mb-2">
-               URL
-            </label>
-            <input
-              type="url"
-              value={imageUrl}
-              onChange={(e) => {
-                setImageUrl(e.target.value);
-                setHasUrlTouched(true);
-              }}
-              placeholder="https://example.com/image.jpg"
               className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
             />
           </div>
