@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { 
   Sparkles, 
   TrendingDown, 
@@ -8,7 +7,6 @@ import {
   MessageSquare,
   Download,
   ChevronRight,
-  ChevronLeft,
   Check
 } from 'lucide-react';
 import { Auth } from './Auth';
@@ -19,8 +17,6 @@ interface OurMissionProps {
 }
 
 export function OurMission({ onGetStarted, userEmail }: OurMissionProps) {
-  const [currentStep, setCurrentStep] = useState(0);
-
   const scrollToOnboarding = () => {
     const onboardingSection = document.getElementById('onboarding-section');
     if (onboardingSection) {
@@ -28,8 +24,11 @@ export function OurMission({ onGetStarted, userEmail }: OurMissionProps) {
     }
   };
 
-  const onComplete = () => {
-    onGetStarted();
+  const scrollToWhyWeCare = () => {
+    const whyWeCareSection = document.getElementById('why-we-care-section');
+    if (whyWeCareSection) {
+      whyWeCareSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   };
 
   const walkthroughSteps = [
@@ -41,9 +40,7 @@ export function OurMission({ onGetStarted, userEmail }: OurMissionProps) {
       icon: Sparkles,
       content: userEmail ? (
         <div className="text-center space-y-4">
-          <p className="text-lg text-foreground/80">
-            Second Thought helps you make intentional purchasing decisions by:
-          </p>
+         
           <div className="space-y-3 max-w-xl mx-auto text-left">
             <div className="flex items-start gap-3 p-3 bg-primary/5 rounded-xl">
               <MessageSquare className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
@@ -81,77 +78,17 @@ export function OurMission({ onGetStarted, userEmail }: OurMissionProps) {
       ),
     },
     {
-      title: 'How to Add an Item',
-      description: 'Add items you\'re considering purchasing',
-      icon: Sparkles,
-      content: (
-        <div className="space-y-3">
-          <div className="space-y-3">
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold flex-shrink-0">
-                1
-              </div>
-              <div>
-                <h4 className="font-semibold text-foreground mb-1 text-base">Enter Product Name</h4>
-                <p className="text-base text-foreground/70">
-                  Tell us what you're thinking about buying
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold flex-shrink-0">
-                2
-              </div>
-              <div>
-                <h4 className="font-semibold text-foreground mb-1 text-base">Answer Reflection Questions</h4>
-                <p className="text-base text-foreground/70">
-                  We'll generate personalized questions to help you reflect on your decision
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold flex-shrink-0">
-                3
-              </div>
-              <div>
-                <h4 className="font-semibold text-foreground mb-1 text-base">Choose Your Constraint</h4>
-                <p className="text-base text-foreground/70">
-                  Select time-based (wait X days) or goals-based (complete a challenge first)
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold flex-shrink-0">
-                4
-              </div>
-              <div>
-                <h4 className="font-semibold text-foreground mb-1 text-base">Track Your Progress</h4>
-                <p className="text-base text-foreground/70">
-                  View your items in Timeline or Goals view and watch your mindfulness grow
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      ),
-    },
-    {
       title: 'Get the Browser Extension',
-      description: 'Add items directly while shopping online',
+      description: 'Install our browser extension to add items with one click while shopping online!',
       icon: Download,
       content: (
         <div className="text-center space-y-4">
           <div className="space-y-3 max-w-2xl mx-auto">
-            <p className="text-lg text-foreground/80">
-              Install our browser extension to add items with one click while shopping online!
-            </p>
             
-            <div className="bg-muted/30 rounded-xl p-4 space-y-2">
-              <h4 className="font-semibold text-foreground text-base">Extension Features:</h4>
-              <ul className="text-base text-foreground/70 space-y-1.5 text-left">
+            
+            <div className="bg-muted/30 rounded-xl p-4 space-y-3">
+              <h4 className="font-semibold text-foreground text-lg text-left">Extension Features:</h4>
+              <ul className="text-base text-foreground/70 space-y-3 text-left">
                 <li className="flex items-start gap-2">
                   <Check className="w-5 h-5 text-primary flex-shrink-0" />
                   <span>Add items directly from product pages</span>
@@ -162,7 +99,7 @@ export function OurMission({ onGetStarted, userEmail }: OurMissionProps) {
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="w-5 h-5 text-primary flex-shrink-0" />
-                  <span>Quick access to your reflection list</span>
+                  <span>Reflect on your decision right away</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="w-5 h-5 text-primary flex-shrink-0" />
@@ -195,34 +132,141 @@ export function OurMission({ onGetStarted, userEmail }: OurMissionProps) {
         </div>
       ),
     },
-  ];
+    {
+      title: 'How to Add an Item',
+      description: 'Add items you\'re considering purchasing',
+      icon: Sparkles,
+      content: (
+        <div className="space-y-5">
+          <div className="space-y-5">
+            <div className="flex items-start gap-3">
+              <div className="w-7 h-7 rounded-lg border-2 border-primary text-primary flex items-center justify-center font-semibold flex-shrink-0 text-sm">
+                1
+              </div>
+              <div>
+                <h4 className="font-semibold text-foreground mb-1 text-base">Enter Product Link or Use the Browser Extension</h4>
+                <p className="text-base text-foreground/70">
+                  Tell us what you're thinking about buying
+                </p>
+              </div>
+            </div>
 
-  const currentStepData = walkthroughSteps[currentStep];
-  const isLastStep = currentStep === walkthroughSteps.length - 1;
+            <div className="flex items-start gap-3">
+              <div className="w-7 h-7 rounded-lg border-2 border-primary text-primary flex items-center justify-center font-semibold flex-shrink-0 text-sm">
+                2
+              </div>
+              <div>
+                <h4 className="font-semibold text-foreground mb-1 text-base">Answer Reflection Questions</h4>
+                <p className="text-base text-foreground/70">
+                  Respond to 5 personalized questions to help you reflect on your decision with a mindfulness score
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <div className="w-7 h-7 rounded-lg border-2 border-primary text-primary flex items-center justify-center font-semibold flex-shrink-0 text-sm">
+                3
+              </div>
+              <div>
+                <h4 className="font-semibold text-foreground mb-1 text-base">Choose Your Constraint</h4>
+                <p className="text-base text-foreground/70">
+                  Select time-based (wait X days) or goals-based (complete a challenge first) constraint
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <div className="w-7 h-7 rounded-lg border-2 border-primary text-primary flex items-center justify-center font-semibold flex-shrink-0 text-sm">
+                4
+              </div>
+              <div>
+                <h4 className="font-semibold text-foreground mb-1 text-base">Track Your Progress</h4>
+                <p className="text-base text-foreground/70">
+                  View your items in Timeline or Goals view and watch your mindfulness grow
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          {/* Add Item Button */}
+          {userEmail && (
+            <div className="text-center pt-4">
+              <button
+                onClick={onGetStarted}
+                className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-8 py-4 rounded-full hover:bg-primary/90 transition-all shadow-lg hover:shadow-xl font-semibold text-lg"
+              >
+                Add Your First Item
+                <ChevronRight className="w-6 h-6" />
+              </button>
+            </div>
+          )}
+        </div>
+      ),
+    },
+  ];
 
   return (
     <div className="space-y-16">
       {/* Hero Section */}
       <div className="text-center py-16 px-4">
         <h1 className="text-5xl md:text-6xl font-bold text-[#06402B] mb-6 font-serif">
-          Our Mission
+          Second Thought
         </h1>
         
         <p className="text-xl md:text-2xl text-[#255736] leading-relaxed max-w-4xl mx-auto mb-12 font-serif">
-          Long gone are the days of clicking ads, immediately purchasing the product, and forgetting about its existence within days. With personalized guidance and restraints on impulsive spending, our mission is to help users practice intentional, mindful consumption to both instill financial responsibility and also minimize fashion's significant contributions to carbon emissions.
+          Long gone are the days of clicking ads, immediately purchasing the product, and forgetting about its existence within days. With personalized guidance and restraints on impulsive spending, our mission is to help users practice{' '}
+          <span className="relative inline-block">
+            <span className="relative z-10">intentional, mindful consumption</span>
+            <span className="absolute bottom-0 left-0 w-full h-[2px] bg-primary/30 origin-left animate-[subtleSlide_1.5s_ease-in-out_1s_forwards] scale-x-0"></span>
+          </span>
+          {' '}to both instill{' '}
+          <span className="relative inline-block">
+            <span className="relative z-10">financial responsibility</span>
+            <span className="absolute bottom-0 left-0 w-full h-[2px] bg-primary/30 origin-left animate-[subtleSlide_1.5s_ease-in-out_2s_forwards] scale-x-0"></span>
+          </span>
+          {' '}and also minimize fashion's significant contributions to{' '}
+          <span className="relative inline-block">
+            <span className="relative z-10">carbon emissions</span>
+            <span className="absolute bottom-0 left-0 w-full h-[2px] bg-primary/30 origin-left animate-[subtleSlide_1.5s_ease-in-out_3s_forwards] scale-x-0"></span>
+          </span>
+          .
         </p>
         
-        <button
-          onClick={scrollToOnboarding}
-          className="inline-flex items-center gap-3 bg-primary text-primary-foreground px-12 py-5 rounded-full hover:bg-primary/90 transition-all shadow-lg hover:shadow-xl text-xl font-semibold"
-        >
-          <Sparkles className="w-6 h-6" />
-          Get Started
-        </button>
+        <style>{`
+          @keyframes subtleSlide {
+            0% {
+              transform: scaleX(0);
+              opacity: 0;
+            }
+            50% {
+              opacity: 1;
+            }
+            100% {
+              transform: scaleX(1);
+              opacity: 0.7;
+            }
+          }
+        `}</style>
+        
+        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+          <button
+            onClick={scrollToWhyWeCare}
+            className="inline-flex items-center gap-3 bg-muted text-foreground px-12 py-5 rounded-full hover:bg-muted/80 transition-all shadow-lg hover:shadow-xl text-xl font-semibold"
+          >
+            Why We Care
+          </button>
+          <button
+            onClick={scrollToOnboarding}
+            className="inline-flex items-center gap-3 bg-primary text-primary-foreground px-12 py-5 rounded-full hover:bg-primary/90 transition-all shadow-lg hover:shadow-xl text-xl font-semibold"
+          >
+            <Sparkles className="w-6 h-6" />
+            Get Started
+          </button>
+        </div>
       </div>
 
       {/* Why We Care Section */}
-      <div className="max-w-6xl mx-auto">
+      <div id="why-we-care-section" className="max-w-6xl mx-auto scroll-mt-8">
         <h2 className="text-4xl md:text-5xl font-bold text-[#06402B] mb-4 text-center font-serif">
           Why We Care
         </h2>
@@ -289,83 +333,39 @@ export function OurMission({ onGetStarted, userEmail }: OurMissionProps) {
 
       {/* Onboarding Section (replaces How It Works) */}
       <div id="onboarding-section" className="scroll-mt-4 pt-4 pb-16">
-        {/* Walkthrough Card */}
-        <div className="max-w-4xl mx-auto mb-16">
-          <div className="bg-card rounded-3xl shadow-xl border border-border p-6 md:p-8">
-            {/* Progress Indicator */}
-            <div className="mb-4">
-              <div className="flex justify-center gap-2">
-                {walkthroughSteps.map((_, index) => (
-                  <div
-                    key={index}
-                    className={`h-2 rounded-full transition-all ${
-                      index === currentStep
-                        ? 'w-8 bg-primary'
-                        : index < currentStep
-                        ? 'w-2 bg-primary/50'
-                        : 'w-2 bg-border'
-                    }`}
-                  />
-                ))}
+        <h2 className="text-4xl md:text-5xl font-bold text-[#06402B] mb-4 text-center font-serif">
+          Get Started
+        </h2>
+        
+        <p className="text-xl text-[#255736] text-center mb-12 font-serif max-w-3xl mx-auto">
+          From setting up your account to adding your first item—your journey to mindful shopping starts here!
+        </p>
+        
+        {/* Vertical Walkthrough Cards */}
+        <div className="max-w-4xl mx-auto space-y-6 mb-16">
+          {walkthroughSteps.map((step, index) => (
+            <div key={index} className="bg-card rounded-3xl shadow-xl border border-border p-6 md:p-8">
+              {/* Step Number */}
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-14 h-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-2xl">
+                  {index + 1}
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-2xl md:text-3xl font-bold text-foreground">
+                    {step.title}
+                  </h2>
+                  <p className="text-base text-muted-foreground mt-1">
+                    {step.description}
+                  </p>
+                </div>
               </div>
-              <p className="text-center text-base text-muted-foreground mt-3">
-                Step {currentStep + 1} of {walkthroughSteps.length}
-              </p>
-            </div>
 
-            {/* Title & Description */}
-            <div className="text-center mb-5">
-              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
-                {currentStepData.title}
-              </h2>
-              <p className="text-lg text-muted-foreground">
-                {currentStepData.description}
-              </p>
+              {/* Step Content */}
+              <div>
+                {step.content}
+              </div>
             </div>
-
-            {/* Step Content */}
-            <div className="mb-1 min-h-[320px]">
-              {currentStepData.content}
-            </div>
-
-            {/* Navigation Buttons */}
-            <div className="flex gap-3 justify-between">
-              {currentStep > 0 ? (
-                <button
-                  onClick={() => setCurrentStep(currentStep - 1)}
-                  className="inline-flex items-center gap-2 px-6 py-3 border border-border text-foreground rounded-full hover:bg-muted/30 transition-colors text-base"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                  Back
-                </button>
-              ) : (
-                <div />
-              )}
-
-              {isLastStep ? (
-                <button
-                  onClick={onGetStarted}
-                  className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-8 py-3 rounded-full hover:bg-primary/90 transition-all shadow-md hover:shadow-lg font-semibold text-base"
-                >
-                  Start Using Second Thought
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-              ) : (
-                // Hide Next button on first step if user is not logged in
-                currentStep === 0 && !userEmail ? (
-                  <div />
-                ) : (
-                  <button
-                    onClick={() => setCurrentStep(currentStep + 1)}
-                    className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-full hover:bg-primary/90 transition-all shadow-md text-base"
-                  >
-                    Next
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
-                )
-              )}
-            </div>
-          </div>
+          ))}
         </div>
       </div>
     </div>
