@@ -10,6 +10,7 @@ export interface DbItem {
   user_id: string;
   name: string;
   image_url: string | null;
+  category: string | null;
   constraint_type: 'time' | 'goals';
   consumption_score: number;
   wait_until_date: string | null;
@@ -30,6 +31,7 @@ function itemToDb(item: Item, userId: string): Omit<DbItem, 'created_at' | 'upda
     user_id: userId,
     name: item.name,
     image_url: item.imageUrl || null,
+    category: item.category || null,
     constraint_type: item.constraintType,
     consumption_score: item.consumptionScore,
     added_date: item.addedDate,
@@ -48,6 +50,7 @@ function dbToItem(dbItem: DbItem): Item {
     id: dbItem.id,
     name: dbItem.name,
     imageUrl: dbItem.image_url || undefined,
+    category: dbItem.category as ItemCategory | undefined,
     constraintType: dbItem.constraint_type,
     consumptionScore: dbItem.consumption_score,
     addedDate: dbItem.added_date,

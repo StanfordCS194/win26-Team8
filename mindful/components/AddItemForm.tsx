@@ -142,12 +142,16 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
       const metadata = await fetchUrlMetadata(productUrl);
       if (metadata.title) {
         setName(metadata.title);
+        // Auto-detect category based on product name
+        const detectedCategory = await detectCategory(metadata.title);
+        setCategory(detectedCategory);
       }
       if (metadata.image) {
         setImageUrl(metadata.image);
       }
     } catch (error) {
       console.error('Error fetching metadata:', error);
+      alert('Failed to fetch product details. Please enter manually.');
     } finally {
       setIsLoadingMetadata(false);
     }
@@ -332,6 +336,51 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
               placeholder="e.g., Wireless Headphones"
               className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
             />
+          </div>
+
+          {/* Image URL */}
+          <div>
+            <label className="block text-sm font-medium text-foreground/80 mb-2">
+              Image URL (Optional)
+            </label>
+            <input
+              type="url"
+              value={imageUrl}
+              onChange={(e) => setImageUrl(e.target.value)}
+              placeholder="https://example.com/image.jpg"
+              className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
+            />
+            {imageUrl && (
+              <div className="mt-3 relative rounded-xl overflow-hidden border border-border bg-muted/20">
+                <img 
+                  src={imageUrl} 
+                  alt="Product preview" 
+                  className="w-full h-48 object-cover"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.parentElement!.innerHTML = '<p class="text-sm text-muted-foreground p-4">Invalid image URL</p>';
+                  }}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Category */}
+          <div>
+            <label className="block text-sm font-medium text-foreground/80 mb-2">
+              Category
+            </label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value as ItemCategory)}
+              className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground"
+            >
+              {ITEM_CATEGORIES.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Actions */}

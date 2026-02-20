@@ -167,7 +167,7 @@ export async function detectCategory(itemName: string): Promise<ItemCategory> {
         'anthropic-dangerous-direct-browser-access': 'true',
       },
       body: JSON.stringify({
-        model: 'claude-3-5-haiku-latest',
+        model: 'claude-3-5-sonnet-20241022',
         max_tokens: 50,
         system: CATEGORY_SYSTEM_PROMPT,
         messages: [

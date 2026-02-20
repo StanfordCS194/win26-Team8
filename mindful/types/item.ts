@@ -9,7 +9,7 @@ export type ItemCategory = 'Beauty' | 'Clothes' | 'Accessories' | 'Sports' | 'El
 export interface Item {
   id: string;
   name: string;
-  imageUrl: string;
+  imageUrl?: string;
   category?: ItemCategory;
   constraintType: 'time' | 'goals';
   consumptionScore: number;

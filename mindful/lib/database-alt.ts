@@ -1,5 +1,5 @@
 import { supabase } from '../env';
-import type { Item, QuestionAnswer } from '../App';
+import type { Item, QuestionAnswer } from '../types/item';
 
 /**
  * ALTERNATIVE SAVE METHOD - Using Direct REST API
@@ -24,7 +24,8 @@ export async function saveItemDirect(item: Item, userId: string): Promise<{ succ
       id: item.id,
       user_id: userId,
       name: item.name,
-      image_url: null,
+      image_url: item.imageUrl || null,
+      category: item.category || null,
       constraint_type: item.constraintType,
       consumption_score: item.consumptionScore,
       added_date: item.addedDate,
