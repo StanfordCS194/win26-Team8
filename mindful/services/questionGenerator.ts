@@ -128,7 +128,7 @@ export async function generateQuestions(
         'anthropic-dangerous-direct-browser-access': 'true',
       },
       body: JSON.stringify({
-        model: 'claude-3-5-haiku-latest',
+        model: 'claude-opus-4-6',
         max_tokens: 1000,
         system: SYSTEM_PROMPT,
         messages: [
