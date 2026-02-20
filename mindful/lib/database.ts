@@ -1,5 +1,4 @@
 import { supabase } from '../env';
-import type { Item, QuestionAnswer } from '../App';
 import type { Item, ItemCategory, QuestionAnswer } from '../types/item';
 
 /**
@@ -30,10 +29,7 @@ function itemToDb(item: Item, userId: string): Omit<DbItem, 'created_at' | 'upda
     id: item.id,
     user_id: userId,
     name: item.name,
-    image_url: item.imageUrl,
-    category: item.category,
-    url: undefined,
-    cost: undefined,
+    image_url: item.imageUrl || null,
     constraint_type: item.constraintType,
     consumption_score: item.consumptionScore,
     added_date: item.addedDate,
@@ -48,39 +44,10 @@ function itemToDb(item: Item, userId: string): Omit<DbItem, 'created_at' | 'upda
  * Simple conversion: snake_case → camelCase
  */
 function dbToItem(dbItem: DbItem): Item {
-  // Try to parse questionnaire_why as JSON array (new format)
-  // Fall back to old fixed format if parsing fails
-  let questionnaire: QuestionAnswer[];
-
-  try {
-    const parsed = JSON.parse(dbItem.questionnaire_why);
-    if (Array.isArray(parsed)) {
-      questionnaire = parsed;
-    } else {
-      // Old format - convert to new format
-      questionnaire = [
-        { id: 'why', question: 'Why do you want this item?', answer: dbItem.questionnaire_why },
-        { id: 'alternatives', question: 'What alternatives have you considered?', answer: dbItem.questionnaire_alternatives },
-        { id: 'impact', question: 'What impact will this have?', answer: dbItem.questionnaire_impact },
-        { id: 'urgency', question: 'How urgent is this purchase?', answer: dbItem.questionnaire_urgency },
-      ];
-    }
-  } catch {
-    // Not JSON - use old fixed format
-    questionnaire = [
-      { id: 'why', question: 'Why do you want this item?', answer: dbItem.questionnaire_why },
-      { id: 'alternatives', question: 'What alternatives have you considered?', answer: dbItem.questionnaire_alternatives },
-      { id: 'impact', question: 'What impact will this have?', answer: dbItem.questionnaire_impact },
-      { id: 'urgency', question: 'How urgent is this purchase?', answer: dbItem.questionnaire_urgency },
-    ];
-  }
-
-  const category = dbItem.category as ItemCategory | undefined;
   return {
     id: dbItem.id,
     name: dbItem.name,
-    imageUrl: dbItem.image_url,
-    category: category && ['Beauty', 'Clothes', 'Accessories', 'Sports', 'Electronics', 'Home', 'Other'].includes(category) ? category : undefined,
+    imageUrl: dbItem.image_url || undefined,
     constraintType: dbItem.constraint_type,
     consumptionScore: dbItem.consumption_score,
     addedDate: dbItem.added_date,

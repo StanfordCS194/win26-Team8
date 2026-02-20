@@ -103,7 +103,7 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [productUrl, setProductUrl] = useState('');
   const [name, setName] = useState('');
-  const [imageUrl, setImageUrl] = useState(initialUrl ?? '');
+  const [imageUrl, setImageUrl] = useState('');
   const [category, setCategory] = useState<ItemCategory>('Other');
   const [hasUrlTouched, setHasUrlTouched] = useState(false);
   const [constraintType, setConstraintType] = useState<'time' | 'goals'>('time');
@@ -116,12 +116,13 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
   const [questions, setQuestions] = useState<GeneratedQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
+  const [isLoadingMetadata, setIsLoadingMetadata] = useState(false);
 
   const resetForm = () => {
     setStep(1);
     setProductUrl('');
     setName('');
-    setImageUrl(initialUrl ?? '');
+    setImageUrl('');
     setCategory('Other');
     setHasUrlTouched(false);
     setConstraintType('time');
