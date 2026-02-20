@@ -4,10 +4,13 @@ export interface QuestionAnswer {
   answer: string;
 }
 
+export type ItemCategory = 'Beauty' | 'Clothes' | 'Accessories' | 'Sports' | 'Electronics' | 'Home' | 'Other';
+
 export interface Item {
   id: string;
   name: string;
   imageUrl: string;
+  category?: ItemCategory;
   constraintType: 'time' | 'goals';
   consumptionScore: number;
   addedDate: string;

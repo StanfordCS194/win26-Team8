@@ -34,6 +34,9 @@ CREATE TABLE IF NOT EXISTS public.items (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Add category column for organizing items (Food, Clothes, Sports, etc.)
+ALTER TABLE public.items ADD COLUMN IF NOT EXISTS category TEXT;
+
 <<<<<<< Updated upstream
 =======
 -- Create profiles table
