@@ -97,10 +97,9 @@ function generateMindfulnessExplanation(questionnaire: QuestionAnswer[], finalSc
 interface AddItemFormProps {
   onSubmit: (item: Omit<Item, 'id' | 'addedDate'>) => void;
   onCancel: () => void;
-  initialUrl?: string;
 }
 
-export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps) {
+export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [productUrl, setProductUrl] = useState('');
   const [name, setName] = useState('');
@@ -117,53 +116,6 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
   const [questions, setQuestions] = useState<GeneratedQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
-
-  // URL metadata fetching state
-  const [isLoadingMetadata, setIsLoadingMetadata] = useState(false);
-  useEffect(() => {
-    if (initialUrl && !hasUrlTouched) {
-      setImageUrl(initialUrl);
-    }
-  }, [initialUrl, hasUrlTouched]);
-
-  // Auto-detect category when item name changes (with debouncing for AI calls)
-  const categoryDetectionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const [isDetectingCategory, setIsDetectingCategory] = useState(false);
-
-  useEffect(() => {
-    // Clear any pending detection
-    if (categoryDetectionTimeoutRef.current) {
-      clearTimeout(categoryDetectionTimeoutRef.current);
-    }
-
-    if (name.trim().length === 0) {
-      setCategory('Other');
-      setIsDetectingCategory(false);
-      return;
-    }
-
-    // Debounce AI calls - wait 500ms after user stops typing
-    setIsDetectingCategory(true);
-    categoryDetectionTimeoutRef.current = setTimeout(async () => {
-      try {
-        const detectedCategory = await detectCategory(name);
-        setCategory(detectedCategory);
-      } catch (error) {
-        console.error('Error detecting category:', error);
-        // Fallback to 'Other' on error
-        setCategory('Other');
-      } finally {
-        setIsDetectingCategory(false);
-      }
-    }, 500);
-
-    // Cleanup on unmount or when name changes
-    return () => {
-      if (categoryDetectionTimeoutRef.current) {
-        clearTimeout(categoryDetectionTimeoutRef.current);
-      }
-    };
-  }, [name]);
 
   const resetForm = () => {
     setStep(1);
@@ -379,62 +331,6 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
               placeholder="e.g., Wireless Headphones"
               className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
             />
-          </div>
-
-          {/* Image URL */}
-          <div>
-            <label className="block text-sm font-medium text-foreground/80 mb-2">
-              Image URL
-            </label>
-            <input
-              type="url"
-              value={imageUrl}
-              onChange={(e) => {
-                setImageUrl(e.target.value);
-                setHasUrlTouched(true);
-              }}
-              placeholder="https://example.com/image.jpg"
-              className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
-            />
-            {imageUrl && (
-              <div className="mt-2">
-                <img
-                  src={imageUrl}
-                  alt="Preview"
-                  className="w-20 h-20 object-cover rounded-lg border border-border"
-                  onError={(e) => (e.currentTarget.style.display = 'none')}
-                />
-              </div>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-foreground/80 mb-2 flex items-center gap-2">
-              Category 
-              {isDetectingCategory && (
-                <Loader2 className="w-3 h-3 animate-spin text-primary" />
-              )}
-              {name.trim().length > 0 && !isDetectingCategory && (
-                <span className="text-xs font-normal text-primary">(AI-detected)</span>
-              )}
-            </label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value as ItemCategory)}
-              disabled={isDetectingCategory}
-              className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {ITEM_CATEGORIES.map((cat) => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
-            <p className="text-xs text-muted-foreground mt-1">
-              {isDetectingCategory 
-                ? 'Detecting category...'
-                : name.trim().length > 0 
-                  ? 'Category detected using AI. You can change it if needed.'
-                  : 'Organize your items for easier browsing on the All Items page'}
-            </p>
           </div>
 
           {/* Actions */}
