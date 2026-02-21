@@ -105,6 +105,7 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
   const [name, setName] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [category, setCategory] = useState<ItemCategory>('Other');
+  const [categoryIsAISuggested, setCategoryIsAISuggested] = useState(false);
   const [hasUrlTouched, setHasUrlTouched] = useState(false);
   const [constraintType, setConstraintType] = useState<'time' | 'goals'>('time');
   const [waitUntilDate, setWaitUntilDate] = useState('');
@@ -124,6 +125,7 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
     setName('');
     setImageUrl('');
     setCategory('Other');
+    setCategoryIsAISuggested(false);
     setHasUrlTouched(false);
     setConstraintType('time');
     setWaitUntilDate('');
@@ -145,6 +147,7 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
         // Auto-detect category based on product name
         const detectedCategory = await detectCategory(metadata.title);
         setCategory(detectedCategory);
+        setCategoryIsAISuggested(true);
       }
       if (metadata.image) {
         setImageUrl(metadata.image);
@@ -355,7 +358,7 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
                 <img 
                   src={imageUrl} 
                   alt="Product preview" 
-                  className="w-full h-48 object-cover"
+                  className="w-full max-h-96 object-contain"
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';
                     e.currentTarget.parentElement!.innerHTML = '<p class="text-sm text-muted-foreground p-4">Invalid image URL</p>';
@@ -367,12 +370,23 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
 
           {/* Category */}
           <div>
-            <label className="block text-sm font-medium text-foreground/80 mb-2">
-              Category
-            </label>
+            <div className="flex items-center gap-2 mb-2">
+              <label className="text-sm font-medium text-foreground/80">
+                Category
+              </label>
+              {categoryIsAISuggested && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                  AI Suggested
+                </span>
+              )}
+            </div>
             <select
               value={category}
-              onChange={(e) => setCategory(e.target.value as ItemCategory)}
+              onChange={(e) => {
+                setCategory(e.target.value as ItemCategory);
+                setCategoryIsAISuggested(false);
+              }}
               className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground"
             >
               {ITEM_CATEGORIES.map((cat) => (
