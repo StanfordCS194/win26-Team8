@@ -18,7 +18,7 @@ import type { Item } from './types/item';
 type View = 'home' | 'item' | 'add' | 'time' | 'goals' | 'mission' | 'profile';
 
 function AppContent() {
-  const { user, loading } = useAuth();
+  const { user, session, loading } = useAuth();
   const [items, setItems] = useState<Item[]>([]);
   const [currentView, setCurrentView] = useState<View>('mission');
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
@@ -104,9 +104,10 @@ function AppContent() {
     setItems(updatedItems);
     setCurrentView('home');
     
-    // Save to Supabase - Using direct REST API (bypasses hanging client issue)
+    // Save to Supabase - Use token we already have so we don't call getSession() (it can hang)
     console.log('💾 Saving to Supabase using direct REST API...');
-    const { success, error } = await saveItemDirect(newItem, user.id);
+    const accessToken = session?.access_token ?? null;
+    const { success, error } = await saveItemDirect(newItem, user.id, accessToken);
     
     if (success) {
       console.log('✅ Item saved to Supabase');
