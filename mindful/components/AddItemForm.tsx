@@ -115,6 +115,7 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
 
   // Dynamic questions state
   const [questions, setQuestions] = useState<GeneratedQuestion[]>([]);
+  const [questionsUsedFallback, setQuestionsUsedFallback] = useState(false);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
   const [isLoadingMetadata, setIsLoadingMetadata] = useState(false);
@@ -132,6 +133,7 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
     setDifficulty('medium');
     setConsumptionScore(1);
     setQuestions([]);
+    setQuestionsUsedFallback(false);
     setAnswers({});
     setGoalDescription('');
   };
@@ -199,8 +201,9 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
     setIsLoadingQuestions(true);
 
     try {
-      const generatedQuestions = await generateQuestions(name);
+      const { questions: generatedQuestions, usedFallback } = await generateQuestions(name);
       setQuestions(generatedQuestions);
+      setQuestionsUsedFallback(!!usedFallback);
 
       const initialAnswers: Record<string, number> = {};
       generatedQuestions.forEach((q) => {
@@ -266,7 +269,7 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
 
     onSubmit({
       name,
-      imageUrl: imageUrl || '',
+      imageUrl: imageUrl?.trim() || undefined,
       category,
       constraintType,
       consumptionScore: calculatedMindfulnessScore,
@@ -353,10 +356,10 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
               placeholder="https://example.com/image.jpg"
               className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
             />
-            {imageUrl && (
+            {(imageUrl && imageUrl.trim()) ? (
               <div className="mt-3 relative rounded-xl overflow-hidden border border-border bg-muted/20">
                 <img 
-                  src={imageUrl} 
+                  src={imageUrl.trim()} 
                   alt="Product preview" 
                   className="w-full max-h-96 object-contain"
                   onError={(e) => {
@@ -365,7 +368,7 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
                   }}
                 />
               </div>
-            )}
+            ) : null}
           </div>
 
           {/* Category */}
@@ -427,6 +430,11 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
 
         {step === 2 && (
           <form onSubmit={handleStep2Submit} className="space-y-6">
+            {questionsUsedFallback && (
+              <p className="text-sm text-muted-foreground bg-muted/50 rounded-xl px-4 py-3 border border-border/50">
+                Using default reflection questions (AI was temporarily busy). You can still continue.
+              </p>
+            )}
             <div className="space-y-6">
               {/* Consumption Score - Question 1 */}
               <div className="space-y-3">

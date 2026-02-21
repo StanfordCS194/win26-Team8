@@ -17,9 +17,9 @@ function ItemCard({
       className="bg-card rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden border border-border/50 hover:border-primary/30"
     >
       <div className="aspect-square bg-muted/30 overflow-hidden">
-        {item.imageUrl ? (
+        {(item.imageUrl && item.imageUrl.trim()) ? (
           <img
-            src={item.imageUrl}
+            src={item.imageUrl.trim()}
             alt={item.name}
             className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
             onError={(e) => {

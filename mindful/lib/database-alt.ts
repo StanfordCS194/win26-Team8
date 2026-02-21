@@ -3,28 +3,40 @@ import type { Item, QuestionAnswer } from '../types/item';
 
 /**
  * ALTERNATIVE SAVE METHOD - Using Direct REST API
- * 
- * This bypasses the Supabase client and uses direct fetch() calls
- * Use this if the Supabase client is hanging
+ *
+ * Pass accessToken when you already have it (e.g. from AuthContext) to avoid
+ * calling getSession(), which can hang on slow networks.
  */
-export async function saveItemDirect(item: Item, userId: string): Promise<{ success: boolean; error: any }> {
+export async function saveItemDirect(
+  item: Item,
+  userId: string,
+  accessToken?: string | null
+): Promise<{ success: boolean; error: any }> {
   try {
     console.log('💾 [DIRECT] Saving item:', item.name);
     
-    // Get the session token
-    const { data: sessionData } = await supabase.auth.getSession();
-    const token = sessionData?.session?.access_token;
+    let token = accessToken ?? null;
+    if (!token) {
+      const sessionTimeoutMs = 5000;
+      const sessionPromise = supabase.auth.getSession();
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Session check timed out. Try refreshing the page.')), sessionTimeoutMs)
+      );
+      const { data: sessionData } = await Promise.race([sessionPromise, timeoutPromise]) as { data: { session: { access_token: string } | null } };
+      token = sessionData?.session?.access_token ?? null;
+    }
     
     if (!token) {
       return { success: false, error: new Error('No auth token - user not logged in') };
     }
     
-    // Prepare the item data
+    // Prepare the item data (normalize empty/whitespace image URL to null)
+    const imageUrl = (item.imageUrl && item.imageUrl.trim()) ? item.imageUrl.trim() : null;
     const dbItem = {
       id: item.id,
       user_id: userId,
       name: item.name,
-      image_url: item.imageUrl || null,
+      image_url: imageUrl,
       category: item.category || null,
       constraint_type: item.constraintType,
       consumption_score: item.consumptionScore,
@@ -53,11 +65,11 @@ export async function saveItemDirect(item: Item, userId: string): Promise<{ succ
       body: JSON.stringify(dbItem),
     });
     
-    const timeoutPromise = new Promise<never>((_, reject) =>
+    const fetchTimeoutPromise = new Promise<never>((_, reject) =>
       setTimeout(() => reject(new Error('Direct API call timed out after 10 seconds')), 10000)
     );
     
-    const response = await Promise.race([fetchPromise, timeoutPromise]) as Response;
+    const response = await Promise.race([fetchPromise, fetchTimeoutPromise]) as Response;
     
     console.log('📊 [DIRECT] Response status:', response.status);
     

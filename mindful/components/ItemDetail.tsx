@@ -1,5 +1,5 @@
 import type { Item, QuestionAnswer } from '../types/item';
-import { ArrowLeft, Calendar, Target, Trash2 } from 'lucide-react';
+import { ArrowLeft, Calendar, Target, Trash2, ShoppingBag } from 'lucide-react';
 
 interface ItemDetailProps {
   item: Item;
@@ -112,12 +112,19 @@ export function ItemDetail({ item, onBack, onDelete }: ItemDetailProps) {
       <div className="bg-card rounded-2xl shadow-sm border border-border/50 overflow-hidden">
         <div className="grid md:grid-cols-2 gap-6 p-8">
           {/* Image */}
-          <div className="aspect-square bg-muted/30 rounded-xl overflow-hidden">
-            <img
-              src={item.imageUrl}
-              alt={item.name}
-              className="w-full h-full object-cover"
-            />
+          <div className="aspect-square bg-muted/30 rounded-xl overflow-hidden flex items-center justify-center">
+            {(item.imageUrl && item.imageUrl.trim()) ? (
+              <img
+                src={item.imageUrl.trim()}
+                alt={item.name}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.src = 'https://via.placeholder.com/400/e5e7eb/9ca3af?text=No+Image';
+                }}
+              />
+            ) : (
+              <ShoppingBag className="w-20 h-20 text-muted-foreground/30" />
+            )}
           </div>
 
           {/* Details */}
