@@ -12297,7 +12297,7 @@
   });
 
   // extension/src/popup.tsx
-  var import_react4 = __toESM(require_react());
+  var import_react5 = __toESM(require_react());
   var import_client = __toESM(require_client());
 
   // components/AddItemForm.tsx
@@ -12976,6 +12976,117 @@ Only respond with the JSON array, no other text.`;
           )
         ] })
       ] })
+    ] }) });
+  }
+
+  // components/Auth.tsx
+  var import_react4 = __toESM(require_react());
+  var import_jsx_runtime2 = __toESM(require_jsx_runtime());
+  function Auth({ onSignIn, onSignUp, compact = false }) {
+    const [isSignUp, setIsSignUp] = (0, import_react4.useState)(false);
+    const [email, setEmail] = (0, import_react4.useState)("");
+    const [password, setPassword] = (0, import_react4.useState)("");
+    const [fullName, setFullName] = (0, import_react4.useState)("");
+    const [error, setError] = (0, import_react4.useState)("");
+    const [loading, setLoading] = (0, import_react4.useState)(false);
+    const showSignUp = !!onSignUp;
+    const handleSubmit = async (e) => {
+      e.preventDefault();
+      setError("");
+      setLoading(true);
+      try {
+        if (isSignUp && onSignUp) {
+          const { error: error2 } = await onSignUp(email, password, fullName);
+          if (error2) {
+            setError(error2.message || "Failed to sign up");
+          } else {
+            alert("Account created! You can now sign in.");
+            setIsSignUp(false);
+          }
+        } else {
+          const { error: error2 } = await onSignIn(email, password);
+          if (error2) {
+            setError(error2.message || "Failed to sign in");
+          }
+        }
+      } catch (err) {
+        setError(err.message || "An error occurred");
+      } finally {
+        setLoading(false);
+      }
+    };
+    return /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: compact ? "" : "min-h-screen bg-background flex items-center justify-center p-8", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: compact ? "w-full" : "w-full max-w-4xl", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: `text-center ${compact ? "mb-6" : "mb-12"}`, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h1", { className: `font-bold text-foreground ${compact ? "text-2xl mb-1" : "text-5xl mb-4"}`, children: "Second Thought" }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { className: `text-muted-foreground ${compact ? "text-sm" : "text-2xl"}`, children: isSignUp ? "Create your account" : compact ? "Sign in to save items" : "Welcome back" })
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: compact ? "bg-card rounded-2xl shadow-sm border border-border/50 p-6" : "bg-card rounded-3xl shadow-xl border border-border p-12", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("form", { onSubmit: handleSubmit, className: `space-y-${compact ? "4" : "6"} ${compact ? "" : "max-w-xl mx-auto"}`, children: [
+        isSignUp && showSignUp && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("label", { className: "block text-base font-medium text-foreground/80 mb-3", children: "Full Name" }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+            "input",
+            {
+              type: "text",
+              value: fullName,
+              onChange: (e) => setFullName(e.target.value),
+              required: isSignUp,
+              placeholder: "John Doe",
+              className: `w-full border border-border bg-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground ${compact ? "px-4 py-3" : "px-5 py-4 text-lg"}`
+            }
+          )
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("label", { className: "block text-base font-medium text-foreground/80 mb-3", children: "Email" }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+            "input",
+            {
+              type: "email",
+              value: email,
+              onChange: (e) => setEmail(e.target.value),
+              required: true,
+              placeholder: "your@email.com",
+              className: `w-full border border-border bg-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground ${compact ? "px-4 py-3" : "px-5 py-4 text-lg"}`
+            }
+          )
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("label", { className: "block text-base font-medium text-foreground/80 mb-3", children: "Password" }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+            "input",
+            {
+              type: "password",
+              value: password,
+              onChange: (e) => setPassword(e.target.value),
+              required: true,
+              placeholder: "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022",
+              minLength: 6,
+              className: `w-full border border-border bg-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground ${compact ? "px-4 py-3" : "px-5 py-4 text-lg"}`
+            }
+          )
+        ] }),
+        error && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: `bg-destructive/10 border border-destructive/20 text-destructive rounded-xl ${compact ? "p-3 text-sm" : "p-4 text-base"}`, children: error }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+          "button",
+          {
+            type: "submit",
+            disabled: loading,
+            className: `w-full bg-primary text-primary-foreground rounded-full hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-semibold ${compact ? "px-6 py-3 shadow-sm hover:shadow-md" : "px-8 py-5 shadow-lg hover:shadow-xl text-lg mt-4"}`,
+            children: loading ? compact ? "Signing in..." : "Loading..." : isSignUp ? "Sign Up" : "Sign In"
+          }
+        ),
+        showSignUp && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: `text-center ${compact ? "mt-4" : "mt-8"}`, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+          "button",
+          {
+            type: "button",
+            onClick: () => {
+              setIsSignUp(!isSignUp);
+              setError("");
+            },
+            className: `text-primary hover:underline ${compact ? "text-sm" : "text-base"}`,
+            children: isSignUp ? "Already have an account? Sign in" : "Don't have an account? Sign up"
+          }
+        ) })
+      ] }) })
     ] }) });
   }
 
@@ -24373,7 +24484,7 @@ ${suffix}`;
   });
 
   // extension/src/popup.tsx
-  var import_jsx_runtime2 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime3 = __toESM(require_jsx_runtime());
   function itemToDbItem(item, userId) {
     return {
       user_id: userId,
@@ -24390,83 +24501,13 @@ ${suffix}`;
       response: parseInt(qa.answer) || 3
     }));
   }
-  function LoginForm({ onSignedIn }) {
-    const [email, setEmail] = (0, import_react4.useState)("");
-    const [password, setPassword] = (0, import_react4.useState)("");
-    const [error, setError] = (0, import_react4.useState)("");
-    const [loading, setLoading] = (0, import_react4.useState)(false);
-    const handleSubmit = async (e) => {
-      e.preventDefault();
-      setError("");
-      setLoading(true);
-      try {
-        const { error: error2 } = await supabase.auth.signInWithPassword({ email, password });
-        if (error2) {
-          setError(error2.message);
-        } else {
-          onSignedIn();
-        }
-      } catch (err) {
-        setError(err.message || "An error occurred");
-      } finally {
-        setLoading(false);
-      }
-    };
-    return /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "text-center mb-6", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h1", { className: "text-2xl font-bold text-foreground mb-1", children: "Second Thought" }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { className: "text-sm text-muted-foreground", children: "Sign in to save items" })
-      ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "bg-card rounded-2xl shadow-sm border border-border/50 p-6", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("form", { onSubmit: handleSubmit, className: "space-y-4", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("label", { className: "block text-sm font-medium text-foreground/80 mb-1", children: "Email" }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
-            "input",
-            {
-              type: "email",
-              value: email,
-              onChange: (e) => setEmail(e.target.value),
-              required: true,
-              placeholder: "your@email.com",
-              className: "w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
-            }
-          )
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("label", { className: "block text-sm font-medium text-foreground/80 mb-1", children: "Password" }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
-            "input",
-            {
-              type: "password",
-              value: password,
-              onChange: (e) => setPassword(e.target.value),
-              required: true,
-              placeholder: "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022",
-              minLength: 6,
-              className: "w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
-            }
-          )
-        ] }),
-        error && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "bg-destructive/10 border border-destructive/20 text-destructive rounded-xl p-3 text-sm", children: error }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
-          "button",
-          {
-            type: "submit",
-            disabled: loading,
-            className: "w-full bg-primary text-primary-foreground px-6 py-3 rounded-full hover:bg-primary/90 transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed font-semibold",
-            children: loading ? "Signing in..." : "Sign In"
-          }
-        )
-      ] }) })
-    ] });
-  }
   var App = () => {
-    const [session, setSession] = (0, import_react4.useState)(null);
-    const [loading, setLoading] = (0, import_react4.useState)(true);
-    const [activeUrl, setActiveUrl] = (0, import_react4.useState)("");
-    const [urlStatus, setUrlStatus] = (0, import_react4.useState)("");
-    const [submitMessage, setSubmitMessage] = (0, import_react4.useState)("");
-    (0, import_react4.useEffect)(() => {
+    const [session, setSession] = (0, import_react5.useState)(null);
+    const [loading, setLoading] = (0, import_react5.useState)(true);
+    const [activeUrl, setActiveUrl] = (0, import_react5.useState)("");
+    const [urlStatus, setUrlStatus] = (0, import_react5.useState)("");
+    const [submitMessage, setSubmitMessage] = (0, import_react5.useState)("");
+    (0, import_react5.useEffect)(() => {
       supabase.auth.getSession().then(({ data: { session: session2 } }) => {
         setSession(session2);
         setLoading(false);
@@ -24480,7 +24521,7 @@ ${suffix}`;
       });
       return () => subscription.unsubscribe();
     }, []);
-    (0, import_react4.useEffect)(() => {
+    (0, import_react5.useEffect)(() => {
       if (typeof chrome !== "undefined" && chrome.tabs && chrome.tabs.query) {
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
           const currentUrl = tabs && tabs[0] && tabs[0].url;
@@ -24519,16 +24560,19 @@ ${suffix}`;
       }
     };
     if (loading) {
-      return /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "flex items-center justify-center min-h-[200px]", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { className: "text-muted-foreground", children: "Loading..." }) });
+      return /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "flex items-center justify-center min-h-[200px]", children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { className: "text-muted-foreground", children: "Loading..." }) });
     }
     if (!session) {
-      return /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(LoginForm, { onSignedIn: () => {
-      } });
+      const handleSignIn = async (email, password) => {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        return { error };
+      };
+      return /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Auth, { onSignIn: handleSignIn, compact: true });
     }
-    return /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "flex items-center justify-between mb-3", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h1", { className: "text-xl font-bold text-foreground", children: "Second Thought" }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+    return /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "flex items-center justify-between mb-3", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("h1", { className: "text-xl font-bold text-foreground", children: "Second Thought" }),
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
           "button",
           {
             onClick: handleSignOut,
@@ -24537,10 +24581,10 @@ ${suffix}`;
           }
         )
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { className: "text-xs text-muted-foreground mb-4", children: session.user.email }),
-      urlStatus && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { className: "text-sm text-muted-foreground mb-2", children: urlStatus }),
-      submitMessage && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "bg-primary/10 border border-primary/20 text-foreground rounded-xl p-3 text-sm mb-4", children: submitMessage }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { className: "text-xs text-muted-foreground mb-4", children: session.user.email }),
+      urlStatus && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { className: "text-sm text-muted-foreground mb-2", children: urlStatus }),
+      submitMessage && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "bg-primary/10 border border-primary/20 text-foreground rounded-xl p-3 text-sm mb-4", children: submitMessage }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
         AddItemForm,
         {
           onSubmit: handleSubmit,
@@ -24553,7 +24597,7 @@ ${suffix}`;
   var container = document.getElementById("root");
   if (container) {
     const root = (0, import_client.createRoot)(container);
-    root.render(/* @__PURE__ */ (0, import_jsx_runtime2.jsx)(App, {}));
+    root.render(/* @__PURE__ */ (0, import_jsx_runtime3.jsx)(App, {}));
   }
 })();
 /*! Bundled license information:
