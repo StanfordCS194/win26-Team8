@@ -17,4 +17,7 @@ export interface Item {
   waitUntilDate?: string;
   difficulty?: 'easy' | 'medium' | 'hard';
   questionnaire: QuestionAnswer[];
+  friendName?: string;
+  friendEmail?: string;
+  unlockPassword?: string;
 }
