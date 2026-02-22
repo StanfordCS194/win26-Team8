@@ -9,6 +9,7 @@ import { Auth } from './components/Auth';
 import { Profile } from './components/Profile';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { fetchItems, saveItem, deleteItem as deleteItemDb } from './lib/database';
+import { saveItemDirect } from './lib/database-alt';
 import { Plus, User } from 'lucide-react';
 import './styles/globals.css';
 import logoImage from './assets/logo.png';
@@ -17,7 +18,7 @@ import type { Item } from './types/item';
 type View = 'home' | 'item' | 'add' | 'time' | 'goals' | 'mission' | 'profile';
 
 function AppContent() {
-  const { user, loading, signIn, signUp } = useAuth();
+  const { user, session, loading } = useAuth();
   const [items, setItems] = useState<Item[]>([]);
   const [currentView, setCurrentView] = useState<View>('mission');
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
@@ -28,6 +29,7 @@ function AppContent() {
       loadItems();
     } else if (!loading) {
       setItems([]);
+      setCurrentView('mission');
     }
   }, [user, loading]);
 
@@ -64,10 +66,17 @@ function AppContent() {
   };
 
   const handleAddItem = async (item: Omit<Item, 'id' | 'addedDate'>) => {
-    if (!user) return;
+    if (!user) {
+      alert('You must be logged in to add items');
+      return;
+    }
     
     console.log('➕ Adding item:', item.name);
-    setCurrentView('home');
+    console.log('📋 Constraint type:', item.constraintType);
+    console.log('📋 Image URL:', item.imageUrl);
+    console.log('📋 Image URL length:', item.imageUrl?.length || 0);
+    console.log('📋 Questions:', item.questionnaire.length);
+    console.log('📋 Full item from form:', JSON.stringify(item, null, 2));
     
     // Generate UUID
     const generateId = () => {
@@ -81,39 +90,43 @@ function AppContent() {
       });
     };
     
+    // Create complete item
     const newItem: Item = {
       ...item,
       id: generateId(),
       addedDate: new Date().toISOString(),
     };
     
+    console.log('🆕 Created item (full):', JSON.stringify(newItem, null, 2));
+    
     // Optimistic UI update
     const updatedItems = [...items, newItem];
     setItems(updatedItems);
+    setCurrentView('home');
     
-    // Save to Supabase and wait for it
-    console.log('💾 Saving to Supabase (please wait)...');
-    const { success, error } = await saveItem(newItem, user.id);
+    // Save to Supabase - Use token we already have so we don't call getSession() (it can hang)
+    console.log('💾 Saving to Supabase using direct REST API...');
+    const accessToken = session?.access_token ?? null;
+    const { success, error } = await saveItemDirect(newItem, user.id, accessToken);
     
     if (success) {
       console.log('✅ Item saved to Supabase');
       
-      // Also save to localStorage as backup
-      localStorage.setItem('secondThought_items', JSON.stringify(updatedItems));
-      localStorage.setItem(`secondThought_user_${user.id}_items`, JSON.stringify(updatedItems));
-      console.log('✅ Also saved to localStorage');
+      // Update localStorage
+      const localKey = `secondThought_user_${user.id}_items`;
+      localStorage.setItem(localKey, JSON.stringify(updatedItems));
+      console.log('✅ Saved to localStorage');
+      
+      alert(`✅ ${item.name} added successfully!`);
     } else {
-      console.error('❌ Failed to save to Supabase:', error);
+      console.error('❌ Failed to save:', error);
+      
       // Rollback UI
       setItems(items);
-      const errorMsg = error?.message || 'Unknown error';
       
-      // Show detailed error
-      if (errorMsg.includes('timeout')) {
-        alert(`Supabase connection timeout.\n\nThis is a browser/network issue blocking API calls.\n\nTry:\n1. Different browser\n2. Disable VPN/extensions\n3. Different network\n\nYour items are saved in localStorage for now.`);
-      } else {
-        alert(`Failed to save item: ${errorMsg}\n\nCheck the console (F12) for details.`);
-      }
+      // Show error details
+      const errorMsg = error?.message || error?.toString() || 'Unknown error';
+      alert(`Failed to save item\n\nError: ${errorMsg}\n\nCheck console (F12) for details.`);
     }
   };
 
@@ -125,33 +138,32 @@ function AppContent() {
   const handleDeleteItem = async (itemId: string) => {
     if (!user) return;
     
-    console.log('🗑️ Deleting item from Supabase...');
+    if (!confirm('Are you sure you want to delete this item?')) {
+      return;
+    }
     
-    // Delete from Supabase first (with longer timeout)
+    console.log('🗑️ Deleting item:', itemId);
+    
+    // Delete from Supabase
     const { success, error } = await deleteItemDb(itemId, user.id);
     
     if (success) {
       console.log('✅ Item deleted from Supabase');
       
-      // Update UI after successful delete
+      // Update UI
       const updatedItems = items.filter(item => item.id !== itemId);
       setItems(updatedItems);
       
       // Update localStorage
-      const localStorageKey = `secondThought_user_${user.id}_items`;
-      localStorage.setItem(localStorageKey, JSON.stringify(updatedItems));
-      console.log('✅ Item deleted from localStorage');
+      const localKey = `secondThought_user_${user.id}_items`;
+      localStorage.setItem(localKey, JSON.stringify(updatedItems));
       
       setCurrentView('home');
+      alert('✅ Item deleted successfully!');
     } else {
-      console.error('❌ Failed to delete from Supabase:', error);
-      const errorMsg = error?.message || 'Unknown error';
-      
-      if (errorMsg.includes('timeout')) {
-        alert(`Supabase connection timeout.\n\nThis is a browser/network issue.\n\nThe item is still in localStorage.\n\nTry a different browser or network.`);
-      } else {
-        alert(`Failed to delete item: ${errorMsg}`);
-      }
+      console.error('❌ Delete failed:', error);
+      const errorMsg = error?.message || error?.toString() || 'Unknown error';
+      alert(`Failed to delete item\n\nError: ${errorMsg}`);
     }
   };
 
@@ -169,10 +181,39 @@ function AppContent() {
     );
   }
 
-  // Show auth screen if not logged in
-  if (!user) {
-    return <Auth onSignIn={signIn} onSignUp={signUp} />;
-  }
+  // Sign In Required Message Component
+  const SignInRequired = () => {
+    const handleGoToSignIn = () => {
+      setCurrentView('mission');
+      // Scroll to onboarding section after a short delay to allow the view to render
+      setTimeout(() => {
+        const onboardingSection = document.getElementById('onboarding-section');
+        if (onboardingSection) {
+          onboardingSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+    };
+
+    return (
+      <div className="flex flex-col items-center justify-center py-16 px-4">
+        <div className="max-w-md text-center space-y-4">
+          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+            <User className="w-8 h-8 text-primary" />
+          </div>
+          <h2 className="text-2xl font-bold text-foreground">Sign In Required</h2>
+          <p className="text-muted-foreground">
+            You need to be logged in to access this feature. Please sign in or create an account to continue.
+          </p>
+          <button
+            onClick={handleGoToSignIn}
+            className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-full hover:bg-primary/90 transition-all shadow-md mt-4"
+          >
+            Go to Sign In
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="w-full min-h-screen bg-background overflow-y-auto">
@@ -239,7 +280,7 @@ function AppContent() {
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-primary text-primary-foreground hover:bg-primary/90'
                 }`}
-                title="View Profile"
+                title="Profile"
               >
                 <User className="w-5 h-5" />
                 <span className="hidden sm:inline">Profile</span>
@@ -251,45 +292,69 @@ function AppContent() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-16">
-        {currentView === 'home' && (
-          <Home 
-            items={items} 
-            onItemClick={handleItemClick}
-            onAddItem={() => setCurrentView('add')}
-          />
+        {currentView === 'mission' && (
+          <OurMission onGetStarted={() => setCurrentView('home')} userEmail={user?.email} />
         )}
-        {currentView === 'item' && selectedItem && (
-          <ItemDetail 
-            item={selectedItem} 
-            onBack={() => setCurrentView('home')}
-            onDelete={handleDeleteItem}
-          />
+        {currentView === 'home' && (
+          user ? (
+            <Home 
+              items={items} 
+              onItemClick={handleItemClick}
+              onAddItem={() => setCurrentView('add')}
+            />
+          ) : (
+            <SignInRequired />
+          )
+        )}
+        {currentView === 'item' && (
+          user && selectedItem ? (
+            <ItemDetail 
+              item={selectedItem} 
+              onBack={() => setCurrentView('home')}
+              onDelete={handleDeleteItem}
+            />
+          ) : (
+            <SignInRequired />
+          )
         )}
         {currentView === 'add' && (
-          <AddItemForm 
-            onSubmit={handleAddItem}
-            onCancel={() => setCurrentView('home')}
-          />
+          user ? (
+            <AddItemForm 
+              onSubmit={handleAddItem}
+              onCancel={() => setCurrentView('home')}
+            />
+          ) : (
+            <SignInRequired />
+          )
         )}
         {currentView === 'time' && (
-          <TimeBasedView 
-            items={items} 
-            onItemClick={handleItemClick}
-            onAddItem={() => setCurrentView('add')}
-          />
+          user ? (
+            <TimeBasedView 
+              items={items} 
+              onItemClick={handleItemClick}
+              onAddItem={() => setCurrentView('add')}
+            />
+          ) : (
+            <SignInRequired />
+          )
         )}
         {currentView === 'goals' && (
-          <GoalsBasedView 
-            items={items} 
-            onItemClick={handleItemClick}
-            onAddItem={() => setCurrentView('add')}
-          />
-        )}
-        {currentView === 'mission' && (
-          <OurMission onGetStarted={() => setCurrentView('home')} />
+          user ? (
+            <GoalsBasedView 
+              items={items} 
+              onItemClick={handleItemClick}
+              onAddItem={() => setCurrentView('add')}
+            />
+          ) : (
+            <SignInRequired />
+          )
         )}
         {currentView === 'profile' && (
-          <Profile items={items} />
+          user ? (
+            <Profile items={items} />
+          ) : (
+            <SignInRequired />
+          )
         )}
       </main>
     </div>
