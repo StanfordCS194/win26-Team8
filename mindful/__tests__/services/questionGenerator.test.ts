@@ -20,7 +20,8 @@ describe('generateQuestions', () => {
 
     const result = await generateQuestions('AirPods');
 
-    expect(result).toEqual(DEFAULT_QUESTIONS);
+    expect(result.questions).toEqual(DEFAULT_QUESTIONS);
+    expect(result.usedFallback).toBe(true);
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
@@ -29,7 +30,8 @@ describe('generateQuestions', () => {
 
     const result = await generateQuestions('AirPods');
 
-    expect(result).toEqual(DEFAULT_QUESTIONS);
+    expect(result.questions).toEqual(DEFAULT_QUESTIONS);
+    expect(result.usedFallback).toBe(true);
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
@@ -52,7 +54,8 @@ describe('generateQuestions', () => {
 
     const result = await generateQuestions('AirPods');
 
-    expect(result).toEqual(mockQuestions);
+    expect(result.questions).toEqual(mockQuestions);
+    expect(result.usedFallback).toBeUndefined();
     expect(mockFetch).toHaveBeenCalledOnce();
   });
 
@@ -66,7 +69,8 @@ describe('generateQuestions', () => {
     });
 
     const result = await generateQuestions('AirPods');
-    expect(result).toEqual(DEFAULT_QUESTIONS);
+    expect(result.questions).toEqual(DEFAULT_QUESTIONS);
+    expect(result.usedFallback).toBe(true);
   });
 
   it('falls back to DEFAULT_QUESTIONS when response has no content', async () => {
@@ -78,7 +82,8 @@ describe('generateQuestions', () => {
     });
 
     const result = await generateQuestions('AirPods');
-    expect(result).toEqual(DEFAULT_QUESTIONS);
+    expect(result.questions).toEqual(DEFAULT_QUESTIONS);
+    expect(result.usedFallback).toBe(true);
   });
 
   it('falls back to DEFAULT_QUESTIONS when JSON cannot be parsed from response', async () => {
@@ -92,7 +97,8 @@ describe('generateQuestions', () => {
     });
 
     const result = await generateQuestions('AirPods');
-    expect(result).toEqual(DEFAULT_QUESTIONS);
+    expect(result.questions).toEqual(DEFAULT_QUESTIONS);
+    expect(result.usedFallback).toBe(true);
   });
 
   it('falls back to DEFAULT_QUESTIONS when response has wrong number of questions', async () => {
@@ -111,7 +117,8 @@ describe('generateQuestions', () => {
     });
 
     const result = await generateQuestions('AirPods');
-    expect(result).toEqual(DEFAULT_QUESTIONS);
+    expect(result.questions).toEqual(DEFAULT_QUESTIONS);
+    expect(result.usedFallback).toBe(true);
   });
 
   it('falls back to DEFAULT_QUESTIONS when questions have invalid structure', async () => {
@@ -132,7 +139,8 @@ describe('generateQuestions', () => {
     });
 
     const result = await generateQuestions('AirPods');
-    expect(result).toEqual(DEFAULT_QUESTIONS);
+    expect(result.questions).toEqual(DEFAULT_QUESTIONS);
+    expect(result.usedFallback).toBe(true);
   });
 
   it('falls back to DEFAULT_QUESTIONS on network error', async () => {
@@ -141,7 +149,8 @@ describe('generateQuestions', () => {
     mockFetch.mockRejectedValueOnce(new Error('Network error'));
 
     const result = await generateQuestions('AirPods');
-    expect(result).toEqual(DEFAULT_QUESTIONS);
+    expect(result.questions).toEqual(DEFAULT_QUESTIONS);
+    expect(result.usedFallback).toBe(true);
   });
 
   it('extracts JSON array even with surrounding text', async () => {
@@ -162,6 +171,7 @@ describe('generateQuestions', () => {
     });
 
     const result = await generateQuestions('Test Product');
-    expect(result).toEqual(mockQuestions);
+    expect(result.questions).toEqual(mockQuestions);
+    expect(result.usedFallback).toBeUndefined();
   });
 });

@@ -1,5 +1,6 @@
 import type { Item, QuestionAnswer } from '../types/item';
-import { ArrowLeft, Calendar, Target, Trash2 } from 'lucide-react';
+import { ArrowLeft, Calendar, Target, Trash2, ShoppingBag, Lock } from 'lucide-react';
+import { useState } from 'react';
 
 interface ItemDetailProps {
   item: Item;
@@ -93,9 +94,60 @@ function generateMindfulnessExplanation(questionnaire: QuestionAnswer[], finalSc
 }
 
 export function ItemDetail({ item, onBack, onDelete }: ItemDetailProps) {
+  const [unlockPassword, setUnlockPassword] = useState('');
+  const [unlockError, setUnlockError] = useState('');
+  const [unlockSuccess, setUnlockSuccess] = useState(false);
+  const [isUnlocking, setIsUnlocking] = useState(false);
+
   const handleDelete = () => {
     if (window.confirm('Are you sure you want to delete this item?')) {
       onDelete(item.id);
+    }
+  };
+
+  const handlePasswordChange = (value: string) => {
+    setUnlockPassword(value);
+    setUnlockError('');
+    setUnlockSuccess(false);
+    
+    // Real-time validation if password is set
+    if (item.unlockPassword && value.trim()) {
+      if (value.trim() === item.unlockPassword) {
+        setUnlockSuccess(true);
+        setUnlockError('');
+      } else if (value.trim().length >= item.unlockPassword.length) {
+        setUnlockError('Incorrect password');
+        setUnlockSuccess(false);
+      }
+    }
+  };
+
+  const handleUnlock = (e: React.FormEvent) => {
+    e.preventDefault();
+    setUnlockError('');
+    setUnlockSuccess(false);
+    
+    if (!unlockPassword.trim()) {
+      setUnlockError('Please enter the unlock password');
+      return;
+    }
+
+    if (!item.unlockPassword) {
+      setUnlockError('This item does not have an unlock password set');
+      return;
+    }
+
+    if (unlockPassword.trim() === item.unlockPassword) {
+      // Password matches - unlock by deleting the item
+      setUnlockSuccess(true);
+      setIsUnlocking(true);
+      // Small delay for better UX
+      setTimeout(() => {
+        onDelete(item.id);
+      }, 500);
+    } else {
+      setUnlockError('Incorrect password. Please check with your friend.');
+      setUnlockSuccess(false);
     }
   };
 
@@ -112,12 +164,19 @@ export function ItemDetail({ item, onBack, onDelete }: ItemDetailProps) {
       <div className="bg-card rounded-2xl shadow-sm border border-border/50 overflow-hidden">
         <div className="grid md:grid-cols-2 gap-6 p-8">
           {/* Image */}
-          <div className="aspect-square bg-muted/30 rounded-xl overflow-hidden">
-            <img
-              src={item.imageUrl}
-              alt={item.name}
-              className="w-full h-full object-cover"
-            />
+          <div className="aspect-square bg-muted/30 rounded-xl overflow-hidden flex items-center justify-center">
+            {(item.imageUrl && item.imageUrl.trim()) ? (
+              <img
+                src={item.imageUrl.trim()}
+                alt={item.name}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.src = 'https://via.placeholder.com/400/e5e7eb/9ca3af?text=No+Image';
+                }}
+              />
+            ) : (
+              <ShoppingBag className="w-20 h-20 text-muted-foreground/30" />
+            )}
           </div>
 
           {/* Details */}
@@ -145,6 +204,100 @@ export function ItemDetail({ item, onBack, onDelete }: ItemDetailProps) {
                     </p>
                   )}
                 </div>
+
+                {/* Goal description for goals-based items */}
+                {item.constraintType === 'goals' && (() => {
+                  const goalQuestion = item.questionnaire?.find(qa => qa.id === 'goal');
+                  return (
+                    <div className="space-y-4">
+                      {goalQuestion && goalQuestion.answer && (
+                        <div className="p-5 bg-secondary/20 rounded-xl border border-secondary/30">
+                          <div className="flex items-start gap-3">
+                            <Target className="w-5 h-5 text-accent mt-0.5 flex-shrink-0" />
+                            <div className="flex-1">
+                              <div className="text-sm text-foreground/80 font-medium mb-2">Your Goal</div>
+                              <p className="text-foreground/90 leading-relaxed mb-3">
+                                {goalQuestion.answer}
+                              </p>
+                              {item.friendName && (
+                                <div className="pt-3 border-t border-secondary/30">
+                                  <div className="text-xs text-foreground/70 mb-1">Unlock Guardian</div>
+                                  <div className="text-sm font-medium text-accent">
+                                    {item.friendName}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Unlock Password Input - Show for all goal-based items */}
+                      <form onSubmit={handleUnlock} className="p-5 bg-primary/10 rounded-xl border border-primary/20">
+                        <div className="flex items-start gap-3">
+                          <Lock className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                          <div className="flex-1">
+                            <div className="text-sm text-foreground/80 font-medium mb-2">Unlock Item</div>
+                            <p className="text-xs text-muted-foreground mb-3">
+                              {item.friendName 
+                                ? `Enter the password sent to ${item.friendName} to unlock this item and mark your goal as complete.`
+                                : 'Enter the unlock password to unlock this item and mark your goal as complete.'}
+                            </p>
+                            <div className="flex gap-2">
+                              <div className="flex-1 relative">
+                                <input
+                                  type="text"
+                                  value={unlockPassword}
+                                  onChange={(e) => handlePasswordChange(e.target.value)}
+                                  placeholder="Enter unlock password"
+                                  className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 text-foreground placeholder:text-muted-foreground transition-colors ${
+                                    unlockSuccess
+                                      ? 'border-green-500 bg-green-50/50 focus:ring-green-500/50'
+                                      : unlockError
+                                      ? 'border-destructive bg-destructive/10 focus:ring-destructive/50'
+                                      : 'border-border bg-input-background focus:ring-primary/50'
+                                  }`}
+                                  disabled={isUnlocking}
+                                />
+                                {unlockPassword.trim() && item.unlockPassword && (
+                                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                    {unlockSuccess ? (
+                                      <span className="text-green-600 text-sm font-medium">✓ Correct</span>
+                                    ) : unlockError && unlockPassword.trim().length >= item.unlockPassword.length ? (
+                                      <span className="text-destructive text-sm font-medium">✗ Incorrect</span>
+                                    ) : null}
+                                  </div>
+                                )}
+                              </div>
+                              <button
+                                type="submit"
+                                disabled={isUnlocking || !unlockPassword.trim() || !item.unlockPassword}
+                                className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                              >
+                                {isUnlocking ? 'Unlocking...' : 'Unlock'}
+                              </button>
+                            </div>
+                            {unlockError && !unlockSuccess && (
+                              <p className="text-sm text-destructive mt-2">
+                                {unlockError}
+                              </p>
+                            )}
+                            {unlockSuccess && (
+                              <p className="text-sm text-green-600 mt-2 font-medium">
+                                Password correct! Unlocking item...
+                              </p>
+                            )}
+                            {!item.unlockPassword && (
+                              <p className="text-xs text-muted-foreground mt-2">
+                                No unlock password is set for this item.
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </form>
+                    </div>
+                  );
+                })()}
 
                 {item.constraintType === 'time' && item.waitUntilDate && (
                   <div className="flex items-center gap-3 p-5 bg-primary/10 rounded-xl border border-primary/20">
@@ -201,38 +354,40 @@ export function ItemDetail({ item, onBack, onDelete }: ItemDetailProps) {
           </h2>
 
           <div className="space-y-6">
-            {item.questionnaire.map((qa, index) => {
-              // Check if answer is a numeric value (1-5 scale)
-              const numericAnswer = parseInt(qa.answer, 10);
-              const isNumericAnswer = !isNaN(numericAnswer) && numericAnswer >= 1 && numericAnswer <= 5;
-              
-              return (
-                <div key={qa.id} className="p-5 bg-muted/20 rounded-xl">
-                  <h3 className="font-medium text-foreground mb-3 font-serif">
-                    {index + 1}. {qa.question}
-                  </h3>
-                  {isNumericAnswer ? (
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-3">
-                        <span className="text-2xl font-semibold text-primary">
-                          {numericAnswer}/5
-                        </span>
-                        <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-primary transition-all"
-                            style={{ width: `${(numericAnswer / 5) * 100}%` }}
-                          />
+            {item.questionnaire
+              .filter(qa => qa.id !== 'goal') // Exclude goal from reflections section since it's shown at top
+              .map((qa, index) => {
+                // Check if answer is a numeric value (1-5 scale)
+                const numericAnswer = parseInt(qa.answer, 10);
+                const isNumericAnswer = !isNaN(numericAnswer) && numericAnswer >= 1 && numericAnswer <= 5;
+                
+                return (
+                  <div key={qa.id} className="p-5 bg-muted/20 rounded-xl">
+                    <h3 className="font-medium text-foreground mb-3 font-serif">
+                      {index + 1}. {qa.question}
+                    </h3>
+                    {isNumericAnswer ? (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl font-semibold text-primary">
+                            {numericAnswer}/5
+                          </span>
+                          <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-primary transition-all"
+                              style={{ width: `${(numericAnswer / 5) * 100}%` }}
+                            />
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ) : (
-                    <p className="text-foreground/80 leading-relaxed">
-                      {qa.answer}
-                    </p>
-                  )}
-                </div>
-              );
-            })}
+                    ) : (
+                      <p className="text-foreground/80 leading-relaxed">
+                        {qa.answer}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
           </div>
         </div>
       </div>

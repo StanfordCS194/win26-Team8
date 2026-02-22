@@ -1,10 +1,14 @@
-import { useState, useEffect } from 'react';
-import { Item, QuestionAnswer } from '../App';
-import { ImageWithFallback } from './figma/ImageWithFallback';
-import { fetchUrlMetadata } from '../services/urlMetadata';
+import { useEffect, useState, useRef } from 'react';
+import type { Item, ItemCategory, QuestionAnswer } from '../types/item';
 import { generateQuestions, GeneratedQuestion } from '../services/questionGenerator';
+import { detectCategory } from '../services/categoryDetector';
+import { fetchUrlMetadata } from '../services/urlMetadata';
 import { Loader2, Link } from 'lucide-react';
 import { Slider } from './ui/slider';
+
+const ITEM_CATEGORIES: ItemCategory[] = ['Beauty', 'Clothes', 'Accessories', 'Sports', 'Electronics', 'Home', 'Other'];
+
+
 
 // Generate intuitive explanation of how mindfulness score reflects the user's responses
 function generateMindfulnessExplanation(questionnaire: QuestionAnswer[], finalScore: number): string {
@@ -93,47 +97,59 @@ function generateMindfulnessExplanation(questionnaire: QuestionAnswer[], finalSc
 interface AddItemFormProps {
   onSubmit: (item: Omit<Item, 'id' | 'addedDate'>) => void;
   onCancel: () => void;
-  initialUrl?: string;
 }
 
-export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps) {
+export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [productUrl, setProductUrl] = useState('');
   const [name, setName] = useState('');
-  const [imageUrl, setImageUrl] = useState(initialUrl ?? '');
+  const [imageUrl, setImageUrl] = useState('');
+  const [category, setCategory] = useState<ItemCategory>('Other');
+  const [categoryIsAISuggested, setCategoryIsAISuggested] = useState(false);
   const [hasUrlTouched, setHasUrlTouched] = useState(false);
   const [constraintType, setConstraintType] = useState<'time' | 'goals'>('time');
   const [waitUntilDate, setWaitUntilDate] = useState('');
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
   const [consumptionScore, setConsumptionScore] = useState(1);
   const [goalDescription, setGoalDescription] = useState('');
+  const [friendName, setFriendName] = useState('');
+  const [friendEmail, setFriendEmail] = useState('');
 
   // Dynamic questions state
   const [questions, setQuestions] = useState<GeneratedQuestion[]>([]);
+  const [questionsUsedFallback, setQuestionsUsedFallback] = useState(false);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
-
-  // URL metadata fetching state
   const [isLoadingMetadata, setIsLoadingMetadata] = useState(false);
-  useEffect(() => {
-    if (initialUrl && !hasUrlTouched) {
-      setImageUrl(initialUrl);
+
+  // Generate a random unlock password
+  const generateUnlockPassword = (): string => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let password = '';
+    for (let i = 0; i < 6; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-  }, [initialUrl, hasUrlTouched]);
+    return password;
+  };
 
   const resetForm = () => {
     setStep(1);
     setProductUrl('');
     setName('');
-    setImageUrl(initialUrl ?? '');
+    setImageUrl('');
+    setCategory('Other');
+    setCategoryIsAISuggested(false);
     setHasUrlTouched(false);
     setConstraintType('time');
     setWaitUntilDate('');
     setDifficulty('medium');
     setConsumptionScore(1);
     setQuestions([]);
+    setQuestionsUsedFallback(false);
     setAnswers({});
     setGoalDescription('');
+    setFriendName('');
+    setFriendEmail('');
   };
 
   const handleFetchMetadata = async () => {
@@ -144,12 +160,17 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
       const metadata = await fetchUrlMetadata(productUrl);
       if (metadata.title) {
         setName(metadata.title);
+        // Auto-detect category based on product name
+        const detectedCategory = await detectCategory(metadata.title);
+        setCategory(detectedCategory);
+        setCategoryIsAISuggested(true);
       }
       if (metadata.image) {
         setImageUrl(metadata.image);
       }
     } catch (error) {
       console.error('Error fetching metadata:', error);
+      alert('Failed to fetch product details. Please enter manually.');
     } finally {
       setIsLoadingMetadata(false);
     }
@@ -194,8 +215,9 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
     setIsLoadingQuestions(true);
 
     try {
-      const generatedQuestions = await generateQuestions(name);
+      const { questions: generatedQuestions, usedFallback } = await generateQuestions(name);
       setQuestions(generatedQuestions);
+      setQuestionsUsedFallback(!!usedFallback);
 
       const initialAnswers: Record<string, number> = {};
       generatedQuestions.forEach((q) => {
@@ -261,11 +283,17 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
 
     onSubmit({
       name,
-      imageUrl: imageUrl || '',
+      imageUrl: imageUrl?.trim() || undefined,
+      category,
       constraintType,
       consumptionScore: calculatedMindfulnessScore,
       ...(constraintType === 'time' ? { waitUntilDate } : { difficulty }),
       questionnaire,
+      ...(constraintType === 'goals' && friendName.trim() ? {
+        friendName: friendName.trim(),
+        friendEmail: friendEmail.trim() || undefined,
+        unlockPassword: generateUnlockPassword(),
+      } : {}),
     });
 
     resetForm();
@@ -338,28 +366,57 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
           {/* Image URL */}
           <div>
             <label className="block text-sm font-medium text-foreground/80 mb-2">
-              Image URL
+              Image URL (Optional)
             </label>
             <input
               type="url"
               value={imageUrl}
-              onChange={(e) => {
-                setImageUrl(e.target.value);
-                setHasUrlTouched(true);
-              }}
+              onChange={(e) => setImageUrl(e.target.value)}
               placeholder="https://example.com/image.jpg"
               className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
             />
-            {imageUrl && (
-              <div className="mt-2">
-                <img
-                  src={imageUrl}
-                  alt="Preview"
-                  className="w-20 h-20 object-cover rounded-lg border border-border"
-                  onError={(e) => (e.currentTarget.style.display = 'none')}
+            {(imageUrl && imageUrl.trim()) ? (
+              <div className="mt-3 relative rounded-xl overflow-hidden border border-border bg-muted/20">
+                <img 
+                  src={imageUrl.trim()} 
+                  alt="Product preview" 
+                  className="w-full max-h-96 object-contain"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.parentElement!.innerHTML = '<p class="text-sm text-muted-foreground p-4">Invalid image URL</p>';
+                  }}
                 />
               </div>
-            )}
+            ) : null}
+          </div>
+
+          {/* Category */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <label className="text-sm font-medium text-foreground/80">
+                Category
+              </label>
+              {categoryIsAISuggested && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                  AI Suggested
+                </span>
+              )}
+            </div>
+            <select
+              value={category}
+              onChange={(e) => {
+                setCategory(e.target.value as ItemCategory);
+                setCategoryIsAISuggested(false);
+              }}
+              className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground"
+            >
+              {ITEM_CATEGORIES.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Actions */}
@@ -392,6 +449,11 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
 
         {step === 2 && (
           <form onSubmit={handleStep2Submit} className="space-y-6">
+            {questionsUsedFallback && (
+              <p className="text-sm text-muted-foreground bg-muted/50 rounded-xl px-4 py-3 border border-border/50">
+                Using default reflection questions (AI was temporarily busy). You can still continue.
+              </p>
+            )}
             <div className="space-y-6">
               {/* Consumption Score - Question 1 */}
               <div className="space-y-3">
@@ -642,6 +704,43 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
                 rows={4}
                 className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground resize-none"
               />
+            </div>
+
+            <div className="space-y-4 pt-4 border-t border-border/50">
+              <p className="text-sm text-foreground/80">
+                Choose a friend who will receive a password to unlock this item once you complete your goal:
+              </p>
+              
+              <div>
+                <label className="block text-sm font-medium text-foreground/80 mb-2">
+                  Friend's Name *
+                </label>
+                <input
+                  type="text"
+                  value={friendName}
+                  onChange={(e) => setFriendName(e.target.value)}
+                  placeholder="Enter your friend's name"
+                  required={constraintType === 'goals'}
+                  className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground/80 mb-2">
+                  Friend's Email *
+                </label>
+                <input
+                  type="email"
+                  value={friendEmail}
+                  onChange={(e) => setFriendEmail(e.target.value)}
+                  placeholder="friend@example.com"
+                  required={constraintType === 'goals'}
+                  className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Your friend will receive an email with a password to unlock this item once you complete your goal.
+                </p>
+              </div>
             </div>
 
             <div className="flex gap-3 pt-4">
