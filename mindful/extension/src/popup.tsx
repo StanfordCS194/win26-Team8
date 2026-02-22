@@ -8,28 +8,20 @@ import type { Session } from '@supabase/supabase-js';
 
 declare const chrome: any;
 
-// --- Duplicated pure transform functions from services/itemService.ts ---
-// Kept here to avoid transitively bundling the web app's Supabase client.
-
-function itemToDbItem(
-  item: Omit<Item, 'id' | 'addedDate'>,
-  userId: string
-): { user_id: string; name: string; url: string | null; image_url: string; cost: number } {
+// Transform item to match the webapp's database schema (database.ts / database-alt.ts)
+function itemToDbItem(item: Omit<Item, 'id' | 'addedDate'>, userId: string) {
   return {
     user_id: userId,
     name: item.name,
-    url: null,
-    image_url: item.imageUrl,
-    cost: item.consumptionScore * 10,
+    image_url: item.imageUrl || null,
+    category: item.category || null,
+    constraint_type: item.constraintType,
+    consumption_score: item.consumptionScore,
+    added_date: new Date().toISOString(),
+    wait_until_date: item.waitUntilDate || null,
+    difficulty: item.difficulty || null,
+    questionnaire: item.questionnaire,
   };
-}
-
-function createReflectionEntries(itemId: string, questionnaire: QuestionAnswer[]) {
-  return questionnaire.map((qa) => ({
-    item_id: itemId,
-    question: qa.id,
-    response: parseInt(qa.answer) || 3,
-  }));
 }
 
 // --- Main app ---
@@ -80,36 +72,41 @@ const App = () => {
   };
 
   const handleSubmit = async (item: Omit<Item, 'id' | 'addedDate'>) => {
-    if (!session?.user) return;
-    const userId = session.user.id;
+    console.log('=== handleSubmit called ===');
+    console.log('Session exists:', !!session);
+    console.log('Session user:', session?.user?.email);
 
-    setSubmitMessage('');
+    if (!session?.user) {
+      console.error('NO SESSION - cannot save item');
+      setSubmitMessage('Error: Not logged in. Please sign out and sign in again.');
+      return;
+    }
+
+    const userId = session.user.id;
+    setSubmitMessage('Saving...');
 
     try {
       const dbItem = itemToDbItem(item, userId);
+      console.log('DB item to insert:', JSON.stringify(dbItem, null, 2));
 
-      const { data: itemData, error: itemError } = await supabase
+      const { data, error: itemError } = await supabase
         .from('items')
         .insert([dbItem])
-        .select()
-        .single();
+        .select();
+
+      console.log('Supabase response - data:', data);
+      console.log('Supabase response - error:', itemError);
 
       if (itemError) {
-        setSubmitMessage(`Error saving item: ${itemError.message}`);
+        console.error('INSERT FAILED:', itemError.message, itemError.details, itemError.hint);
+        setSubmitMessage(`Error: ${itemError.message}`);
         return;
       }
 
-      const reflectionEntries = createReflectionEntries(itemData.id, item.questionnaire);
-      const { error: reflError } = await supabase
-        .from('item_reflections')
-        .insert(reflectionEntries);
-
-      if (reflError) {
-        console.error('Error saving reflections:', reflError);
-      }
-
+      console.log('Item saved successfully!');
       setSubmitMessage('Item saved! Open the web app to view it.');
     } catch (err: any) {
+      console.error('EXCEPTION saving item:', err);
       setSubmitMessage(`Error: ${err.message}`);
     }
   };

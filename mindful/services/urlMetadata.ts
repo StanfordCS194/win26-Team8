@@ -1,4 +1,4 @@
-// Service to fetch product metadata (title, image) from a URL using microlink.io
+// Service to fetch product metadata (title, image) from a URL
 
 export interface UrlMetadata {
   title: string | null;
