@@ -112,6 +112,8 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
   const [consumptionScore, setConsumptionScore] = useState(1);
   const [goalDescription, setGoalDescription] = useState('');
+  const [friendName, setFriendName] = useState('');
+  const [friendEmail, setFriendEmail] = useState('');
 
   // Dynamic questions state
   const [questions, setQuestions] = useState<GeneratedQuestion[]>([]);
@@ -136,6 +138,8 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
     setQuestionsUsedFallback(false);
     setAnswers({});
     setGoalDescription('');
+    setFriendName('');
+    setFriendEmail('');
   };
 
   const handleFetchMetadata = async () => {
@@ -275,6 +279,10 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
       consumptionScore: calculatedMindfulnessScore,
       ...(constraintType === 'time' ? { waitUntilDate } : { difficulty }),
       questionnaire,
+      ...(constraintType === 'goals' && friendName.trim() ? {
+        friendName: friendName.trim(),
+        friendEmail: friendEmail.trim() || undefined,
+      } : {}),
     });
 
     resetForm();
@@ -685,6 +693,43 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
                 rows={4}
                 className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground resize-none"
               />
+            </div>
+
+            <div className="space-y-4 pt-4 border-t border-border/50">
+              <p className="text-sm text-foreground/80">
+                Choose a friend who will receive a password to unlock this item once you complete your goal:
+              </p>
+              
+              <div>
+                <label className="block text-sm font-medium text-foreground/80 mb-2">
+                  Friend's Name *
+                </label>
+                <input
+                  type="text"
+                  value={friendName}
+                  onChange={(e) => setFriendName(e.target.value)}
+                  placeholder="Enter your friend's name"
+                  required={constraintType === 'goals'}
+                  className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground/80 mb-2">
+                  Friend's Email *
+                </label>
+                <input
+                  type="email"
+                  value={friendEmail}
+                  onChange={(e) => setFriendEmail(e.target.value)}
+                  placeholder="friend@example.com"
+                  required={constraintType === 'goals'}
+                  className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Your friend will receive an email with a password to unlock this item once you complete your goal.
+                </p>
+              </div>
             </div>
 
             <div className="flex gap-3 pt-4">

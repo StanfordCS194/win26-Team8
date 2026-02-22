@@ -153,6 +153,35 @@ export function ItemDetail({ item, onBack, onDelete }: ItemDetailProps) {
                   )}
                 </div>
 
+                {/* Goal description for goals-based items */}
+                {item.constraintType === 'goals' && item.questionnaire && (() => {
+                  const goalQuestion = item.questionnaire.find(qa => qa.id === 'goal');
+                  if (goalQuestion && goalQuestion.answer) {
+                    return (
+                      <div className="p-5 bg-secondary/20 rounded-xl border border-secondary/30">
+                        <div className="flex items-start gap-3">
+                          <Target className="w-5 h-5 text-accent mt-0.5 flex-shrink-0" />
+                          <div className="flex-1">
+                            <div className="text-sm text-foreground/80 font-medium mb-2">Your Goal</div>
+                            <p className="text-foreground/90 leading-relaxed mb-3">
+                              {goalQuestion.answer}
+                            </p>
+                            {item.friendName && (
+                              <div className="pt-3 border-t border-secondary/30">
+                                <div className="text-xs text-foreground/70 mb-1">Unlock Guardian</div>
+                                <div className="text-sm font-medium text-accent">
+                                  {item.friendName}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+
                 {item.constraintType === 'time' && item.waitUntilDate && (
                   <div className="flex items-center gap-3 p-5 bg-primary/10 rounded-xl border border-primary/20">
                     <Calendar className="w-5 h-5 text-primary" />
@@ -208,38 +237,40 @@ export function ItemDetail({ item, onBack, onDelete }: ItemDetailProps) {
           </h2>
 
           <div className="space-y-6">
-            {item.questionnaire.map((qa, index) => {
-              // Check if answer is a numeric value (1-5 scale)
-              const numericAnswer = parseInt(qa.answer, 10);
-              const isNumericAnswer = !isNaN(numericAnswer) && numericAnswer >= 1 && numericAnswer <= 5;
-              
-              return (
-                <div key={qa.id} className="p-5 bg-muted/20 rounded-xl">
-                  <h3 className="font-medium text-foreground mb-3 font-serif">
-                    {index + 1}. {qa.question}
-                  </h3>
-                  {isNumericAnswer ? (
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-3">
-                        <span className="text-2xl font-semibold text-primary">
-                          {numericAnswer}/5
-                        </span>
-                        <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-primary transition-all"
-                            style={{ width: `${(numericAnswer / 5) * 100}%` }}
-                          />
+            {item.questionnaire
+              .filter(qa => qa.id !== 'goal') // Exclude goal from reflections section since it's shown at top
+              .map((qa, index) => {
+                // Check if answer is a numeric value (1-5 scale)
+                const numericAnswer = parseInt(qa.answer, 10);
+                const isNumericAnswer = !isNaN(numericAnswer) && numericAnswer >= 1 && numericAnswer <= 5;
+                
+                return (
+                  <div key={qa.id} className="p-5 bg-muted/20 rounded-xl">
+                    <h3 className="font-medium text-foreground mb-3 font-serif">
+                      {index + 1}. {qa.question}
+                    </h3>
+                    {isNumericAnswer ? (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl font-semibold text-primary">
+                            {numericAnswer}/5
+                          </span>
+                          <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-primary transition-all"
+                              style={{ width: `${(numericAnswer / 5) * 100}%` }}
+                            />
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ) : (
-                    <p className="text-foreground/80 leading-relaxed">
-                      {qa.answer}
-                    </p>
-                  )}
-                </div>
-              );
-            })}
+                    ) : (
+                      <p className="text-foreground/80 leading-relaxed">
+                        {qa.answer}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
           </div>
         </div>
       </div>
