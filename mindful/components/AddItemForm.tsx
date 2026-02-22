@@ -122,6 +122,16 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
   const [isLoadingMetadata, setIsLoadingMetadata] = useState(false);
 
+  // Generate a random unlock password
+  const generateUnlockPassword = (): string => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let password = '';
+    for (let i = 0; i < 6; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return password;
+  };
+
   const resetForm = () => {
     setStep(1);
     setProductUrl('');
@@ -282,6 +292,7 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
       ...(constraintType === 'goals' && friendName.trim() ? {
         friendName: friendName.trim(),
         friendEmail: friendEmail.trim() || undefined,
+        unlockPassword: generateUnlockPassword(),
       } : {}),
     });
 

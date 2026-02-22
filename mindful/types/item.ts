@@ -19,4 +19,5 @@ export interface Item {
   questionnaire: QuestionAnswer[];
   friendName?: string;
   friendEmail?: string;
+  unlockPassword?: string;
 }
