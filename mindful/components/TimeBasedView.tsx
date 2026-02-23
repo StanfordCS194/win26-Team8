@@ -1,6 +1,11 @@
 import { useMemo, useState } from 'react';
 import type { Item } from '../types/item';
 import { Calendar, Clock, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from './ui/popover';
 
 interface TimeBasedViewProps {
   items: Item[];
@@ -151,16 +156,21 @@ export function TimeBasedView({ items, onItemClick, onAddItem }: TimeBasedViewPr
                   const itemsForDay = itemsByDate.get(key) || [];
                   const hasItems = itemsForDay.length > 0;
                   const unlockedCount = itemsForDay.length;
-                  const isToday = (() => {
-                    const now = new Date();
-                    return (
-                      date.getFullYear() === now.getFullYear() &&
-                      date.getMonth() === now.getMonth() &&
-                      date.getDate() === now.getDate()
-                    );
-                  })();
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                  const isFutureDay = dayStart.getTime() > today.getTime();
+                  const isToday = (
+                    date.getFullYear() === today.getFullYear() &&
+                    date.getMonth() === today.getMonth() &&
+                    date.getDate() === today.getDate()
+                  );
+                  const daysUntilUnlock = isFutureDay
+                    ? Math.ceil((dayStart.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+                    : 0;
+                  const showUnlockPreview = hasItems && isFutureDay;
 
-                  return (
+                  const dayButton = (
                     <button
                       key={key}
                       type="button"
@@ -173,6 +183,10 @@ export function TimeBasedView({ items, onItemClick, onAddItem }: TimeBasedViewPr
                         .filter(Boolean)
                         .join(' ')}
                       onClick={() => {
+                        if (showUnlockPreview) {
+                          // Popover handles the click; don't navigate
+                          return;
+                        }
                         if (itemsForDay.length === 1) {
                           onItemClick(itemsForDay[0].id);
                         }
@@ -183,7 +197,7 @@ export function TimeBasedView({ items, onItemClick, onAddItem }: TimeBasedViewPr
                       </span>
                       {hasItems && (
                         <div className="mt-1 flex flex-col items-center gap-0.5">
-                          <div className="flex gap-0.5">
+                          <div className="flex gap-0.5 items-center justify-center">
                             {itemsForDay.slice(0, 3).map((item) => (
                               <span
                                 key={item.id}
@@ -195,8 +209,11 @@ export function TimeBasedView({ items, onItemClick, onAddItem }: TimeBasedViewPr
                                 +{itemsForDay.length - 3}
                               </span>
                             )}
+                            {showUnlockPreview && (
+                              <Clock className="w-3 h-3 text-amber-600 flex-shrink-0" aria-hidden />
+                            )}
                           </div>
-                          {unlockedCount > 0 && (
+                          {hasItems && !isFutureDay && (
                             <span className="text-[11px] font-semibold text-emerald-700 text-center px-1 truncate max-w-full">
                               {unlockedCount} item{unlockedCount !== 1 ? 's' : ''} unlocked!
                             </span>
@@ -205,6 +222,39 @@ export function TimeBasedView({ items, onItemClick, onAddItem }: TimeBasedViewPr
                       )}
                     </button>
                   );
+
+                  if (showUnlockPreview) {
+                    return (
+                      <Popover key={key}>
+                        <PopoverTrigger asChild>
+                          {dayButton}
+                        </PopoverTrigger>
+                        <PopoverContent
+                          side="top"
+                          align="center"
+                          className="max-w-[min(280px,90vw)] bg-green-50 border-green-200 text-foreground shadow-md"
+                        >
+                          <div className="space-y-2">
+                            <p className="text-sm font-semibold text-green-800 border-b border-green-200 pb-2">
+                              {daysUntilUnlock} day{daysUntilUnlock !== 1 ? 's' : ''} until unlocked
+                            </p>
+                            <ul className="space-y-1.5 text-sm text-green-900/90">
+                              {itemsForDay.map((item) => (
+                                <li key={item.id} className="leading-tight">
+                                  {item.name}
+                                </li>
+                              ))}
+                            </ul>
+                            <p className="text-xs text-green-700 pt-0.5">
+                              {itemsForDay.length === 1 ? 'This item' : 'These items'} will be unlocked on this day.
+                            </p>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    );
+                  }
+
+                  return dayButton;
                 })}
               </div>
             ))}
