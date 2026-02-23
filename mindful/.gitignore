@@ -40,3 +40,6 @@ yarn-error.*
 /ios
 /android
 .env
+
+# extension build temp (Windows file-lock workaround)
+extension/popup.tmp.js

@@ -12375,16 +12375,17 @@ Example for "Tennis Racket":
 
 Only respond with the JSON array, no other text.`;
   function getApiKey() {
-    if (typeof process !== "undefined" && process.env) {
-      return process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY || "";
+    try {
+      return "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";
+    } catch {
+      return "";
     }
-    return "";
   }
   async function generateQuestions(productName) {
     const apiKey = getApiKey();
     if (typeof process !== "undefined" && process.env) {
       console.log("Environment check:");
-      console.log("   EXPO_PUBLIC_ANTHROPIC_API_KEY exists:", !!process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY);
+      console.log("   EXPO_PUBLIC_ANTHROPIC_API_KEY exists:", true);
     }
     console.log("   API key length:", apiKey.length);
     if (apiKey) {
@@ -12487,10 +12488,11 @@ Categories:
 
 Return ONLY the category name (one word: Beauty, Clothes, Accessories, Sports, Electronics, Home, or Other). Do not include any explanation or additional text.`;
   function getApiKey2() {
-    if (typeof process !== "undefined" && process.env) {
-      return process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY || "";
+    try {
+      return "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";
+    } catch {
+      return "";
     }
-    return "";
   }
   function detectCategoryFallback(itemName) {
     if (!itemName || itemName.trim().length === 0) {
@@ -12847,34 +12849,103 @@ Return ONLY the category name (one word: Beauty, Clothes, Accessories, Sports, E
   }
 
   // services/urlMetadata.ts
-  async function fetchUrlMetadata(url) {
+  var BOT_CHECK_PATTERNS = [
+    /robot or human/i,
+    /are you a human/i,
+    /captcha/i,
+    /verify you're human/i,
+    /access denied/i,
+    /just a moment/i,
+    // Cloudflare
+    /attention required/i,
+    // Cloudflare
+    /please verify/i,
+    /security check/i,
+    /blocked/i,
+    /pardon our interruption/i
+  ];
+  function isBotCheckTitle(title) {
+    return BOT_CHECK_PATTERNS.some((pattern) => pattern.test(title));
+  }
+  async function scrapeMetadata(url) {
     try {
       const apiUrl = `https://api.microlink.io?url=${encodeURIComponent(url)}`;
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 1e4);
-      const response = await fetch(apiUrl, {
-        signal: controller.signal
-      });
+      const response = await fetch(apiUrl, { signal: controller.signal });
       clearTimeout(timeoutId);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch: ${response.status}`);
-      }
+      if (!response.ok) return { title: null, image: null };
       const data = await response.json();
-      if (data.status !== "success") {
-        throw new Error("API returned non-success status");
+      if (data.status !== "success") return { title: null, image: null };
+      const title = data.data.title || null;
+      const image = data.data.image?.url || null;
+      if (title && isBotCheckTitle(title)) {
+        console.log("Microlink returned bot-check page, ignoring:", title);
+        return { title: null, image: null };
       }
-      return {
-        title: data.data.title || null,
-        image: data.data.image?.url || null
-      };
+      if (title) console.log("Microlink scraped title:", title);
+      return { title, image };
     } catch (error) {
-      if (error instanceof Error && error.name === "AbortError") {
-        console.error("Request timed out");
-      } else {
-        console.error("Error fetching URL metadata:", error);
-      }
+      console.error("Microlink scraping failed:", error);
       return { title: null, image: null };
     }
+  }
+  async function inferProductNameFromUrl(url) {
+    const apiKey = "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";
+    if (!apiKey || apiKey === "your_api_key_here") {
+      console.warn("No API key available for AI URL inference");
+      return null;
+    }
+    try {
+      console.log("AI inference: calling Claude for URL:", url);
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+          "anthropic-dangerous-direct-browser-access": "true"
+        },
+        body: JSON.stringify({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 100,
+          messages: [
+            {
+              role: "user",
+              content: `Extract the product name from this URL. Return ONLY the product name, nothing else. If you cannot determine a product name, return "Unknown Product".
+
+URL: ${url}`
+            }
+          ]
+        })
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("AI inference API error:", response.status, errorText);
+        return null;
+      }
+      const data = await response.json();
+      const name = data.content?.[0]?.text?.trim();
+      if (!name || name === "Unknown Product") {
+        console.log("AI could not determine product name");
+        return null;
+      }
+      console.log("AI inferred product name:", name);
+      return name;
+    } catch (error) {
+      console.error("Error in AI URL inference:", error);
+      return null;
+    }
+  }
+  async function fetchUrlMetadata(url) {
+    const [scraped, aiTitle] = await Promise.all([
+      scrapeMetadata(url),
+      inferProductNameFromUrl(url)
+    ]);
+    const title = scraped.title || aiTitle;
+    const image = scraped.image;
+    console.log("Final result \u2014 scraped:", scraped.title, "| AI:", aiTitle, "| using:", title);
+    return { title, image };
   }
 
   // services/imageGenerator.ts
@@ -17187,6 +17258,7 @@ Return ONLY the category name (one word: Beauty, Clothes, Accessories, Sports, E
     const [productUrl, setProductUrl] = (0, import_react5.useState)(initialUrl ?? "");
     const [name, setName] = (0, import_react5.useState)("");
     const [imageUrl, setImageUrl] = (0, import_react5.useState)("");
+    const [hasProductUrlTouched, setHasProductUrlTouched] = (0, import_react5.useState)(false);
     const [category, setCategory] = (0, import_react5.useState)("Other");
     const [categoryIsAISuggested, setCategoryIsAISuggested] = (0, import_react5.useState)(false);
     const [hasUrlTouched, setHasUrlTouched] = (0, import_react5.useState)(false);
@@ -17195,6 +17267,8 @@ Return ONLY the category name (one word: Beauty, Clothes, Accessories, Sports, E
     const [difficulty, setDifficulty] = (0, import_react5.useState)("medium");
     const [consumptionScore, setConsumptionScore] = (0, import_react5.useState)(1);
     const [goalDescription, setGoalDescription] = (0, import_react5.useState)("");
+    const [friendName, setFriendName] = (0, import_react5.useState)("");
+    const [friendEmail, setFriendEmail] = (0, import_react5.useState)("");
     const [questions, setQuestions] = (0, import_react5.useState)([]);
     const [questionsUsedFallback, setQuestionsUsedFallback] = (0, import_react5.useState)(false);
     const [answers, setAnswers] = (0, import_react5.useState)({});
@@ -17206,11 +17280,25 @@ Return ONLY the category name (one word: Beauty, Clothes, Accessories, Sports, E
         setProductUrl(initialUrl);
       }
     }, [initialUrl]);
+    (0, import_react5.useEffect)(() => {
+      if (initialUrl && !hasProductUrlTouched) {
+        setProductUrl(initialUrl);
+      }
+    }, [initialUrl, hasProductUrlTouched]);
+    const generateUnlockPassword = () => {
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+      let password = "";
+      for (let i = 0; i < 6; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return password;
+    };
     const resetForm = () => {
       setStep(1);
       setProductUrl(initialUrl ?? "");
       setName("");
       setImageUrl("");
+      setHasProductUrlTouched(false);
       setCategory("Other");
       setCategoryIsAISuggested(false);
       setHasUrlTouched(false);
@@ -17222,6 +17310,8 @@ Return ONLY the category name (one word: Beauty, Clothes, Accessories, Sports, E
       setQuestionsUsedFallback(false);
       setAnswers({});
       setGoalDescription("");
+      setFriendName("");
+      setFriendEmail("");
     };
     const handleFetchMetadata = async () => {
       if (!productUrl) return;
@@ -17306,6 +17396,13 @@ Return ONLY the category name (one word: Beauty, Clothes, Accessories, Sports, E
         setStep(2);
       } catch (error) {
         console.error("Error generating questions:", error);
+        setQuestions(DEFAULT_QUESTIONS);
+        const initialAnswers = {};
+        DEFAULT_QUESTIONS.forEach((q) => {
+          initialAnswers[q.id] = 1;
+        });
+        setAnswers(initialAnswers);
+        setStep(2);
       } finally {
         setIsLoadingQuestions(false);
       }
@@ -17356,7 +17453,12 @@ Return ONLY the category name (one word: Beauty, Clothes, Accessories, Sports, E
         constraintType,
         consumptionScore: calculatedMindfulnessScore,
         ...constraintType === "time" ? { waitUntilDate } : { difficulty },
-        questionnaire
+        questionnaire,
+        ...constraintType === "goals" && friendName.trim() ? {
+          friendName: friendName.trim(),
+          friendEmail: friendEmail.trim() || void 0,
+          unlockPassword: generateUnlockPassword()
+        } : {}
       });
       resetForm();
     };
@@ -17383,7 +17485,10 @@ Return ONLY the category name (one word: Beauty, Clothes, Accessories, Sports, E
               {
                 type: "url",
                 value: productUrl,
-                onChange: (e) => setProductUrl(e.target.value),
+                onChange: (e) => {
+                  setProductUrl(e.target.value);
+                  setHasProductUrlTouched(true);
+                },
                 placeholder: "https://amazon.com/product/...",
                 className: "flex-1 px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
               }
@@ -17737,6 +17842,38 @@ Return ONLY the category name (one word: Beauty, Clothes, Accessories, Sports, E
               className: "w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground resize-none"
             }
           )
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "space-y-4 pt-4 border-t border-border/50", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("p", { className: "text-sm text-foreground/80", children: "Choose a friend who will receive a password to unlock this item once you complete your goal:" }),
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { className: "block text-sm font-medium text-foreground/80 mb-2", children: "Friend's Name *" }),
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+              "input",
+              {
+                type: "text",
+                value: friendName,
+                onChange: (e) => setFriendName(e.target.value),
+                placeholder: "Enter your friend's name",
+                required: constraintType === "goals",
+                className: "w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
+              }
+            )
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { className: "block text-sm font-medium text-foreground/80 mb-2", children: "Friend's Email *" }),
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+              "input",
+              {
+                type: "email",
+                value: friendEmail,
+                onChange: (e) => setFriendEmail(e.target.value),
+                placeholder: "friend@example.com",
+                required: constraintType === "goals",
+                className: "w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
+              }
+            ),
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("p", { className: "text-xs text-muted-foreground mt-1", children: "Your friend will receive an email with a password to unlock this item once you complete your goal." })
+          ] })
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "flex gap-3 pt-4", children: [
           /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
