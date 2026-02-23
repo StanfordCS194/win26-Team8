@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import type { Item, ItemCategory } from '../types/item';
-import { Calendar, Target, ShoppingBag, Plus, ChevronDown, Check } from 'lucide-react';
+import { Calendar, Target, ShoppingBag, Plus, ChevronDown, Check, RefreshCw } from 'lucide-react';
 
 const CATEGORY_ORDER: ItemCategory[] = ['Beauty', 'Clothes', 'Accessories', 'Sports', 'Electronics', 'Home', 'Other'];
 
@@ -75,9 +75,14 @@ interface HomeProps {
   items: Item[];
   onItemClick: (itemId: string) => void;
   onAddItem: () => void;
+  onRefresh?: () => void;
+  onRetry?: () => void;
+  isRefreshing?: boolean;
+  isLoading?: boolean;
+  loadError?: string | null;
 }
 
-export function Home({ items, onItemClick, onAddItem }: HomeProps) {
+export function Home({ items, onItemClick, onAddItem, onRefresh, onRetry, isRefreshing, isLoading, loadError }: HomeProps) {
   const [selectedCategories, setSelectedCategories] = useState<ItemCategory[] | null>(null); // null = All Categories
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -129,6 +134,20 @@ export function Home({ items, onItemClick, onAddItem }: HomeProps) {
 
   return (
     <div>
+      {loadError && (
+        <div className="mb-4 flex items-center justify-between gap-4 rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-destructive">
+          <span className="text-sm">{loadError}</span>
+          {onRetry && (
+            <button
+              type="button"
+              onClick={onRetry}
+              className="shrink-0 rounded-md bg-destructive/20 px-3 py-1.5 text-sm font-medium hover:bg-destructive/30"
+            >
+              Try again
+            </button>
+          )}
+        </div>
+      )}
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h2 className="text-2xl text-foreground font-serif">Your Reflection List</h2>
@@ -137,6 +156,18 @@ export function Home({ items, onItemClick, onAddItem }: HomeProps) {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          {onRefresh && (
+            <button
+              type="button"
+              onClick={onRefresh}
+              disabled={isRefreshing}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-border bg-card text-foreground hover:bg-muted/30 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              title="Refresh list from database"
+            >
+              <RefreshCw className={`w-4 h-4 shrink-0 ${isRefreshing ? 'animate-spin' : ''}`} />
+              {isRefreshing ? 'Refreshing…' : 'Refresh'}
+            </button>
+          )}
           {/* Category filter dropdown */}
           <div className="relative" ref={dropdownRef}>
             <button
@@ -200,7 +231,20 @@ export function Home({ items, onItemClick, onAddItem }: HomeProps) {
         </div>
       </div>
 
-      {items.length === 0 ? (
+      {items.length === 0 && isLoading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="rounded-2xl border border-border/50 overflow-hidden bg-card animate-pulse">
+              <div className="aspect-square bg-muted/40" />
+              <div className="p-5 space-y-3">
+                <div className="h-5 bg-muted/50 rounded w-3/4" />
+                <div className="h-4 bg-muted/40 rounded w-1/2" />
+                <div className="h-4 bg-muted/40 rounded w-full" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : items.length === 0 ? (
         <div className="text-center py-16">
           <div className="text-muted-foreground/40 mb-4">
             <ShoppingBag className="w-16 h-16 mx-auto" />
