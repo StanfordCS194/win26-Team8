@@ -196,9 +196,19 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
           setIsGeneratingImage(false);
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching metadata:', error);
-      alert('Failed to fetch product details. Please enter manually.');
+      const msg = (error?.message ?? String(error)) || '';
+      const isExtensionInvalidated =
+        /Extension context invalidated/i.test(msg) ||
+        /context invalidated/i.test(msg);
+      if (isExtensionInvalidated) {
+        alert(
+          'The extension was reloaded or updated. Please refresh this page and try adding the item again.'
+        );
+      } else {
+        alert('Failed to fetch product details. Please enter manually.');
+      }
     } finally {
       setIsLoadingMetadata(false);
       setIsGeneratingImage(false);

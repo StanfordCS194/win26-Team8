@@ -12811,7 +12811,7 @@ Return ONLY the category name (one word: Beauty, Clothes, Accessories, Sports, E
           "anthropic-dangerous-direct-browser-access": "true"
         },
         body: JSON.stringify({
-          model: "claude-3-5-sonnet-20241022",
+          model: "claude-haiku-4-5-20251001",
           max_tokens: 50,
           system: CATEGORY_SYSTEM_PROMPT,
           messages: [
@@ -17339,7 +17339,15 @@ URL: ${url}`
         }
       } catch (error) {
         console.error("Error fetching metadata:", error);
-        alert("Failed to fetch product details. Please enter manually.");
+        const msg = (error?.message ?? String(error)) || "";
+        const isExtensionInvalidated = /Extension context invalidated/i.test(msg) || /context invalidated/i.test(msg);
+        if (isExtensionInvalidated) {
+          alert(
+            "The extension was reloaded or updated. Please refresh this page and try adding the item again."
+          );
+        } else {
+          alert("Failed to fetch product details. Please enter manually.");
+        }
       } finally {
         setIsLoadingMetadata(false);
         setIsGeneratingImage(false);
