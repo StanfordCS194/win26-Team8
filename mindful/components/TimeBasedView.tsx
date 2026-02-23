@@ -201,7 +201,7 @@ export function TimeBasedView({ items, onItemClick, onAddItem }: TimeBasedViewPr
                             {itemsForDay.slice(0, 3).map((item) => (
                               <span
                                 key={item.id}
-                                className="inline-block w-1.5 h-1.5 rounded-full bg-primary"
+                                className="inline-block w-2.5 h-2.5 rounded-full bg-primary"
                               />
                             ))}
                             {itemsForDay.length > 3 && (
