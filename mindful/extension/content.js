@@ -12316,6 +12316,22 @@
     /^add\s+to\s+bag\s*$/i,
     /^add\s+to\s+cart\s*$/i
   ];
+  var NOT_ADD_TO_CART_PATTERNS = [
+    /\badd\s+to\s+wishlist\b/i,
+    /\badd\s+to\s+list\b/i,
+    /\badd\s+to\s+registry\b/i,
+    /\badd\s+to\s+saved\b/i,
+    /\badd\s+address\b/i,
+    /\badd\s+payment\b/i,
+    /\badd\s+card\b/i,
+    /\bview\s+(cart|bag|basket)\b/i,
+    /\bsee\s+(cart|bag)\b/i,
+    /\bshop\s+now\b/i,
+    /\bsee\s+more\b/i,
+    /\bview\s+product\b/i,
+    /\bview\s+item\b/i,
+    /\bproduct\s+details?\b/i
+  ];
   var ADD_TO_CART_SELECTORS = [
     '[id*="add-to-cart"]',
     '[id*="addToCart"]',
@@ -12412,6 +12428,15 @@
     }
     return false;
   }
+  function isButtonLike(element) {
+    const tag = (element.tagName || "").toLowerCase();
+    const role = (element.getAttribute("role") || "").toLowerCase();
+    const type = (element.getAttribute("type") || element.type || "").toLowerCase();
+    if (tag === "button") return true;
+    if (tag === "input" && (type === "submit" || type === "button")) return true;
+    if (role === "button") return true;
+    return false;
+  }
   function isCartAddSubmitButton(element) {
     const tag = (element.tagName || "").toLowerCase();
     const type = (element.getAttribute("type") || element.type || "").toLowerCase();
@@ -12432,6 +12457,7 @@
     return false;
   }
   function matchesAddToCart(element) {
+    if (!isButtonLike(element)) return false;
     if (isCartAddSubmitButton(element)) return true;
     const text = (element.textContent || "").trim();
     const innerText = typeof element.innerText === "string" ? element.innerText.trim() : "";
@@ -12446,11 +12472,13 @@
     const dataName = element.getAttribute("data-name") || "";
     const dataAutomation = element.getAttribute("data-automation") || element.getAttribute("data-automation-id") || "";
     const combined = [text, innerText, value, ariaLabel, title, id, className, name, dataAction, dataTestId, dataName, dataAutomation].join(" ");
+    if (NOT_ADD_TO_CART_PATTERNS.some((re) => re.test(combined))) return false;
     if (ADD_TO_CART_PATTERNS.some((re) => re.test(combined))) return true;
     try {
       if (ADD_TO_CART_SELECTORS.some((sel) => element.matches?.(sel))) return true;
       for (const sel of ADD_TO_CART_SELECTORS) {
-        if (element.closest?.(sel)) return true;
+        const closestEl = element.closest?.(sel);
+        if (closestEl && isButtonLike(closestEl)) return true;
       }
     } catch {
     }
@@ -12489,7 +12517,7 @@
     }
     const target = clickEvent.target;
     if (target) {
-      const interactive = target.closest?.('button, [role="button"], a[href], input[type="submit"]');
+      const interactive = target.closest?.('button, [role="button"], input[type="submit"]');
       if (interactive && interactive !== overlayRoot && !(overlayRoot && overlayRoot.contains(interactive)) && !isRemoveOrDecreaseControl(interactive) && matchesAddToCart(interactive)) {
         return interactive;
       }

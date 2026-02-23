@@ -19,6 +19,24 @@ export const ADD_TO_CART_PATTERNS = [
   /^add\s+to\s+cart\s*$/i,
 ];
 
+// Text/context that means this is NOT an add-to-cart button (don't trigger overlay)
+const NOT_ADD_TO_CART_PATTERNS = [
+  /\badd\s+to\s+wishlist\b/i,
+  /\badd\s+to\s+list\b/i,
+  /\badd\s+to\s+registry\b/i,
+  /\badd\s+to\s+saved\b/i,
+  /\badd\s+address\b/i,
+  /\badd\s+payment\b/i,
+  /\badd\s+card\b/i,
+  /\bview\s+(cart|bag|basket)\b/i,
+  /\bsee\s+(cart|bag)\b/i,
+  /\bshop\s+now\b/i,
+  /\bsee\s+more\b/i,
+  /\bview\s+product\b/i,
+  /\bview\s+item\b/i,
+  /\bproduct\s+details?\b/i,
+];
+
 export const ADD_TO_CART_SELECTORS = [
   '[id*="add-to-cart"]',
   '[id*="addToCart"]',
@@ -120,6 +138,17 @@ export function isRemoveOrDecreaseControl(element: Element): boolean {
   return false;
 }
 
+/** True if element is a button, submit input, or role=button. We do not treat links as add-to-cart to avoid opening on product/detail links. */
+function isButtonLike(element: Element): boolean {
+  const tag = (element.tagName || '').toLowerCase();
+  const role = (element.getAttribute('role') || '').toLowerCase();
+  const type = (element.getAttribute('type') || (element as HTMLInputElement).type || '').toLowerCase();
+  if (tag === 'button') return true;
+  if (tag === 'input' && (type === 'submit' || type === 'button')) return true;
+  if (role === 'button') return true;
+  return false;
+}
+
 /** True if element is a submit button for a Shopify-style cart add form */
 function isCartAddSubmitButton(element: Element): boolean {
   const tag = (element.tagName || '').toLowerCase();
@@ -142,6 +171,9 @@ function isCartAddSubmitButton(element: Element): boolean {
 }
 
 export function matchesAddToCart(element: Element): boolean {
+  // Only consider button-like elements (button, input[submit], role=button) to avoid opening on product links/cards
+  if (!isButtonLike(element)) return false;
+
   if (isCartAddSubmitButton(element)) return true;
 
   const text = (element.textContent || '').trim();
@@ -159,11 +191,15 @@ export function matchesAddToCart(element: Element): boolean {
 
   const combined = [text, innerText, value, ariaLabel, title, id, className, name, dataAction, dataTestId, dataName, dataAutomation].join(' ');
 
+  // Exclude "add to wishlist", "view cart", "see more", etc.
+  if (NOT_ADD_TO_CART_PATTERNS.some((re) => re.test(combined))) return false;
+
   if (ADD_TO_CART_PATTERNS.some((re) => re.test(combined))) return true;
   try {
     if (ADD_TO_CART_SELECTORS.some((sel) => element.matches?.(sel))) return true;
     for (const sel of ADD_TO_CART_SELECTORS) {
-      if (element.closest?.(sel)) return true;
+      const closestEl = element.closest?.(sel);
+      if (closestEl && isButtonLike(closestEl)) return true;
     }
   } catch {
     // ignore selector errors
@@ -214,10 +250,10 @@ export function findAddToCartTarget(clickEvent: MouseEvent, overlayRootId?: stri
         : null;
     current = nextParent;
   }
-  // Last resort: if click was on a child of a button/link, check closest interactive ancestor
+  // Last resort: if click was on a child of a button, check closest button ancestor (no links – avoids product links)
   const target = clickEvent.target as Element;
   if (target) {
-    const interactive = target.closest?.('button, [role="button"], a[href], input[type="submit"]');
+    const interactive = target.closest?.('button, [role="button"], input[type="submit"]');
     if (interactive && interactive !== overlayRoot && !(overlayRoot && overlayRoot.contains(interactive)) && !isRemoveOrDecreaseControl(interactive) && matchesAddToCart(interactive)) {
       return interactive;
     }
