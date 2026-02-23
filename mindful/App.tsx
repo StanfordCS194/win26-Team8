@@ -14,7 +14,7 @@ import './styles/globals.css';
 import logoImage from './assets/logo.png';
 import type { Item } from './types/item';
 
-const FETCH_ITEMS_TIMEOUT_MS = 15000;
+const FETCH_ITEMS_TIMEOUT_MS = 20000;
 
 type View = 'home' | 'item' | 'add' | 'time' | 'goals' | 'mission' | 'profile';
 
@@ -68,16 +68,21 @@ function AppContent() {
       }
     }
 
-    const { items: loadedItems, error } = await fetchItemsWithTimeout();
+    let result = await fetchItemsWithTimeout();
+    if (result.error && !result.items?.length) {
+      await new Promise((r) => setTimeout(r, 1500));
+      result = await fetchItemsWithTimeout();
+    }
+
     setItemsLoading(false);
 
-    if (!error && loadedItems) {
-      setItems(loadedItems);
-      localStorage.setItem(localStorageKey, JSON.stringify(loadedItems));
-    } else if (error) {
-      const message = error instanceof Error ? error.message : 'Could not load items. Try again.';
+    if (!result.error && result.items) {
+      setItems(result.items);
+      localStorage.setItem(localStorageKey, JSON.stringify(result.items));
+    } else if (result.error) {
+      const message = result.error instanceof Error ? result.error.message : 'Could not load items. Try again.';
       setItemsLoadError(message);
-      if (loadedItems?.length) setItems(loadedItems);
+      if (result.items?.length) setItems(result.items);
     }
   };
 
@@ -86,12 +91,16 @@ function AppContent() {
     setItemsLoadError(null);
     setRefreshingItems(true);
     try {
-      const { items: loadedItems, error } = await fetchItemsWithTimeout();
-      if (!error && loadedItems) {
-        setItems(loadedItems);
-        localStorage.setItem(`secondThought_user_${user.id}_items`, JSON.stringify(loadedItems));
-      } else if (error) {
-        const message = error instanceof Error ? error.message : 'Could not refresh. Try again.';
+      let result = await fetchItemsWithTimeout();
+      if (result.error && !result.items?.length) {
+        await new Promise((r) => setTimeout(r, 1500));
+        result = await fetchItemsWithTimeout();
+      }
+      if (!result.error && result.items) {
+        setItems(result.items);
+        localStorage.setItem(`secondThought_user_${user.id}_items`, JSON.stringify(result.items));
+      } else if (result.error) {
+        const message = result.error instanceof Error ? result.error.message : 'Could not refresh. Try again.';
         setItemsLoadError(message);
       }
     } finally {

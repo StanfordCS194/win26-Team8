@@ -82,8 +82,6 @@ const ITEMS_SELECT =
  */
 export async function fetchItems(userId: string): Promise<{ items: Item[]; error: any }> {
   try {
-    console.log('📥 Fetching items for user:', userId);
-
     const { data, error } = await supabase
       .from('items')
       .select(ITEMS_SELECT)
