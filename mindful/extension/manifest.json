@@ -11,5 +11,9 @@
     "activeTab",
     "tabs",
     "storage"
+  ],
+  "host_permissions": [
+    "https://api.anthropic.com/*",
+    "https://api.microlink.io/*"
   ]
 }

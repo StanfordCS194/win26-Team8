@@ -38,6 +38,11 @@ function itemToDb(item: Item, userId: string): Omit<DbItem, 'created_at' | 'upda
     wait_until_date: item.waitUntilDate || null,
     difficulty: item.difficulty || null,
     questionnaire: item.questionnaire,
+    // Friend unlock fields
+    friend_name: item.friendName || null,
+    friend_email: item.friendEmail || null,
+    unlock_password: item.unlockPassword || null,
+    is_unlocked: false,
   };
 }
 
@@ -57,6 +62,10 @@ function dbToItem(dbItem: DbItem): Item {
     waitUntilDate: dbItem.wait_until_date || undefined,
     difficulty: dbItem.difficulty as 'easy' | 'medium' | 'hard' | undefined,
     questionnaire: dbItem.questionnaire,
+    // Friend unlock fields
+    friendName: dbItem.friend_name || undefined,
+    friendEmail: dbItem.friend_email || undefined,
+    unlockPassword: dbItem.unlock_password || undefined,
   };
 }
 

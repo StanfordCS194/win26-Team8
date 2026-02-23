@@ -82,12 +82,15 @@ Example for "Tennis Racket":
 
 Only respond with the JSON array, no other text.`;
 
-// Safe env access for both Expo (process.env) and browser/extension (no process)
+// Safe env access for both Expo and browser/extension
+// In Expo, process.env is available at runtime.
+// In the extension, esbuild inlines the value at build time via --define.
 function getApiKey(): string {
-  if (typeof process !== 'undefined' && process.env) {
+  try {
     return process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY || '';
+  } catch {
+    return '';
   }
-  return '';
 }
 
 export type GenerateQuestionsResult = {
