@@ -3,6 +3,7 @@ import type { Item, ItemCategory, QuestionAnswer } from '../types/item';
 import { generateQuestions, GeneratedQuestion } from '../services/questionGenerator';
 import { detectCategory } from '../services/categoryDetector';
 import { fetchUrlMetadata } from '../services/urlMetadata';
+import { generateProductImage } from '../services/imageGenerator';
 import { Loader2, Link } from 'lucide-react';
 import { Slider } from './ui/slider';
 
@@ -97,11 +98,12 @@ function generateMindfulnessExplanation(questionnaire: QuestionAnswer[], finalSc
 interface AddItemFormProps {
   onSubmit: (item: Omit<Item, 'id' | 'addedDate'>) => void;
   onCancel: () => void;
+  initialUrl?: string;
 }
 
-export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
+export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps) {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
-  const [productUrl, setProductUrl] = useState('');
+  const [productUrl, setProductUrl] = useState(initialUrl ?? '');
   const [name, setName] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [category, setCategory] = useState<ItemCategory>('Other');
@@ -121,6 +123,13 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
   const [isLoadingMetadata, setIsLoadingMetadata] = useState(false);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+
+  useEffect(() => {
+    if (initialUrl) {
+      setProductUrl(initialUrl);
+    }
+  }, [initialUrl]);
 
   // Generate a random unlock password
   const generateUnlockPassword = (): string => {
@@ -134,7 +143,7 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
 
   const resetForm = () => {
     setStep(1);
-    setProductUrl('');
+    setProductUrl(initialUrl ?? '');
     setName('');
     setImageUrl('');
     setCategory('Other');
@@ -167,12 +176,24 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
       }
       if (metadata.image) {
         setImageUrl(metadata.image);
+      } else {
+        // No image from scraping — generate one with DALL-E
+        const itemName = metadata.title || name;
+        if (itemName) {
+          setIsGeneratingImage(true);
+          const generatedImage = await generateProductImage(itemName);
+          if (generatedImage) {
+            setImageUrl(generatedImage);
+          }
+          setIsGeneratingImage(false);
+        }
       }
     } catch (error) {
       console.error('Error fetching metadata:', error);
       alert('Failed to fetch product details. Please enter manually.');
     } finally {
       setIsLoadingMetadata(false);
+      setIsGeneratingImage(false);
     }
   };
 
@@ -212,10 +233,19 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
 
   const handleStep1Submit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // If name is still empty, derive from URL hostname
+    const itemName = name.trim() || (() => {
+      try { return new URL(productUrl).hostname.replace('www.', ''); } catch { return 'Item'; }
+    })();
+    if (!name.trim()) {
+      setName(itemName);
+    }
+
     setIsLoadingQuestions(true);
 
     try {
-      const { questions: generatedQuestions, usedFallback } = await generateQuestions(name);
+      const { questions: generatedQuestions, usedFallback } = await generateQuestions(itemName);
       setQuestions(generatedQuestions);
       setQuestionsUsedFallback(!!usedFallback);
 
@@ -351,14 +381,13 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
           {/* Item Name */}
           <div>
             <label className="block text-sm font-medium text-foreground/80 mb-2">
-              Item Name *
+              Item Name
             </label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              required
-              placeholder="e.g., Wireless Headphones"
+              placeholder="Auto-filled from URL, or type manually"
               className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
             />
           </div>
@@ -377,18 +406,28 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
             />
             {(imageUrl && imageUrl.trim()) ? (
               <div className="mt-3 relative rounded-xl overflow-hidden border border-border bg-muted/20">
-                <img 
-                  src={imageUrl.trim()} 
-                  alt="Product preview" 
+                <img
+                  src={imageUrl.trim()}
+                  alt="Product preview"
                   className="w-full max-h-96 object-contain"
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';
-                    e.currentTarget.parentElement!.innerHTML = '<p class="text-sm text-muted-foreground p-4">Invalid image URL</p>';
+                    if (e.currentTarget.parentElement) {
+                      e.currentTarget.parentElement.innerHTML = '<p class="text-sm text-muted-foreground p-4">Invalid image URL</p>';
+                    }
                   }}
                 />
               </div>
             ) : null}
           </div>
+
+          {/* Image generation loading state */}
+          {isGeneratingImage && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Generating product image...
+            </div>
+          )}
 
           {/* Category */}
           <div>
@@ -423,7 +462,7 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
           <div className="flex gap-3 pt-4">
             <button
               type="submit"
-              disabled={isLoadingQuestions}
+              disabled={isLoadingQuestions || !productUrl}
               className="flex-1 bg-primary text-primary-foreground px-6 py-3 rounded-full hover:bg-primary/90 transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isLoadingQuestions ? (

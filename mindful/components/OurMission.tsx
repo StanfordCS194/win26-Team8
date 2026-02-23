@@ -10,6 +10,7 @@ import {
   Check
 } from 'lucide-react';
 import { Auth } from './Auth';
+import { useAuth } from '../contexts/AuthContext';
 
 interface OurMissionProps {
   onGetStarted: () => void;
@@ -17,6 +18,7 @@ interface OurMissionProps {
 }
 
 export function OurMission({ onGetStarted, userEmail }: OurMissionProps) {
+  const { signIn, signUp } = useAuth();
   const scrollToOnboarding = () => {
     const onboardingSection = document.getElementById('onboarding-section');
     if (onboardingSection) {
@@ -73,7 +75,7 @@ export function OurMission({ onGetStarted, userEmail }: OurMissionProps) {
         </div>
       ) : (
         <div className="w-full max-w-md mx-auto">
-          <Auth embedded />
+          <Auth onSignIn={signIn} onSignUp={signUp} embedded />
         </div>
       ),
     },
