@@ -7,7 +7,15 @@
     "default_title": "mindful",
     "default_popup": "index.html"
   },
-  "permissions": ["activeTab", "tabs"],
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://api.anthropic.com/*",
+    "https://api.microlink.io/*"
+  ],
   "content_scripts": [
     {
       "matches": ["<all_urls>"],

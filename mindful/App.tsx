@@ -5,7 +5,6 @@ import { AddItemForm } from './components/AddItemForm';
 import { TimeBasedView } from './components/TimeBasedView';
 import { GoalsBasedView } from './components/GoalsBasedView';
 import { OurMission } from './components/OurMission';
-import { Auth } from './components/Auth';
 import { Profile } from './components/Profile';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { fetchItems, saveItem, deleteItem as deleteItemDb } from './lib/database';
@@ -35,33 +34,33 @@ function AppContent() {
 
   const loadItems = async () => {
     if (!user) return;
-    
+
     // First, load from localStorage (instant)
-    console.log('💾 Loading from localStorage...');
+    console.log('Loading from localStorage...');
     const localStorageKey = `secondThought_user_${user.id}_items`;
     const storedItems = localStorage.getItem(localStorageKey);
-    
+
     if (storedItems) {
       try {
         const parsedItems = JSON.parse(storedItems);
         setItems(parsedItems);
-        console.log('✅ Loaded', parsedItems.length, 'items from localStorage');
+        console.log('Loaded', parsedItems.length, 'items from localStorage');
       } catch (err) {
-        console.error('❌ Failed to parse localStorage items:', err);
+        console.error('Failed to parse localStorage items:', err);
       }
     }
-    
+
     // Then, try to sync with Supabase (in background)
-    console.log('🌐 Syncing with Supabase...');
+    console.log('Syncing with Supabase...');
     const { items: loadedItems, error } = await fetchItems(user.id);
-    
+
     if (!error && loadedItems) {
       setItems(loadedItems);
       // Update localStorage with Supabase data
       localStorage.setItem(localStorageKey, JSON.stringify(loadedItems));
-      console.log('✅ Synced', loadedItems.length, 'items from Supabase');
+      console.log('Synced', loadedItems.length, 'items from Supabase');
     } else if (error) {
-      console.warn('⚠️ Supabase sync failed (using localStorage):', error);
+      console.warn('Supabase sync failed (using localStorage):', error);
     }
   };
 
@@ -70,14 +69,14 @@ function AppContent() {
       alert('You must be logged in to add items');
       return;
     }
-    
-    console.log('➕ Adding item:', item.name);
-    console.log('📋 Constraint type:', item.constraintType);
-    console.log('📋 Image URL:', item.imageUrl);
-    console.log('📋 Image URL length:', item.imageUrl?.length || 0);
-    console.log('📋 Questions:', item.questionnaire.length);
-    console.log('📋 Full item from form:', JSON.stringify(item, null, 2));
-    
+
+    console.log('Adding item:', item.name);
+    console.log('Constraint type:', item.constraintType);
+    console.log('Image URL:', item.imageUrl);
+    console.log('Image URL length:', item.imageUrl?.length || 0);
+    console.log('Questions:', item.questionnaire.length);
+    console.log('Full item from form:', JSON.stringify(item, null, 2));
+
     // Generate UUID
     const generateId = () => {
       if (typeof crypto !== 'undefined' && crypto.randomUUID) {
@@ -89,29 +88,29 @@ function AppContent() {
         return v.toString(16);
       });
     };
-    
+
     // Create complete item
     const newItem: Item = {
       ...item,
       id: generateId(),
       addedDate: new Date().toISOString(),
     };
-    
-    console.log('🆕 Created item (full):', JSON.stringify(newItem, null, 2));
-    
+
+    console.log('Created item (full):', JSON.stringify(newItem, null, 2));
+
     // Optimistic UI update
     const updatedItems = [...items, newItem];
     setItems(updatedItems);
     setCurrentView('home');
-    
+
     // Save to Supabase - Use token we already have so we don't call getSession() (it can hang)
-    console.log('💾 Saving to Supabase using direct REST API...');
+    console.log('Saving to Supabase using direct REST API...');
     const accessToken = session?.access_token ?? null;
     const { success, error } = await saveItemDirect(newItem, user.id, accessToken);
-    
+
     if (success) {
-      console.log('✅ Item saved to Supabase');
-      
+      console.log('Item saved to Supabase');
+
       // Store friend unlock email information if this is a goals-based constraint with a friend
       if (item.constraintType === 'goals' && item.friendName && item.friendEmail && item.unlockPassword) {
         const { createFriendUnlockEmail } = await import('./lib/friendUnlockService');
@@ -120,29 +119,26 @@ function AppContent() {
           item.friendEmail,
           item.unlockPassword
         );
-        
+
         if (emailRecord.success) {
-          console.log('✅ Friend unlock email record created in database');
-          // TODO: Integrate with your email service here
-          // Query pending emails using getPendingEmails() and send them
-          // Then mark as sent using markEmailAsSent()
+          console.log('Friend unlock email record created in database');
         } else {
-          console.warn('⚠️ Failed to create friend unlock email record:', emailRecord.error);
+          console.warn('Failed to create friend unlock email record:', emailRecord.error);
         }
       }
-      
+
       // Update localStorage
       const localKey = `secondThought_user_${user.id}_items`;
       localStorage.setItem(localKey, JSON.stringify(updatedItems));
-      console.log('✅ Saved to localStorage');
-      
-      alert(`✅ ${item.name} added successfully!`);
+      console.log('Saved to localStorage');
+
+      alert(`${item.name} added successfully!`);
     } else {
-      console.error('❌ Failed to save:', error);
-      
+      console.error('Failed to save:', error);
+
       // Rollback UI
       setItems(items);
-      
+
       // Show error details
       const errorMsg = error?.message || error?.toString() || 'Unknown error';
       alert(`Failed to save item\n\nError: ${errorMsg}\n\nCheck console (F12) for details.`);
@@ -156,31 +152,31 @@ function AppContent() {
 
   const handleDeleteItem = async (itemId: string) => {
     if (!user) return;
-    
+
     if (!confirm('Are you sure you want to delete this item?')) {
       return;
     }
-    
-    console.log('🗑️ Deleting item:', itemId);
-    
+
+    console.log('Deleting item:', itemId);
+
     // Delete from Supabase
     const { success, error } = await deleteItemDb(itemId, user.id);
-    
+
     if (success) {
-      console.log('✅ Item deleted from Supabase');
-      
+      console.log('Item deleted from Supabase');
+
       // Update UI
       const updatedItems = items.filter(item => item.id !== itemId);
       setItems(updatedItems);
-      
+
       // Update localStorage
       const localKey = `secondThought_user_${user.id}_items`;
       localStorage.setItem(localKey, JSON.stringify(updatedItems));
-      
+
       setCurrentView('home');
-      alert('✅ Item deleted successfully!');
+      alert('Item deleted successfully!');
     } else {
-      console.error('❌ Delete failed:', error);
+      console.error('Delete failed:', error);
       const errorMsg = error?.message || error?.toString() || 'Unknown error';
       alert(`Failed to delete item\n\nError: ${errorMsg}`);
     }
@@ -240,9 +236,9 @@ function AppContent() {
       <header className="bg-card/80 backdrop-blur-sm border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
-            <img 
+            <img
               src={typeof logoImage === 'string' ? logoImage : (logoImage as any).default || (logoImage as any).uri || logoImage}
-              alt="Second Thought Logo" 
+              alt="Second Thought Logo"
               className="h-32 w-auto cursor-pointer hover:opacity-80 transition-opacity"
               onClick={() => setCurrentView('mission')}
             />
@@ -316,8 +312,8 @@ function AppContent() {
         )}
         {currentView === 'home' && (
           user ? (
-            <Home 
-              items={items} 
+            <Home
+              items={items}
               onItemClick={handleItemClick}
               onAddItem={() => setCurrentView('add')}
             />
@@ -327,8 +323,8 @@ function AppContent() {
         )}
         {currentView === 'item' && (
           user && selectedItem ? (
-            <ItemDetail 
-              item={selectedItem} 
+            <ItemDetail
+              item={selectedItem}
               onBack={() => setCurrentView('home')}
               onDelete={handleDeleteItem}
             />
@@ -338,7 +334,7 @@ function AppContent() {
         )}
         {currentView === 'add' && (
           user ? (
-            <AddItemForm 
+            <AddItemForm
               onSubmit={handleAddItem}
               onCancel={() => setCurrentView('home')}
             />
@@ -348,8 +344,8 @@ function AppContent() {
         )}
         {currentView === 'time' && (
           user ? (
-            <TimeBasedView 
-              items={items} 
+            <TimeBasedView
+              items={items}
               onItemClick={handleItemClick}
               onAddItem={() => setCurrentView('add')}
             />
@@ -359,8 +355,8 @@ function AppContent() {
         )}
         {currentView === 'goals' && (
           user ? (
-            <GoalsBasedView 
-              items={items} 
+            <GoalsBasedView
+              items={items}
               onItemClick={handleItemClick}
               onAddItem={() => setCurrentView('add')}
             />
