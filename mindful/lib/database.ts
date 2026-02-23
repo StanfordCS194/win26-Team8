@@ -19,6 +19,11 @@ export interface DbItem {
   added_date: string;
   created_at: string;
   updated_at: string;
+  // Friend unlock fields – match Supabase schema
+  friend_name: string | null;
+  friend_email: string | null;
+  unlock_password: string | null;
+  is_unlocked: boolean | null;
 }
 
 /**
@@ -69,9 +74,9 @@ function dbToItem(dbItem: DbItem): Item {
   };
 }
 
-// Columns needed for list/detail (excludes friend_*, unlock_* to reduce payload and speed up refresh)
+// Columns needed for list/detail – include friend/unlock fields so guard info is preserved
 const ITEMS_SELECT =
-  'id, user_id, name, image_url, category, constraint_type, consumption_score, wait_until_date, difficulty, questionnaire, added_date, created_at, updated_at';
+  'id, user_id, name, image_url, category, constraint_type, consumption_score, wait_until_date, difficulty, questionnaire, added_date, created_at, updated_at, friend_name, friend_email, unlock_password, is_unlocked';
 
 /**
  * FETCH ALL ITEMS FOR A USER
