@@ -3,26 +3,11 @@ import { createRoot } from 'react-dom/client';
 import { AddItemForm } from '../../components/AddItemForm';
 import { Auth } from '../../components/Auth';
 import { supabase } from './supabaseClient';
-import type { Item, QuestionAnswer } from '../../types/item';
+import type { Item } from '../../types/item';
 import type { Session } from '@supabase/supabase-js';
+import { itemToDbItem } from './itemToDbItem';
 
 declare const chrome: any;
-
-// Transform item to match the webapp's database schema (database.ts / database-alt.ts)
-function itemToDbItem(item: Omit<Item, 'id' | 'addedDate'>, userId: string) {
-  return {
-    user_id: userId,
-    name: item.name,
-    image_url: item.imageUrl || null,
-    category: item.category || null,
-    constraint_type: item.constraintType,
-    consumption_score: item.consumptionScore,
-    added_date: new Date().toISOString(),
-    wait_until_date: item.waitUntilDate || null,
-    difficulty: item.difficulty || null,
-    questionnaire: item.questionnaire,
-  };
-}
 
 // --- Main app ---
 

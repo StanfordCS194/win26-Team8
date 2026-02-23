@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import type { Item, ItemCategory, QuestionAnswer } from '../types/item';
-import { generateQuestions, GeneratedQuestion } from '../services/questionGenerator';
+import { generateQuestions, GeneratedQuestion, DEFAULT_QUESTIONS } from '../services/questionGenerator';
 import { detectCategory } from '../services/categoryDetector';
 import { fetchUrlMetadata } from '../services/urlMetadata';
 import { generateProductImage } from '../services/imageGenerator';
@@ -106,6 +106,7 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
   const [productUrl, setProductUrl] = useState(initialUrl ?? '');
   const [name, setName] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [hasProductUrlTouched, setHasProductUrlTouched] = useState(false);
   const [category, setCategory] = useState<ItemCategory>('Other');
   const [categoryIsAISuggested, setCategoryIsAISuggested] = useState(false);
   const [hasUrlTouched, setHasUrlTouched] = useState(false);
@@ -131,6 +132,12 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
     }
   }, [initialUrl]);
 
+  useEffect(() => {
+    if (initialUrl && !hasProductUrlTouched) {
+      setProductUrl(initialUrl);
+    }
+  }, [initialUrl, hasProductUrlTouched]);
+
   // Generate a random unlock password
   const generateUnlockPassword = (): string => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -146,6 +153,7 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
     setProductUrl(initialUrl ?? '');
     setName('');
     setImageUrl('');
+    setHasProductUrlTouched(false);
     setCategory('Other');
     setCategoryIsAISuggested(false);
     setHasUrlTouched(false);
@@ -188,9 +196,19 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
           setIsGeneratingImage(false);
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching metadata:', error);
-      alert('Failed to fetch product details. Please enter manually.');
+      const msg = (error?.message ?? String(error)) || '';
+      const isExtensionInvalidated =
+        /Extension context invalidated/i.test(msg) ||
+        /context invalidated/i.test(msg);
+      if (isExtensionInvalidated) {
+        alert(
+          'The extension was reloaded or updated. Please refresh this page and try adding the item again.'
+        );
+      } else {
+        alert('Failed to fetch product details. Please enter manually.');
+      }
     } finally {
       setIsLoadingMetadata(false);
       setIsGeneratingImage(false);
@@ -258,6 +276,14 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
       setStep(2);
     } catch (error) {
       console.error('Error generating questions:', error);
+      // Still advance to step 2 with default questions (e.g. in extension content script when API fails)
+      setQuestions(DEFAULT_QUESTIONS);
+      const initialAnswers: Record<string, number> = {};
+      DEFAULT_QUESTIONS.forEach((q) => {
+        initialAnswers[q.id] = 1;
+      });
+      setAnswers(initialAnswers);
+      setStep(2);
     } finally {
       setIsLoadingQuestions(false);
     }
@@ -355,7 +381,10 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
               <input
                 type="url"
                 value={productUrl}
-                onChange={(e) => setProductUrl(e.target.value)}
+                onChange={(e) => {
+                  setProductUrl(e.target.value);
+                  setHasProductUrlTouched(true);
+                }}
                 placeholder="https://amazon.com/product/..."
                 className="flex-1 px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
               />

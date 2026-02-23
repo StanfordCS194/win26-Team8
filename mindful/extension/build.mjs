@@ -1,5 +1,6 @@
 import { build } from 'esbuild';
-import { readFileSync } from 'fs';
+import { readFileSync, renameSync } from 'fs';
+import { join } from 'path';
 
 // Load .env file and extract EXPO_PUBLIC_ variables
 const envFile = readFileSync('.env', 'utf-8');
@@ -19,15 +20,24 @@ for (const line of envFile.split('\n')) {
   }
 }
 
+// Build to a temp file first to avoid Windows "user-mapped section" errors
+// when popup.js is open in an editor or another process.
+const outDir = 'extension';
+const outFile = join(outDir, 'popup.js');
+const tmpFile = join(outDir, 'popup.tmp.js');
+
 await build({
   entryPoints: ['extension/src/popup.tsx'],
   bundle: true,
   platform: 'browser',
   format: 'iife',
-  outfile: 'extension/popup.js',
+  outfile: tmpFile,
   jsx: 'automatic',
   jsxImportSource: 'react',
   define,
 });
+
+// Replace popup.js with the new bundle (avoids writing to a locked file on Windows).
+renameSync(tmpFile, outFile);
 
 console.log('Extension popup built successfully');
