@@ -29471,8 +29471,7 @@ ${suffix}`;
     }
   });
 
-  // extension/src/popup.tsx
-  var import_jsx_runtime11 = __toESM(require_jsx_runtime());
+  // extension/src/itemToDbItem.ts
   function itemToDbItem(item, userId) {
     return {
       user_id: userId,
@@ -29487,6 +29486,9 @@ ${suffix}`;
       questionnaire: item.questionnaire
     };
   }
+
+  // extension/src/popup.tsx
+  var import_jsx_runtime11 = __toESM(require_jsx_runtime());
   var App = () => {
     const [session, setSession] = (0, import_react7.useState)(null);
     const [loading, setLoading] = (0, import_react7.useState)(true);

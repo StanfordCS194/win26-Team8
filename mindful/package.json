@@ -12,7 +12,7 @@
     "build:popup:css": "tailwindcss -i extension/src/popup.css -o extension/popup.css",
     "build:popup": "npm run build:popup:css && node extension/build.mjs",
     "build:content:css": "tailwindcss -i extension/src/content.css -o extension/content.css",
-    "build:content": "npm run build:content:css && esbuild extension/src/content.tsx --bundle --platform=browser --format=iife --outfile=extension/content.js --jsx=automatic --jsx-import-source=react",
+    "build:content": "npm run build:content:css && node extension/build-content.mjs",
     "build:extension:all": "npm run build:popup && npm run build:content",
     "test": "vitest run"
   },
