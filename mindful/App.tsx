@@ -111,6 +111,22 @@ function AppContent() {
     if (success) {
       console.log('Item saved to Supabase');
 
+      // Store friend unlock email information if this is a goals-based constraint with a friend
+      if (item.constraintType === 'goals' && item.friendName && item.friendEmail && item.unlockPassword) {
+        const { createFriendUnlockEmail } = await import('./lib/friendUnlockService');
+        const emailRecord = await createFriendUnlockEmail(
+          newItem.id,
+          item.friendEmail,
+          item.unlockPassword
+        );
+
+        if (emailRecord.success) {
+          console.log('Friend unlock email record created in database');
+        } else {
+          console.warn('Failed to create friend unlock email record:', emailRecord.error);
+        }
+      }
+
       // Update localStorage
       const localKey = `secondThought_user_${user.id}_items`;
       localStorage.setItem(localKey, JSON.stringify(updatedItems));
