@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Item, QuestionAnswer } from '../App';
 import { ImageWithFallback } from './figma/ImageWithFallback';
+import { fetchUrlMetadata } from '../services/urlMetadata';
 import { generateQuestions, GeneratedQuestion } from '../services/questionGenerator';
-import { Loader2, Calendar } from 'lucide-react';
+import { Loader2, Calendar, Link } from 'lucide-react';
 import { generateGoogleCalendarUrl } from '../services/googleCalendar';
 import { Slider } from './ui/slider';
 
@@ -103,13 +104,34 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
   const [consumptionScore, setConsumptionScore] = useState(1);
   const [goalDescription, setGoalDescription] = useState('');
 
+  // URL metadata fetching state
+  const [productUrl, setProductUrl] = useState('');
+  const [isLoadingMetadata, setIsLoadingMetadata] = useState(false);
+
   // Dynamic questions state
   const [questions, setQuestions] = useState<GeneratedQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
 
+  const handleFetchMetadata = async () => {
+    if (!productUrl) return;
+
+    setIsLoadingMetadata(true);
+    try {
+      const metadata = await fetchUrlMetadata(productUrl);
+      if (metadata.title) {
+        setName(metadata.title);
+      }
+    } catch (error) {
+      console.error('Error fetching metadata:', error);
+    } finally {
+      setIsLoadingMetadata(false);
+    }
+  };
+
   const resetForm = () => {
     setStep(1);
+    setProductUrl('');
     setName('');
     setImageUrl('');
     setConstraintType('time');
@@ -286,7 +308,39 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
 
         {step === 1 && (
           <form onSubmit={handleStep1Submit} className="space-y-6">
-          {/* Basic Information */}
+          {/* Product URL with auto-fetch */}
+          <div>
+            <label className="block text-sm font-medium text-foreground/80 mb-2">
+              Product URL
+            </label>
+            <p className="text-xs text-muted-foreground mb-2">
+              Paste a product link to auto-fill the item name
+            </p>
+            <div className="flex gap-2">
+              <input
+                type="url"
+                value={productUrl}
+                onChange={(e) => setProductUrl(e.target.value)}
+                placeholder="https://amazon.com/product/..."
+                className="flex-1 px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
+              />
+              <button
+                type="button"
+                onClick={handleFetchMetadata}
+                disabled={!productUrl || isLoadingMetadata}
+                className="px-4 py-3 bg-muted hover:bg-muted/80 text-foreground rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {isLoadingMetadata ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Link className="w-4 h-4" />
+                )}
+                Fetch
+              </button>
+            </div>
+          </div>
+
+          {/* Item Name */}
           <div>
             <label className="block text-sm font-medium text-foreground/80 mb-2">
               Item Name *
@@ -297,19 +351,6 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
               onChange={(e) => setName(e.target.value)}
               required
               placeholder="e.g., Wireless Headphones"
-              className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-foreground/80 mb-2">
-               URL
-            </label>
-            <input
-              type="url"
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
-              placeholder="https://example.com/image.jpg"
               className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
             />
           </div>
