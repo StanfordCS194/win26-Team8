@@ -150,9 +150,7 @@ export function TimeBasedView({ items, onItemClick, onAddItem }: TimeBasedViewPr
                   const key = date.toISOString().split('T')[0];
                   const itemsForDay = itemsByDate.get(key) || [];
                   const hasItems = itemsForDay.length > 0;
-                  // On the calendar, any day that matches an item's wait date
-                  // is shown as "[item name] unlocked! 🛍️"
-                  const unlockedItems = hasItems ? itemsForDay : [];
+                  const unlockedCount = itemsForDay.length;
                   const isToday = (() => {
                     const now = new Date();
                     return (
@@ -198,11 +196,9 @@ export function TimeBasedView({ items, onItemClick, onAddItem }: TimeBasedViewPr
                               </span>
                             )}
                           </div>
-                          {unlockedItems.length > 0 && (
+                          {unlockedCount > 0 && (
                             <span className="text-[11px] font-semibold text-emerald-700 text-center px-1 truncate max-w-full">
-                              {unlockedItems.length === 1
-                                ? `${unlockedItems[0].name} unlocked!`
-                                : `${unlockedItems[0].name} unlocked! +${unlockedItems.length - 1}`}
+                              {unlockedCount} item{unlockedCount !== 1 ? 's' : ''} unlocked!
                             </span>
                           )}
                         </div>
