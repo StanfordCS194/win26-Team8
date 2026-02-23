@@ -29672,6 +29672,7 @@ ${suffix}`;
     const [session, setSession] = (0, import_react7.useState)(null);
     const [loading, setLoading] = (0, import_react7.useState)(true);
     const [showForm, setShowForm] = (0, import_react7.useState)(false);
+    const [showSavedScreen, setShowSavedScreen] = (0, import_react7.useState)(false);
     const [submitMessage, setSubmitMessage] = (0, import_react7.useState)("");
     (0, import_react7.useEffect)(() => {
       supabase.auth.getSession().then(({ data: { session: session2 } }) => {
@@ -29708,9 +29709,8 @@ ${suffix}`;
           setSubmitMessage(`Error: ${itemError.message}`);
           return;
         }
-        setSubmitMessage("Item saved! Open the web app to view it.");
         setShowForm(false);
-        onClose();
+        setShowSavedScreen(true);
       } catch (err) {
         setSubmitMessage(`Error: ${err.message}`);
       }
@@ -29742,6 +29742,24 @@ ${suffix}`;
               onClose();
             },
             children: "Continue without adding"
+          }
+        )
+      ] }) }) });
+    }
+    if (showSavedScreen) {
+      return /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { id: OVERLAY_ID, className: "st-overlay-root", onClick: (e) => e.stopPropagation(), children: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "st-overlay-backdrop", onClick: handleBackdropClick, children: /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "st-overlay-card", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("h1", { className: "st-overlay-title", children: "Item saved!" }),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
+          "button",
+          {
+            type: "button",
+            className: "st-overlay-btn-primary",
+            onClick: (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onClose();
+            },
+            children: "Close"
           }
         )
       ] }) }) });

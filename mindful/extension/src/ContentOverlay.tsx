@@ -17,6 +17,7 @@ export function ContentOverlay({ onClose, pageUrl }: ContentOverlayProps) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [showSavedScreen, setShowSavedScreen] = useState(false);
   const [submitMessage, setSubmitMessage] = useState('');
 
   useEffect(() => {
@@ -66,9 +67,8 @@ export function ContentOverlay({ onClose, pageUrl }: ContentOverlayProps) {
         return;
       }
 
-      setSubmitMessage('Item saved! Open the web app to view it.');
       setShowForm(false);
-      onClose();
+      setShowSavedScreen(true);
     } catch (err: any) {
       setSubmitMessage(`Error: ${err.message}`);
     }
@@ -114,6 +114,29 @@ export function ContentOverlay({ onClose, pageUrl }: ContentOverlayProps) {
               }}
             >
               Continue without adding
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (showSavedScreen) {
+    return (
+      <div id={OVERLAY_ID} className="st-overlay-root" onClick={(e) => e.stopPropagation()}>
+        <div className="st-overlay-backdrop" onClick={handleBackdropClick}>
+          <div className="st-overlay-card">
+            <h1 className="st-overlay-title">Item saved!</h1>
+            <button
+              type="button"
+              className="st-overlay-btn-primary"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onClose();
+              }}
+            >
+              Close
             </button>
           </div>
         </div>
