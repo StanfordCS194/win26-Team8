@@ -17253,7 +17253,7 @@ URL: ${url}`
     }
     return explanation;
   }
-  function AddItemForm({ onSubmit, onCancel, initialUrl }) {
+  function AddItemForm({ onSubmit, onCancel, initialUrl, checkUrlInInventory }) {
     const [step, setStep] = (0, import_react5.useState)(1);
     const [productUrl, setProductUrl] = (0, import_react5.useState)(initialUrl ?? "");
     const [name, setName] = (0, import_react5.useState)("");
@@ -17269,6 +17269,8 @@ URL: ${url}`
     const [goalDescription, setGoalDescription] = (0, import_react5.useState)("");
     const [friendName, setFriendName] = (0, import_react5.useState)("");
     const [friendEmail, setFriendEmail] = (0, import_react5.useState)("");
+    const [showAlreadyInInventory, setShowAlreadyInInventory] = (0, import_react5.useState)(false);
+    const [isCheckingUrl, setIsCheckingUrl] = (0, import_react5.useState)(false);
     const [questions, setQuestions] = (0, import_react5.useState)([]);
     const [questionsUsedFallback, setQuestionsUsedFallback] = (0, import_react5.useState)(false);
     const [answers, setAnswers] = (0, import_react5.useState)({});
@@ -17312,6 +17314,7 @@ URL: ${url}`
       setGoalDescription("");
       setFriendName("");
       setFriendEmail("");
+      setShowAlreadyInInventory(false);
     };
     const handleFetchMetadata = async () => {
       if (!productUrl) return;
@@ -17391,6 +17394,20 @@ URL: ${url}`
       if (!name.trim()) {
         setName(itemName);
       }
+      if (productUrl.trim() && checkUrlInInventory) {
+        setIsCheckingUrl(true);
+        try {
+          const alreadyInInventory = await checkUrlInInventory(productUrl.trim());
+          if (alreadyInInventory) {
+            setShowAlreadyInInventory(true);
+            return;
+          }
+        } catch (err) {
+          console.error("Error checking URL in inventory:", err);
+        } finally {
+          setIsCheckingUrl(false);
+        }
+      }
       setIsLoadingQuestions(true);
       try {
         const { questions: generatedQuestions, usedFallback } = await generateQuestions(itemName);
@@ -17457,6 +17474,7 @@ URL: ${url}`
       onSubmit({
         name,
         imageUrl: imageUrl?.trim() || void 0,
+        productUrl: productUrl?.trim() || void 0,
         category,
         constraintType,
         consumptionScore: calculatedMindfulnessScore,
@@ -17484,7 +17502,20 @@ URL: ${url}`
           " of 4"
         ] })
       ] }),
-      step === 1 && /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("form", { onSubmit: handleStep1Submit, className: "space-y-6", children: [
+      showAlreadyInInventory && /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "space-y-6 py-4", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("p", { className: "text-lg text-foreground", children: "This item is already in your inventory!" }),
+        /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("p", { className: "text-sm text-muted-foreground", children: "You've already saved this product. No need to add it again." }),
+        /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+          "button",
+          {
+            type: "button",
+            onClick: onCancel,
+            className: "px-4 py-3 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-colors",
+            children: "Back"
+          }
+        )
+      ] }),
+      !showAlreadyInInventory && step === 1 && /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(import_jsx_runtime9.Fragment, { children: /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("form", { onSubmit: handleStep1Submit, className: "space-y-6", children: [
         /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { children: [
           /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { className: "block text-sm font-medium text-foreground/80 mb-2", children: "Product URL" }),
           /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "flex gap-2", children: [
@@ -17587,9 +17618,12 @@ URL: ${url}`
             "button",
             {
               type: "submit",
-              disabled: isLoadingQuestions || !productUrl,
+              disabled: isLoadingQuestions || isCheckingUrl || !productUrl,
               className: "flex-1 bg-primary text-primary-foreground px-6 py-3 rounded-full hover:bg-primary/90 transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2",
-              children: isLoadingQuestions ? /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)(import_jsx_runtime9.Fragment, { children: [
+              children: isCheckingUrl ? /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)(import_jsx_runtime9.Fragment, { children: [
+                /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(LoaderCircle, { className: "w-5 h-5 animate-spin" }),
+                "Checking..."
+              ] }) : isLoadingQuestions ? /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)(import_jsx_runtime9.Fragment, { children: [
                 /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(LoaderCircle, { className: "w-5 h-5 animate-spin" }),
                 "Generating Questions..."
               ] }) : "Continue to Reflection"
@@ -17600,13 +17634,13 @@ URL: ${url}`
             {
               type: "button",
               onClick: onCancel,
-              disabled: isLoadingQuestions,
+              disabled: isLoadingQuestions || isCheckingUrl,
               className: "px-8 py-3 border border-border text-foreground rounded-full hover:bg-muted/30 transition-colors disabled:opacity-50",
               children: "Cancel"
             }
           )
         ] })
-      ] }),
+      ] }) }),
       step === 2 && /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("form", { onSubmit: handleStep2Submit, className: "space-y-6", children: [
         questionsUsedFallback && /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("p", { className: "text-sm text-muted-foreground bg-muted/50 rounded-xl px-4 py-3 border border-border/50", children: "Using default reflection questions (AI was temporarily busy). You can still continue." }),
         /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "space-y-6", children: [
@@ -29485,6 +29519,7 @@ ${suffix}`;
       user_id: userId,
       name: item.name,
       image_url: item.imageUrl || null,
+      product_url: item.productUrl || null,
       category: item.category || null,
       constraint_type: item.constraintType,
       consumption_score: item.consumptionScore,
@@ -29493,6 +29528,19 @@ ${suffix}`;
       difficulty: item.difficulty || null,
       questionnaire: item.questionnaire
     };
+  }
+
+  // lib/urlUtils.ts
+  function normalizeProductUrl(url) {
+    if (!url || !url.trim()) return "";
+    try {
+      const u = new URL(url.trim());
+      const path = u.pathname.replace(/\/+$/, "") || "/";
+      const host = u.hostname.toLowerCase().replace(/^www\./, "");
+      return `${u.protocol}//${host}${path}`;
+    } catch {
+      return url.trim();
+    }
   }
 
   // extension/src/popup.tsx
@@ -29563,6 +29611,16 @@ ${suffix}`;
         setSubmitMessage(`Error: ${err.message}`);
       }
     };
+    const checkUrlInInventory = (0, import_react7.useCallback)(
+      async (url) => {
+        if (!session?.user) return false;
+        const { data, error } = await supabase.from("items").select("product_url").eq("user_id", session.user.id).not("product_url", "is", null);
+        if (error || !data) return false;
+        const normalized = normalizeProductUrl(url);
+        return data.some((r2) => r2.product_url && normalizeProductUrl(r2.product_url) === normalized);
+      },
+      [session?.user?.id]
+    );
     if (loading) {
       return /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "flex items-center justify-center min-h-[200px]", children: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("p", { className: "text-muted-foreground", children: "Loading..." }) });
     }
@@ -29593,7 +29651,8 @@ ${suffix}`;
         {
           onSubmit: handleSubmit,
           onCancel: () => window.close(),
-          initialUrl: activeUrl
+          initialUrl: activeUrl,
+          checkUrlInInventory
         }
       )
     ] });

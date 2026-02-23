@@ -6,6 +6,7 @@ export function itemToDbItem(item: Omit<Item, 'id' | 'addedDate'>, userId: strin
     user_id: userId,
     name: item.name,
     image_url: item.imageUrl || null,
+    product_url: item.productUrl || null,
     category: item.category || null,
     constraint_type: item.constraintType,
     consumption_score: item.consumptionScore,

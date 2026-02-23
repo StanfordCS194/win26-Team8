@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { AddItemForm } from '../../components/AddItemForm';
 import { Auth } from '../../components/Auth';
 import { supabase } from './supabaseClient';
 import { itemToDbItem } from './itemToDbItem';
+import { normalizeProductUrl } from '../../lib/urlUtils';
 import type { Item } from '../../types/item';
 import type { Session } from '@supabase/supabase-js';
 
@@ -78,6 +79,21 @@ export function ContentOverlay({ onClose, pageUrl }: ContentOverlayProps) {
     setShowForm(false);
     setSubmitMessage('');
   };
+
+  const checkUrlInInventory = useCallback(
+    async (url: string): Promise<boolean> => {
+      if (!session?.user) return false;
+      const { data, error } = await supabase
+        .from('items')
+        .select('product_url')
+        .eq('user_id', session.user.id)
+        .not('product_url', 'is', null);
+      if (error || !data) return false;
+      const normalized = normalizeProductUrl(url);
+      return data.some((r) => r.product_url && normalizeProductUrl(r.product_url) === normalized);
+    },
+    [session?.user?.id]
+  );
 
   const handleSignIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -162,6 +178,7 @@ export function ContentOverlay({ onClose, pageUrl }: ContentOverlayProps) {
               onSubmit={handleSubmit}
               onCancel={handleFormCancel}
               initialUrl={pageUrl}
+              checkUrlInInventory={checkUrlInInventory}
             />
           </div>
         </div>
