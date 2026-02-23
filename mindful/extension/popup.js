@@ -12303,37 +12303,6 @@
   // components/AddItemForm.tsx
   var import_react5 = __toESM(require_react());
 
-  // services/urlMetadata.ts
-  async function fetchUrlMetadata(url) {
-    try {
-      const apiUrl = `https://api.microlink.io?url=${encodeURIComponent(url)}`;
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 1e4);
-      const response = await fetch(apiUrl, {
-        signal: controller.signal
-      });
-      clearTimeout(timeoutId);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch: ${response.status}`);
-      }
-      const data = await response.json();
-      if (data.status !== "success") {
-        throw new Error("API returned non-success status");
-      }
-      return {
-        title: data.data.title || null,
-        image: data.data.image?.url || null
-      };
-    } catch (error) {
-      if (error instanceof Error && error.name === "AbortError") {
-        console.error("Request timed out");
-      } else {
-        console.error("Error fetching URL metadata:", error);
-      }
-      return { title: null, image: null };
-    }
-  }
-
   // services/questionGenerator.ts
   var DEFAULT_QUESTIONS = [
     {
@@ -12427,7 +12396,7 @@ Only respond with the JSON array, no other text.`;
       console.warn("   1. Create a .env file in the mindful/ directory (same folder as package.json)");
       console.warn("   2. Add: EXPO_PUBLIC_ANTHROPIC_API_KEY=your_actual_key_here");
       console.warn("   3. Restart your Expo dev server (stop with Ctrl+C, then run npm start again)");
-      return DEFAULT_QUESTIONS;
+      return { questions: DEFAULT_QUESTIONS, usedFallback: true };
     }
     console.log("API key found, generating questions for:", productName);
     try {
@@ -12440,7 +12409,7 @@ Only respond with the JSON array, no other text.`;
           "anthropic-dangerous-direct-browser-access": "true"
         },
         body: JSON.stringify({
-          model: "claude-3-5-haiku-latest",
+          model: "claude-opus-4-6",
           max_tokens: 1e3,
           system: SYSTEM_PROMPT,
           messages: [
@@ -12462,6 +12431,10 @@ Requirements:
       if (!response.ok) {
         const errorText = await response.text();
         console.error("API Error:", response.status, errorText);
+        if (response.status === 529) {
+          console.warn("Anthropic API overloaded (529). Falling back to default questions.");
+          return { questions: DEFAULT_QUESTIONS, usedFallback: true };
+        }
         throw new Error(`Anthropic API error: ${response.status} - ${errorText}`);
       }
       const data = await response.json();
@@ -12488,15 +12461,489 @@ Requirements:
         }
       }
       console.log("Successfully generated", questions.length, "questions for", productName);
-      return questions;
+      return { questions };
     } catch (error) {
       console.error("Error generating questions:", error);
       if (error instanceof Error) {
         console.error("   Error message:", error.message);
       }
       console.warn("Falling back to default questions");
-      return DEFAULT_QUESTIONS;
+      return { questions: DEFAULT_QUESTIONS, usedFallback: true };
     }
+  }
+
+  // services/categoryDetector.ts
+  var CATEGORIES = ["Beauty", "Clothes", "Accessories", "Sports", "Electronics", "Home", "Other"];
+  var CATEGORY_SYSTEM_PROMPT = `You are a product categorization assistant. Your task is to classify product names into one of these categories: Beauty, Clothes, Accessories, Sports, Electronics, Home, or Other.
+
+Categories:
+- Beauty: Skincare products, makeup, cosmetics, perfumes, hair care, beauty tools, nail polish, serums, creams, lotions. Not jewelry or bags.
+- Clothes: Clothing and apparel only\u2014shirts, pants, dresses, shoes, sneakers, jackets, sweaters, jeans, skirts, tops, suits, coats, socks, underwear. Not jewelry, purses, or bags.
+- Accessories: Jewelry (rings, necklaces, bracelets, earrings), purses, handbags, wallets, belts, watches (fashion watches), sunglasses, scarves, hats, backpacks (non-sport), totes, clutches\u2014items that accessorize rather than being clothing or beauty products.
+- Sports: Sports equipment, fitness gear, athletic wear, workout equipment, outdoor gear
+- Electronics: Phones, computers, cameras, TVs, headphones, gadgets, tech devices
+- Home: Furniture, home decor, appliances, kitchen items, bedding, lighting, storage
+- Other: Anything that doesn't fit the above categories
+
+Return ONLY the category name (one word: Beauty, Clothes, Accessories, Sports, Electronics, Home, or Other). Do not include any explanation or additional text.`;
+  function getApiKey2() {
+    if (typeof process !== "undefined" && process.env) {
+      return process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY || "";
+    }
+    return "";
+  }
+  function detectCategoryFallback(itemName) {
+    if (!itemName || itemName.trim().length === 0) {
+      return "Other";
+    }
+    const nameLower = itemName.toLowerCase().trim();
+    const beautyKeywords = [
+      "beauty",
+      "makeup",
+      "cosmetic",
+      "skincare",
+      "moisturizer",
+      "serum",
+      "cleanser",
+      "toner",
+      "foundation",
+      "concealer",
+      "lipstick",
+      "mascara",
+      "eyeliner",
+      "eyeshadow",
+      "blush",
+      "perfume",
+      "cologne",
+      "fragrance",
+      "hair",
+      "shampoo",
+      "conditioner",
+      "hairspray",
+      "nail",
+      "polish",
+      "lotion",
+      "cream",
+      "sunscreen",
+      "spf",
+      "face",
+      "mask",
+      "exfoliant",
+      "retinol",
+      "vitamin c",
+      "hyaluronic",
+      "squalane",
+      "niacinamide",
+      "cleansing",
+      "brush",
+      "makeup brush",
+      "palette",
+      "primer",
+      "setting spray",
+      "beauty tool",
+      "skincare tool",
+      "cosmetic",
+      "beauty product",
+      "self-care",
+      "grooming",
+      "facial",
+      "treatment"
+    ];
+    const accessoriesKeywords = [
+      "jewelry",
+      "jewellery",
+      "watch",
+      "ring",
+      "necklace",
+      "bracelet",
+      "earring",
+      "purse",
+      "handbag",
+      "bag",
+      "clutch",
+      "wallet",
+      "belt",
+      "sunglasses",
+      "tote",
+      "backpack",
+      "crossbody",
+      "satchel",
+      "scarf",
+      "hat",
+      "cap",
+      "hair clip",
+      "brooch",
+      "pendant",
+      "anklet",
+      "choker",
+      "accessory",
+      "accessories"
+    ];
+    const clothesKeywords = [
+      "shirt",
+      "pants",
+      "dress",
+      "shoes",
+      "sneakers",
+      "boots",
+      "jacket",
+      "coat",
+      "sweater",
+      "hoodie",
+      "jeans",
+      "shorts",
+      "skirt",
+      "top",
+      "blouse",
+      "suit",
+      "tie",
+      "gloves",
+      "socks",
+      "underwear",
+      "lingerie",
+      "clothing",
+      "apparel",
+      "fashion",
+      "outfit",
+      "wardrobe",
+      "blazer",
+      "cardigan",
+      "jumper",
+      "leggings"
+    ];
+    const sportsKeywords = [
+      "sport",
+      "gym",
+      "workout",
+      "exercise",
+      "fitness",
+      "running",
+      "jogging",
+      "basketball",
+      "football",
+      "soccer",
+      "tennis",
+      "golf",
+      "baseball",
+      "hockey",
+      "swimming",
+      "cycling",
+      "bike",
+      "bicycle",
+      "yoga",
+      "pilates",
+      "weights",
+      "dumbbell",
+      "treadmill",
+      "elliptical",
+      "equipment",
+      "racket",
+      "ball",
+      "helmet",
+      "skateboard",
+      "surfboard",
+      "ski",
+      "snowboard",
+      "hiking",
+      "camping",
+      "outdoor",
+      "athletic",
+      "trainer",
+      "sneaker",
+      "cleats"
+    ];
+    const electronicsKeywords = [
+      "phone",
+      "iphone",
+      "android",
+      "smartphone",
+      "laptop",
+      "computer",
+      "pc",
+      "mac",
+      "tablet",
+      "ipad",
+      "camera",
+      "tv",
+      "television",
+      "headphone",
+      "earbud",
+      "airpod",
+      "speaker",
+      "microphone",
+      "keyboard",
+      "mouse",
+      "monitor",
+      "screen",
+      "display",
+      "charger",
+      "cable",
+      "usb",
+      "battery",
+      "power",
+      "electronic",
+      "device",
+      "gadget",
+      "smart",
+      "smartwatch",
+      "smart watch",
+      "fitbit",
+      "apple watch",
+      "galaxy watch",
+      "nintendo",
+      "playstation",
+      "xbox",
+      "console",
+      "game",
+      "drone",
+      "router",
+      "modem",
+      "printer",
+      "scanner"
+    ];
+    const homeKeywords = [
+      "furniture",
+      "chair",
+      "table",
+      "desk",
+      "sofa",
+      "couch",
+      "bed",
+      "mattress",
+      "pillow",
+      "blanket",
+      "sheet",
+      "lamp",
+      "light",
+      "lighting",
+      "decor",
+      "decoration",
+      "art",
+      "painting",
+      "frame",
+      "mirror",
+      "rug",
+      "carpet",
+      "curtain",
+      "blinds",
+      "plant",
+      "vase",
+      "candle",
+      "home",
+      "house",
+      "kitchen",
+      "appliance",
+      "refrigerator",
+      "oven",
+      "microwave",
+      "dishwasher",
+      "washer",
+      "dryer",
+      "vacuum",
+      "cleaner",
+      "tool",
+      "shelf",
+      "cabinet",
+      "drawer",
+      "storage",
+      "organizer"
+    ];
+    if (electronicsKeywords.some((keyword) => nameLower.includes(keyword))) {
+      return "Electronics";
+    }
+    if (beautyKeywords.some((keyword) => nameLower.includes(keyword))) {
+      return "Beauty";
+    }
+    if (accessoriesKeywords.some((keyword) => nameLower.includes(keyword))) {
+      return "Accessories";
+    }
+    if (clothesKeywords.some((keyword) => nameLower.includes(keyword))) {
+      return "Clothes";
+    }
+    if (sportsKeywords.some((keyword) => nameLower.includes(keyword))) {
+      return "Sports";
+    }
+    if (homeKeywords.some((keyword) => nameLower.includes(keyword))) {
+      return "Home";
+    }
+    const words = nameLower.split(/\s+/);
+    for (const word of words) {
+      if (beautyKeywords.some((keyword) => word.includes(keyword) || keyword.includes(word))) {
+        return "Beauty";
+      }
+      if (accessoriesKeywords.some((keyword) => word.includes(keyword) || keyword.includes(word))) {
+        return "Accessories";
+      }
+      if (clothesKeywords.some((keyword) => word.includes(keyword) || keyword.includes(word))) {
+        return "Clothes";
+      }
+      if (sportsKeywords.some((keyword) => word.includes(keyword) || keyword.includes(word))) {
+        return "Sports";
+      }
+      if (electronicsKeywords.some((keyword) => word.includes(keyword) || keyword.includes(word))) {
+        return "Electronics";
+      }
+      if (homeKeywords.some((keyword) => word.includes(keyword) || keyword.includes(word))) {
+        return "Home";
+      }
+    }
+    return "Other";
+  }
+  async function detectCategory(itemName) {
+    if (!itemName || itemName.trim().length === 0) {
+      return "Other";
+    }
+    const apiKey = getApiKey2();
+    if (!apiKey || apiKey === "your_api_key_here" || apiKey.trim() === "") {
+      console.log("No API key found, using keyword-based category detection");
+      return detectCategoryFallback(itemName);
+    }
+    try {
+      console.log("Using AI to detect category for:", itemName);
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+          "anthropic-dangerous-direct-browser-access": "true"
+        },
+        body: JSON.stringify({
+          model: "claude-3-5-sonnet-20241022",
+          max_tokens: 50,
+          system: CATEGORY_SYSTEM_PROMPT,
+          messages: [
+            {
+              role: "user",
+              content: `What category does this product belong to: "${itemName}"?`
+            }
+          ]
+        })
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.warn("AI category detection failed, using fallback:", response.status, errorText);
+        return detectCategoryFallback(itemName);
+      }
+      const data = await response.json();
+      const content = data.content?.[0]?.text?.trim();
+      if (!content) {
+        console.warn("No content in AI response, using fallback");
+        return detectCategoryFallback(itemName);
+      }
+      const detectedCategory = content.split(/\s+/)[0].trim();
+      if (CATEGORIES.includes(detectedCategory)) {
+        console.log("AI detected category:", detectedCategory);
+        return detectedCategory;
+      } else {
+        console.warn("AI returned invalid category:", detectedCategory, "- using fallback");
+        return detectCategoryFallback(itemName);
+      }
+    } catch (error) {
+      console.error("Error detecting category with AI:", error);
+      console.log("Falling back to keyword-based detection");
+      return detectCategoryFallback(itemName);
+    }
+  }
+
+  // services/urlMetadata.ts
+  var BOT_CHECK_PATTERNS = [
+    /robot or human/i,
+    /are you a human/i,
+    /captcha/i,
+    /verify you're human/i,
+    /access denied/i,
+    /just a moment/i,
+    // Cloudflare
+    /attention required/i,
+    // Cloudflare
+    /please verify/i,
+    /security check/i,
+    /blocked/i,
+    /pardon our interruption/i
+  ];
+  function isBotCheckTitle(title) {
+    return BOT_CHECK_PATTERNS.some((pattern) => pattern.test(title));
+  }
+  async function scrapeMetadata(url) {
+    try {
+      const apiUrl = `https://api.microlink.io?url=${encodeURIComponent(url)}`;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 1e4);
+      const response = await fetch(apiUrl, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (!response.ok) return { title: null, image: null };
+      const data = await response.json();
+      if (data.status !== "success") return { title: null, image: null };
+      const title = data.data.title || null;
+      const image = data.data.image?.url || null;
+      if (title && isBotCheckTitle(title)) {
+        console.log("Microlink returned bot-check page, ignoring:", title);
+        return { title: null, image: null };
+      }
+      if (title) console.log("Microlink scraped title:", title);
+      return { title, image };
+    } catch (error) {
+      console.error("Microlink scraping failed:", error);
+      return { title: null, image: null };
+    }
+  }
+  async function inferProductNameFromUrl(url) {
+    const apiKey = process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY || "";
+    if (!apiKey || apiKey === "your_api_key_here") {
+      console.warn("No API key available for AI URL inference");
+      return null;
+    }
+    try {
+      console.log("AI inference: calling Claude for URL:", url);
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+          "anthropic-dangerous-direct-browser-access": "true"
+        },
+        body: JSON.stringify({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 100,
+          messages: [
+            {
+              role: "user",
+              content: `Extract the product name from this URL. Return ONLY the product name, nothing else. If you cannot determine a product name, return "Unknown Product".
+
+URL: ${url}`
+            }
+          ]
+        })
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("AI inference API error:", response.status, errorText);
+        return null;
+      }
+      const data = await response.json();
+      const name = data.content?.[0]?.text?.trim();
+      if (!name || name === "Unknown Product") {
+        console.log("AI could not determine product name");
+        return null;
+      }
+      console.log("AI inferred product name:", name);
+      return name;
+    } catch (error) {
+      console.error("Error in AI URL inference:", error);
+      return null;
+    }
+  }
+  async function fetchUrlMetadata(url) {
+    const [scraped, aiTitle] = await Promise.all([
+      scrapeMetadata(url),
+      inferProductNameFromUrl(url)
+    ]);
+    const title = scraped.title || aiTitle;
+    const image = scraped.image;
+    console.log("Final result \u2014 scraped:", scraped.title, "| AI:", aiTitle, "| using:", title);
+    return { title, image };
   }
 
   // node_modules/lucide-react/dist/esm/createLucideIcon.js
@@ -16679,6 +17126,7 @@ Requirements:
 
   // components/AddItemForm.tsx
   var import_jsx_runtime9 = __toESM(require_jsx_runtime());
+  var ITEM_CATEGORIES = ["Beauty", "Clothes", "Accessories", "Sports", "Electronics", "Home", "Other"];
   function generateMindfulnessExplanation(questionnaire, finalScore) {
     const insights = [];
     const areasForGrowth = [];
@@ -16759,13 +17207,18 @@ Requirements:
     const [name, setName] = (0, import_react5.useState)("");
     const [imageUrl, setImageUrl] = (0, import_react5.useState)("");
     const [hasProductUrlTouched, setHasProductUrlTouched] = (0, import_react5.useState)(false);
+    const [category, setCategory] = (0, import_react5.useState)("Other");
+    const [categoryIsAISuggested, setCategoryIsAISuggested] = (0, import_react5.useState)(false);
     const [hasUrlTouched, setHasUrlTouched] = (0, import_react5.useState)(false);
     const [constraintType, setConstraintType] = (0, import_react5.useState)("time");
     const [waitUntilDate, setWaitUntilDate] = (0, import_react5.useState)("");
     const [difficulty, setDifficulty] = (0, import_react5.useState)("medium");
     const [consumptionScore, setConsumptionScore] = (0, import_react5.useState)(1);
     const [goalDescription, setGoalDescription] = (0, import_react5.useState)("");
+    const [friendName, setFriendName] = (0, import_react5.useState)("");
+    const [friendEmail, setFriendEmail] = (0, import_react5.useState)("");
     const [questions, setQuestions] = (0, import_react5.useState)([]);
+    const [questionsUsedFallback, setQuestionsUsedFallback] = (0, import_react5.useState)(false);
     const [answers, setAnswers] = (0, import_react5.useState)({});
     const [isLoadingQuestions, setIsLoadingQuestions] = (0, import_react5.useState)(false);
     const [isLoadingMetadata, setIsLoadingMetadata] = (0, import_react5.useState)(false);
@@ -16774,20 +17227,33 @@ Requirements:
         setProductUrl(initialUrl);
       }
     }, [initialUrl, hasProductUrlTouched]);
+    const generateUnlockPassword = () => {
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+      let password = "";
+      for (let i = 0; i < 6; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return password;
+    };
     const resetForm = () => {
       setStep(1);
       setProductUrl(initialUrl ?? "");
       setName("");
       setImageUrl("");
       setHasProductUrlTouched(false);
+      setCategory("Other");
+      setCategoryIsAISuggested(false);
       setHasUrlTouched(false);
       setConstraintType("time");
       setWaitUntilDate("");
       setDifficulty("medium");
       setConsumptionScore(1);
       setQuestions([]);
+      setQuestionsUsedFallback(false);
       setAnswers({});
       setGoalDescription("");
+      setFriendName("");
+      setFriendEmail("");
     };
     const handleFetchMetadata = async () => {
       if (!productUrl) return;
@@ -16796,12 +17262,16 @@ Requirements:
         const metadata = await fetchUrlMetadata(productUrl);
         if (metadata.title) {
           setName(metadata.title);
+          const detectedCategory = await detectCategory(metadata.title);
+          setCategory(detectedCategory);
+          setCategoryIsAISuggested(true);
         }
         if (metadata.image) {
           setImageUrl(metadata.image);
         }
       } catch (error) {
         console.error("Error fetching metadata:", error);
+        alert("Failed to fetch product details. Please enter manually.");
       } finally {
         setIsLoadingMetadata(false);
       }
@@ -16836,8 +17306,9 @@ Requirements:
       e.preventDefault();
       setIsLoadingQuestions(true);
       try {
-        const generatedQuestions = await generateQuestions(name);
+        const { questions: generatedQuestions, usedFallback } = await generateQuestions(name);
         setQuestions(generatedQuestions);
+        setQuestionsUsedFallback(!!usedFallback);
         const initialAnswers = {};
         generatedQuestions.forEach((q) => {
           initialAnswers[q.id] = 1;
@@ -16898,11 +17369,17 @@ Requirements:
       const calculatedMindfulnessScore = calculateMindfulnessScore(answers);
       onSubmit({
         name,
-        imageUrl: imageUrl || "",
+        imageUrl: imageUrl?.trim() || void 0,
+        category,
         constraintType,
         consumptionScore: calculatedMindfulnessScore,
         ...constraintType === "time" ? { waitUntilDate } : { difficulty },
-        questionnaire
+        questionnaire,
+        ...constraintType === "goals" && friendName.trim() ? {
+          friendName: friendName.trim(),
+          friendEmail: friendEmail.trim() || void 0,
+          unlockPassword: generateUnlockPassword()
+        } : {}
       });
       resetForm();
     };
@@ -16968,29 +17445,50 @@ Requirements:
           )
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { className: "block text-sm font-medium text-foreground/80 mb-2", children: "Image URL" }),
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { className: "block text-sm font-medium text-foreground/80 mb-2", children: "Image URL (Optional)" }),
           /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
             "input",
             {
               type: "url",
               value: imageUrl,
-              onChange: (e) => {
-                setImageUrl(e.target.value);
-                setHasUrlTouched(true);
-              },
+              onChange: (e) => setImageUrl(e.target.value),
               placeholder: "https://example.com/image.jpg",
               className: "w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
             }
           ),
-          imageUrl && /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "mt-2", children: /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+          imageUrl && imageUrl.trim() ? /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "mt-3 relative rounded-xl overflow-hidden border border-border bg-muted/20", children: /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
             "img",
             {
-              src: imageUrl,
-              alt: "Preview",
-              className: "w-20 h-20 object-cover rounded-lg border border-border",
-              onError: (e) => e.currentTarget.style.display = "none"
+              src: imageUrl.trim(),
+              alt: "Product preview",
+              className: "w-full max-h-96 object-contain",
+              onError: (e) => {
+                e.currentTarget.style.display = "none";
+                e.currentTarget.parentElement.innerHTML = '<p class="text-sm text-muted-foreground p-4">Invalid image URL</p>';
+              }
             }
-          ) })
+          ) }) : null
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "flex items-center gap-2 mb-2", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { className: "text-sm font-medium text-foreground/80", children: "Category" }),
+            categoryIsAISuggested && /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("span", { className: "inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "w-1.5 h-1.5 rounded-full bg-primary animate-pulse" }),
+              "AI Suggested"
+            ] })
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+            "select",
+            {
+              value: category,
+              onChange: (e) => {
+                setCategory(e.target.value);
+                setCategoryIsAISuggested(false);
+              },
+              className: "w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground",
+              children: ITEM_CATEGORIES.map((cat) => /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("option", { value: cat, children: cat }, cat))
+            }
+          )
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "flex gap-3 pt-4", children: [
           /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
@@ -17018,6 +17516,7 @@ Requirements:
         ] })
       ] }),
       step === 2 && /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("form", { onSubmit: handleStep2Submit, className: "space-y-6", children: [
+        questionsUsedFallback && /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("p", { className: "text-sm text-muted-foreground bg-muted/50 rounded-xl px-4 py-3 border border-border/50", children: "Using default reflection questions (AI was temporarily busy). You can still continue." }),
         /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "space-y-6", children: [
           /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "space-y-3", children: [
             /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "flex items-center justify-between", children: [
@@ -17259,6 +17758,38 @@ Requirements:
               className: "w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground resize-none"
             }
           )
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "space-y-4 pt-4 border-t border-border/50", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("p", { className: "text-sm text-foreground/80", children: "Choose a friend who will receive a password to unlock this item once you complete your goal:" }),
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { className: "block text-sm font-medium text-foreground/80 mb-2", children: "Friend's Name *" }),
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+              "input",
+              {
+                type: "text",
+                value: friendName,
+                onChange: (e) => setFriendName(e.target.value),
+                placeholder: "Enter your friend's name",
+                required: constraintType === "goals",
+                className: "w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
+              }
+            )
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { className: "block text-sm font-medium text-foreground/80 mb-2", children: "Friend's Email *" }),
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+              "input",
+              {
+                type: "email",
+                value: friendEmail,
+                onChange: (e) => setFriendEmail(e.target.value),
+                placeholder: "friend@example.com",
+                required: constraintType === "goals",
+                className: "w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
+              }
+            ),
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("p", { className: "text-xs text-muted-foreground mt-1", children: "Your friend will receive an email with a password to unlock this item once you complete your goal." })
+          ] })
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "flex gap-3 pt-4", children: [
           /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(

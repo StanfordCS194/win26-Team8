@@ -90,9 +90,14 @@ function getApiKey(): string {
   return '';
 }
 
+export type GenerateQuestionsResult = {
+  questions: GeneratedQuestion[];
+  usedFallback?: boolean;
+};
+
 export async function generateQuestions(
   productName: string
-): Promise<GeneratedQuestion[]> {
+): Promise<GenerateQuestionsResult> {
   // Check if API key is configured
   // Note: Expo automatically loads .env files, but you must restart the dev server after adding/changing .env
   const apiKey = getApiKey();
@@ -113,7 +118,7 @@ export async function generateQuestions(
     console.warn('   1. Create a .env file in the mindful/ directory (same folder as package.json)');
     console.warn('   2. Add: EXPO_PUBLIC_ANTHROPIC_API_KEY=your_actual_key_here');
     console.warn('   3. Restart your Expo dev server (stop with Ctrl+C, then run npm start again)');
-    return DEFAULT_QUESTIONS;
+    return { questions: DEFAULT_QUESTIONS, usedFallback: true };
   }
 
   console.log('API key found, generating questions for:', productName);
@@ -128,7 +133,7 @@ export async function generateQuestions(
         'anthropic-dangerous-direct-browser-access': 'true',
       },
       body: JSON.stringify({
-        model: 'claude-3-5-haiku-latest',
+        model: 'claude-opus-4-6',
         max_tokens: 1000,
         system: SYSTEM_PROMPT,
         messages: [
@@ -151,6 +156,11 @@ Requirements:
     if (!response.ok) {
       const errorText = await response.text();
       console.error('API Error:', response.status, errorText);
+      // 529 = "Overloaded" – Anthropic's API was temporarily too busy
+      if (response.status === 529) {
+        console.warn('Anthropic API overloaded (529). Falling back to default questions.');
+        return { questions: DEFAULT_QUESTIONS, usedFallback: true };
+      }
       throw new Error(`Anthropic API error: ${response.status} - ${errorText}`);
     }
 
@@ -187,15 +197,15 @@ Requirements:
     }
 
     console.log('Successfully generated', questions.length, 'questions for', productName);
-    return questions;
+    return { questions };
   } catch (error) {
     console.error('Error generating questions:', error);
     if (error instanceof Error) {
       console.error('   Error message:', error.message);
     }
-    // Fall back to default questions on error
+    // Fall back to default questions on error (e.g. 529 overloaded, network error)
     console.warn('Falling back to default questions');
-    return DEFAULT_QUESTIONS;
+    return { questions: DEFAULT_QUESTIONS, usedFallback: true };
   }
 }
 

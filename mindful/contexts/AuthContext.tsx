@@ -1,6 +1,9 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { supabase } from '../env';
 import type { User, Session } from '@supabase/supabase-js';
+
+/** Supabase stores session here; we read it when getSession() times out. */
+const SUPABASE_STORAGE_KEY = 'sb-mohgivduzthccoybnbnr-auth-token';
 
 interface Profile {
   id: string;
@@ -26,37 +29,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  /** Set when onAuthStateChange fires SIGNED_IN so we can treat timeout as success */
+  const signedInAtRef = useRef<number | null>(null);
 
   useEffect(() => {
     console.log('🔐 Initializing auth...');
     
-    // Get initial session with timeout
+    // Get initial session. Supabase's getSession() can hang on slow/flaky networks,
+    // so we use a timeout and fall back to reading the session from localStorage.
     const checkSession = async () => {
+      let session: Session | null = null;
       try {
+        const timeoutMs = 10000; // 10s
         const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Session check timeout')), 3000)
+          setTimeout(() => reject(new Error('Session check timeout')), timeoutMs)
         );
-        
-        const sessionPromise = supabase.auth.getSession();
-        
-        const { data: { session } } = await Promise.race([
-          sessionPromise,
+        const { data } = await Promise.race([
+          supabase.auth.getSession(),
           timeoutPromise
-        ]) as any;
-        
-        console.log('📱 Initial session:', session ? 'Found' : 'None');
-        setSession(session);
-        setUser(session?.user || null);
-        
-        if (session?.user) {
-          loadProfile(session.user.id);
-        }
+        ]) as { data: { session: Session | null } };
+        session = data?.session ?? null;
       } catch (err) {
         console.warn('⚠️ Session check failed (showing login):', err);
-        // No session found or timeout - show login
-      } finally {
-        setLoading(false);
+        // getSession() timed out or failed - try localStorage fallback
+        try {
+          const raw = localStorage.getItem(SUPABASE_STORAGE_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw) as { currentSession?: Session; session?: Session } | Session | null;
+            const fromStorage =
+              parsed && typeof parsed === 'object' && 'user' in parsed
+                ? (parsed as Session)
+                : (parsed as { currentSession?: Session; session?: Session })?.currentSession
+                  ?? (parsed as { currentSession?: Session; session?: Session })?.session;
+            if (fromStorage?.user) {
+              session = fromStorage;
+              console.log('📱 Restored session from localStorage (getSession timed out)');
+            }
+          }
+        } catch (_) {
+          // Ignore localStorage parse errors
+        }
       }
+      console.log('📱 Initial session:', session ? 'Found' : 'None');
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        loadProfile(session.user.id);
+      }
+      setLoading(false);
     };
     
     checkSession();
@@ -65,6 +85,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('🔄 Auth state changed:', event);
+        if (event === 'SIGNED_IN' && session) {
+          signedInAtRef.current = Date.now();
+        }
         setSession(session);
         setUser(session?.user || null);
         
@@ -176,8 +199,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       console.log('🔐 Signing in...');
       
+      const timeoutMs = 15000; // 15s so slow networks can complete
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Sign in timeout after 10 seconds')), 10000)
+        setTimeout(() => reject(new Error('Sign in timeout after 15 seconds')), timeoutMs)
       );
 
       const signInPromise = supabase.auth.signInWithPassword({
@@ -185,11 +209,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         password,
       });
 
-      const { error } = await Promise.race([
+      const result = await Promise.race([
         signInPromise,
         timeoutPromise
       ]) as any;
 
+      const { error } = result ?? {};
       if (error) {
         console.error('❌ Sign in error:', error);
         return { error };
@@ -198,6 +223,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('✅ Signed in');
       return { error: null };
     } catch (err) {
+      // Timeout can fire even when auth succeeded (onAuthStateChange already fired SIGNED_IN)
+      const signedInAt = signedInAtRef.current;
+      if (signedInAt != null && Date.now() - signedInAt < 20000) {
+        console.log('✅ Signed in (SIGNED_IN received before timeout)');
+        return { error: null };
+      }
       console.error('❌ Sign in exception:', err);
       return { error: err };
     }
@@ -206,7 +237,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     try {
       console.log('🚪 Signing out...');
-      
+      signedInAtRef.current = null;
       setUser(null);
       setProfile(null);
       setSession(null);
