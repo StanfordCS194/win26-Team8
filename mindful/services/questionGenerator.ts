@@ -1,6 +1,8 @@
 // Question Generation Service using Claude API (Anthropic)
 // Generates contextual reflection questions based on the product being added
 
+import { getExpoPublic } from './env';
+
 export interface GeneratedQuestion {
   id: string;
   question: string;
@@ -82,15 +84,8 @@ Example for "Tennis Racket":
 
 Only respond with the JSON array, no other text.`;
 
-// Safe env access for both Expo and browser/extension
-// In Expo, process.env is available at runtime.
-// In the extension, esbuild inlines the value at build time via --define.
 function getApiKey(): string {
-  try {
-    return process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY || '';
-  } catch {
-    return '';
-  }
+  return getExpoPublic('EXPO_PUBLIC_ANTHROPIC_API_KEY');
 }
 
 export type GenerateQuestionsResult = {
@@ -105,10 +100,9 @@ export async function generateQuestions(
   // Note: Expo automatically loads .env files, but you must restart the dev server after adding/changing .env
   const apiKey = getApiKey();
 
-  // Debug: Log what we're getting from environment (only when process exists)
-  if (typeof process !== 'undefined' && process.env) {
-    console.log('Environment check:');
-    console.log('   EXPO_PUBLIC_ANTHROPIC_API_KEY exists:', !!process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY);
+  // Debug: Log what we're getting from environment
+  if (apiKey.length > 0) {
+    console.log('   EXPO_PUBLIC_ANTHROPIC_API_KEY exists: true');
   }
   console.log('   API key length:', apiKey.length);
   if (apiKey) {

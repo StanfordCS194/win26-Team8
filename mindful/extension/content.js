@@ -12302,6 +12302,7 @@
   // extension/src/cartDetection.ts
   var ADD_TO_CART_PATTERNS = [
     /\badd\s+to\s+(cart|bag|basket)\b/i,
+    /\badd\s+to\s+(my|your)\s+bag\b/i,
     /\badd\s+to\s+shopping\s+cart\b/i,
     /\bbuy\s+now\b/i,
     /\badd\s+to\s+bag\b/i,
@@ -12319,27 +12320,38 @@
     '[id*="add-to-cart"]',
     '[id*="addToCart"]',
     '[id*="add-to-bag"]',
+    '[id*="addToBag"]',
     '[id*="add_to_cart"]',
     '[id*="add_to_bag"]',
     '[id="add-to-cart-button"]',
     '[id="addToCart"]',
+    '[id="add-to-bag"]',
     '[data-action*="add-to-cart"]',
     '[data-action*="add-to-bag"]',
+    '[data-action*="addToCart"]',
+    '[data-action*="addToBag"]',
     '[data-testid*="add-to-cart"]',
     '[data-testid*="addToCart"]',
+    '[data-testid*="add-to-bag"]',
+    '[data-testid*="addToBag"]',
     '[data-name*="add-to-cart" i]',
     "[data-add-to-cart]",
     "[data-add-to-cart-trigger]",
+    '[data-automation*="add-to-bag" i]',
+    '[data-automation*="add-to-cart" i]',
     '[class*="add-to-cart"]',
     '[class*="add_to_cart"]',
     '[class*="addToCart"]',
     '[class*="add-to-bag"]',
+    '[class*="addToBag"]',
     '[class*="add_to_bag"]',
     '[class*="product-form__submit"]',
     '[class*="btn--add-to-cart"]',
+    '[class*="add-to-bag"]',
     '[name="add"]',
     '[name*="add-to-cart"]',
     '[name*="addToCart"]',
+    '[name*="add-to-bag"]',
     '[value*="add to cart" i]',
     '[value*="add to bag" i]',
     '[value*="add to basket" i]',
@@ -12422,6 +12434,7 @@
   function matchesAddToCart(element) {
     if (isCartAddSubmitButton(element)) return true;
     const text = (element.textContent || "").trim();
+    const innerText = typeof element.innerText === "string" ? element.innerText.trim() : "";
     const value = element.getAttribute("value") || element.value || "";
     const ariaLabel = element.getAttribute("aria-label") || "";
     const title = element.getAttribute("title") || "";
@@ -12431,7 +12444,8 @@
     const dataAction = element.getAttribute("data-action") || "";
     const dataTestId = element.getAttribute("data-testid") || "";
     const dataName = element.getAttribute("data-name") || "";
-    const combined = [text, value, ariaLabel, title, id, className, name, dataAction, dataTestId, dataName].join(" ");
+    const dataAutomation = element.getAttribute("data-automation") || element.getAttribute("data-automation-id") || "";
+    const combined = [text, innerText, value, ariaLabel, title, id, className, name, dataAction, dataTestId, dataName, dataAutomation].join(" ");
     if (ADD_TO_CART_PATTERNS.some((re) => re.test(combined))) return true;
     try {
       if (ADD_TO_CART_SELECTORS.some((sel) => element.matches?.(sel))) return true;
@@ -12470,7 +12484,15 @@
       if (overlayRoot && (current === overlayRoot || overlayRoot.contains(current))) return null;
       if (isRemoveOrDecreaseControl(current)) return null;
       if (matchesAddToCart(current)) return current;
-      current = current.parentElement;
+      const nextParent = current.parentElement ? current.parentElement : current.parentNode && current.parentNode.host !== void 0 ? current.parentNode.host : null;
+      current = nextParent;
+    }
+    const target = clickEvent.target;
+    if (target) {
+      const interactive = target.closest?.('button, [role="button"], a[href], input[type="submit"]');
+      if (interactive && interactive !== overlayRoot && !(overlayRoot && overlayRoot.contains(interactive)) && !isRemoveOrDecreaseControl(interactive) && matchesAddToCart(interactive)) {
+        return interactive;
+      }
     }
     return null;
   }
@@ -12480,6 +12502,18 @@
 
   // components/AddItemForm.tsx
   var import_react5 = __toESM(require_react());
+
+  // services/env.ts
+  function getExpoPublic(key) {
+    try {
+      if (typeof process !== "undefined" && process.env && key in process.env) {
+        const v = process.env[key];
+        return typeof v === "string" ? v : "";
+      }
+    } catch {
+    }
+    return "";
+  }
 
   // services/questionGenerator.ts
   var DEFAULT_QUESTIONS = [
@@ -12553,17 +12587,12 @@ Example for "Tennis Racket":
 
 Only respond with the JSON array, no other text.`;
   function getApiKey() {
-    try {
-      return "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";
-    } catch {
-      return "";
-    }
+    return getExpoPublic("EXPO_PUBLIC_ANTHROPIC_API_KEY");
   }
   async function generateQuestions(productName) {
     const apiKey = getApiKey();
-    if (typeof process !== "undefined" && process.env) {
-      console.log("Environment check:");
-      console.log("   EXPO_PUBLIC_ANTHROPIC_API_KEY exists:", true);
+    if (apiKey.length > 0) {
+      console.log("   EXPO_PUBLIC_ANTHROPIC_API_KEY exists: true");
     }
     console.log("   API key length:", apiKey.length);
     if (apiKey) {
@@ -12666,11 +12695,7 @@ Categories:
 
 Return ONLY the category name (one word: Beauty, Clothes, Accessories, Sports, Electronics, Home, or Other). Do not include any explanation or additional text.`;
   function getApiKey2() {
-    try {
-      return "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";
-    } catch {
-      return "";
-    }
+    return getExpoPublic("EXPO_PUBLIC_ANTHROPIC_API_KEY");
   }
   function detectCategoryFallback(itemName) {
     if (!itemName || itemName.trim().length === 0) {
@@ -13069,7 +13094,7 @@ Return ONLY the category name (one word: Beauty, Clothes, Accessories, Sports, E
     }
   }
   async function inferProductNameFromUrl(url) {
-    const apiKey = "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";
+    const apiKey = getExpoPublic("EXPO_PUBLIC_ANTHROPIC_API_KEY");
     if (!apiKey || apiKey === "your_api_key_here") {
       console.warn("No API key available for AI URL inference");
       return null;
@@ -13128,7 +13153,7 @@ URL: ${url}`
 
   // services/imageGenerator.ts
   async function generateProductImage(productName, productDescription) {
-    const apiKey = process.env.EXPO_PUBLIC_OPENAI_API_KEY || "";
+    const apiKey = getExpoPublic("EXPO_PUBLIC_OPENAI_API_KEY");
     if (!apiKey || apiKey === "your_api_key_here" || apiKey.trim() === "") {
       console.warn("OpenAI API key not configured. Cannot generate image.");
       return null;

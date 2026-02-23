@@ -1,10 +1,12 @@
 // Service to generate product images using OpenAI DALL-E 3 when scraping fails
 
+import { getExpoPublic } from './env';
+
 export async function generateProductImage(
   productName: string,
   productDescription?: string
 ): Promise<string | null> {
-  const apiKey = process.env.EXPO_PUBLIC_OPENAI_API_KEY || '';
+  const apiKey = getExpoPublic('EXPO_PUBLIC_OPENAI_API_KEY');
 
   if (!apiKey || apiKey === 'your_api_key_here' || apiKey.trim() === '') {
     console.warn('OpenAI API key not configured. Cannot generate image.');
