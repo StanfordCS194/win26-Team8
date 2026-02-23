@@ -60,19 +60,24 @@ function dbToItem(dbItem: DbItem): Item {
   };
 }
 
+// Columns needed for list/detail (excludes friend_*, unlock_* to reduce payload and speed up refresh)
+const ITEMS_SELECT =
+  'id, user_id, name, image_url, category, constraint_type, consumption_score, wait_until_date, difficulty, questionnaire, added_date, created_at, updated_at';
+
 /**
  * FETCH ALL ITEMS FOR A USER
- * 
+ * Uses index (user_id, created_at DESC) when present. Selects only needed columns for faster response.
+ *
  * @param userId - User's UUID
  * @returns { items: Item[], error: any }
  */
 export async function fetchItems(userId: string): Promise<{ items: Item[]; error: any }> {
   try {
     console.log('📥 Fetching items for user:', userId);
-    
+
     const { data, error } = await supabase
       .from('items')
-      .select('*')
+      .select(ITEMS_SELECT)
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
     

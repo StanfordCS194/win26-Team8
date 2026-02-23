@@ -14,6 +14,8 @@ import './styles/globals.css';
 import logoImage from './assets/logo.png';
 import type { Item } from './types/item';
 
+const FETCH_ITEMS_TIMEOUT_MS = 15000;
+
 type View = 'home' | 'item' | 'add' | 'time' | 'goals' | 'mission' | 'profile';
 
 function AppContent() {
@@ -21,6 +23,9 @@ function AppContent() {
   const [items, setItems] = useState<Item[]>([]);
   const [currentView, setCurrentView] = useState<View>('mission');
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [refreshingItems, setRefreshingItems] = useState(false);
+  const [itemsLoading, setItemsLoading] = useState(false);
+  const [itemsLoadError, setItemsLoadError] = useState<string | null>(null);
 
   // Load items when user logs in
   useEffect(() => {
@@ -29,38 +34,68 @@ function AppContent() {
     } else if (!loading) {
       setItems([]);
       setCurrentView('mission');
+      setItemsLoadError(null);
     }
   }, [user, loading]);
+
+  const fetchItemsWithTimeout = (): Promise<{ items: Item[]; error: unknown }> => {
+    if (!user) return Promise.resolve({ items: [], error: null });
+    return Promise.race([
+      fetchItems(user.id),
+      new Promise<{ items: Item[]; error: unknown }>((_, reject) =>
+        setTimeout(() => reject(new Error('Connection timed out. Check your network and try again.')), FETCH_ITEMS_TIMEOUT_MS)
+      ),
+    ]).then(
+      (r) => r,
+      (err) => ({ items: [] as Item[], error: err })
+    );
+  };
 
   const loadItems = async () => {
     if (!user) return;
 
-    // First, load from localStorage (instant)
-    console.log('Loading from localStorage...');
+    setItemsLoadError(null);
+    setItemsLoading(true);
+
     const localStorageKey = `secondThought_user_${user.id}_items`;
     const storedItems = localStorage.getItem(localStorageKey);
-
     if (storedItems) {
       try {
         const parsedItems = JSON.parse(storedItems);
         setItems(parsedItems);
-        console.log('Loaded', parsedItems.length, 'items from localStorage');
-      } catch (err) {
-        console.error('Failed to parse localStorage items:', err);
+      } catch {
+        // ignore parse errors
       }
     }
 
-    // Then, try to sync with Supabase (in background)
-    console.log('Syncing with Supabase...');
-    const { items: loadedItems, error } = await fetchItems(user.id);
+    const { items: loadedItems, error } = await fetchItemsWithTimeout();
+    setItemsLoading(false);
 
     if (!error && loadedItems) {
       setItems(loadedItems);
-      // Update localStorage with Supabase data
       localStorage.setItem(localStorageKey, JSON.stringify(loadedItems));
-      console.log('Synced', loadedItems.length, 'items from Supabase');
     } else if (error) {
-      console.warn('Supabase sync failed (using localStorage):', error);
+      const message = error instanceof Error ? error.message : 'Could not load items. Try again.';
+      setItemsLoadError(message);
+      if (loadedItems?.length) setItems(loadedItems);
+    }
+  };
+
+  const handleRefreshItems = async () => {
+    if (!user) return;
+    setItemsLoadError(null);
+    setRefreshingItems(true);
+    try {
+      const { items: loadedItems, error } = await fetchItemsWithTimeout();
+      if (!error && loadedItems) {
+        setItems(loadedItems);
+        localStorage.setItem(`secondThought_user_${user.id}_items`, JSON.stringify(loadedItems));
+      } else if (error) {
+        const message = error instanceof Error ? error.message : 'Could not refresh. Try again.';
+        setItemsLoadError(message);
+      }
+    } finally {
+      setRefreshingItems(false);
     }
   };
 
@@ -296,10 +331,15 @@ function AppContent() {
         )}
         {currentView === 'home' && (
           user ? (
-            <Home
-              items={items}
+            <Home 
+              items={items} 
               onItemClick={handleItemClick}
               onAddItem={() => setCurrentView('add')}
+              onRefresh={handleRefreshItems}
+              onRetry={loadItems}
+              isRefreshing={refreshingItems}
+              isLoading={itemsLoading}
+              loadError={itemsLoadError}
             />
           ) : (
             <SignInRequired />
