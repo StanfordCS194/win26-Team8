@@ -9,11 +9,15 @@ interface TimeBasedViewProps {
 }
 
 export function TimeBasedView({ items, onItemClick, onAddItem }: TimeBasedViewProps) {
+  const now = new Date();
   const timeBasedItems = items
     .filter(item => item.constraintType === 'time')
     .sort((a, b) => {
       const dateA = new Date(a.waitUntilDate || 0).getTime();
       const dateB = new Date(b.waitUntilDate || 0).getTime();
+      const aUnlocked = now.getTime() >= dateA ? 0 : 1;
+      const bUnlocked = now.getTime() >= dateB ? 0 : 1;
+      if (aUnlocked !== bUnlocked) return aUnlocked - bUnlocked;
       return dateA - dateB;
     });
 
@@ -105,6 +109,96 @@ export function TimeBasedView({ items, onItemClick, onAddItem }: TimeBasedViewPr
           </button>
         </div>
 
+        <h3 className="text-lg font-semibold text-foreground">
+          Items
+        </h3>
+
+        {timeBasedItems.length === 0 ? (
+          <div className="text-center py-10">
+            <div className="text-muted-foreground/40 mb-4">
+              <Clock className="w-12 h-12 mx-auto" />
+            </div>
+            <p className="text-muted-foreground">
+              Items with time constraints will appear here in chronological order.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {timeBasedItems.map((item) => {
+              const waitDate = new Date(item.waitUntilDate || '');
+              const today = new Date();
+              const daysRemaining = Math.ceil((waitDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+              const isPast = daysRemaining < 0;
+
+              return (
+                <div
+                  key={item.id}
+                  onClick={() => onItemClick(item.id)}
+                  className="bg-card rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden border border-border/50 hover:border-primary/30"
+                >
+                  <div className="aspect-square bg-muted/30 overflow-hidden">
+                    {item.imageUrl ? (
+                      <img
+                        src={item.imageUrl}
+                        alt={item.name}
+                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                        onError={(e) => {
+                          e.currentTarget.src = 'https://via.placeholder.com/400/e5e7eb/9ca3af?text=No+Image';
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-muted/50">
+                        <Clock className="w-16 h-16 text-muted-foreground/30" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-5">
+                    <h3 className="font-medium text-foreground mb-3 line-clamp-2 font-serif">
+                      {item.name}
+                    </h3>
+
+                    <div className="flex items-center justify-between mb-3 pb-3 border-b border-border/50">
+                      <span className="text-sm text-muted-foreground">Score</span>
+                      <span className={`font-semibold text-lg ${
+                        item.consumptionScore >= 7 ? 'text-destructive' :
+                        item.consumptionScore >= 4 ? 'text-accent' :
+                        'text-primary'
+                      }`}>
+                        {item.consumptionScore}/10
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5 text-sm">
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Calendar className="w-4 h-4 flex-shrink-0" />
+                        <span>
+                          {waitDate.toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                          })}
+                        </span>
+                      </div>
+                      <div className={`font-medium ${
+                        isPast ? 'text-primary' :
+                        daysRemaining <= 7 ? 'text-accent' :
+                        'text-muted-foreground'
+                      }`}>
+                        {isPast ?
+                          'Ready to purchase' :
+                          `${daysRemaining} day${daysRemaining !== 1 ? 's' : ''} remaining`
+                        }
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <div className="mt-6 space-y-4">
         <h3 className="text-lg font-semibold text-foreground">
           My Calendar
         </h3>
@@ -220,96 +314,6 @@ export function TimeBasedView({ items, onItemClick, onAddItem }: TimeBasedViewPr
             </p>
           )}
         </div>
-      </div>
-
-      <div className="mt-6">
-        <h3 className="text-lg font-semibold text-foreground mb-3">
-          Items
-        </h3>
-
-        {timeBasedItems.length === 0 ? (
-          <div className="text-center py-10">
-            <div className="text-muted-foreground/40 mb-4">
-              <Clock className="w-12 h-12 mx-auto" />
-            </div>
-            <p className="text-muted-foreground">
-              Items with time constraints will appear here in chronological order.
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {timeBasedItems.map((item) => {
-              const waitDate = new Date(item.waitUntilDate || '');
-              const today = new Date();
-              const daysRemaining = Math.ceil((waitDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-              const isPast = daysRemaining < 0;
-
-              return (
-                <div
-                  key={item.id}
-                  onClick={() => onItemClick(item.id)}
-                  className="bg-card rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden border border-border/50 hover:border-primary/30"
-                >
-                  <div className="aspect-square bg-muted/30 overflow-hidden">
-                    {item.imageUrl ? (
-                      <img
-                        src={item.imageUrl}
-                        alt={item.name}
-                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                        onError={(e) => {
-                          e.currentTarget.src = 'https://via.placeholder.com/400/e5e7eb/9ca3af?text=No+Image';
-                        }}
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-muted/50">
-                        <Clock className="w-16 h-16 text-muted-foreground/30" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-5">
-                    <h3 className="font-medium text-foreground mb-3 line-clamp-2 font-serif">
-                      {item.name}
-                    </h3>
-
-                    <div className="flex items-center justify-between mb-3 pb-3 border-b border-border/50">
-                      <span className="text-sm text-muted-foreground">Score</span>
-                      <span className={`font-semibold text-lg ${
-                        item.consumptionScore >= 7 ? 'text-destructive' :
-                        item.consumptionScore >= 4 ? 'text-accent' :
-                        'text-primary'
-                      }`}>
-                        {item.consumptionScore}/10
-                      </span>
-                    </div>
-
-                    <div className="flex flex-col gap-1.5 text-sm">
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Calendar className="w-4 h-4 flex-shrink-0" />
-                        <span>
-                          {waitDate.toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric',
-                          })}
-                        </span>
-                      </div>
-                      <div className={`font-medium ${
-                        isPast ? 'text-primary' :
-                        daysRemaining <= 7 ? 'text-accent' :
-                        'text-muted-foreground'
-                      }`}>
-                        {isPast ?
-                          'Ready to purchase' :
-                          `${daysRemaining} day${daysRemaining !== 1 ? 's' : ''} remaining`
-                        }
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
       </div>
     </div>
   );

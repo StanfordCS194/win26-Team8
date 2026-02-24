@@ -1,8 +1,24 @@
 import { useState, useRef, useEffect } from 'react';
 import type { Item, ItemCategory } from '../types/item';
-import { Calendar, Target, ShoppingBag, Plus, ChevronDown, Check } from 'lucide-react';
+import { Calendar, Target, ShoppingBag, Plus, ChevronDown, Check, CheckCircle } from 'lucide-react';
 
 const CATEGORY_ORDER: ItemCategory[] = ['Beauty', 'Clothes', 'Accessories', 'Sports', 'Electronics', 'Home', 'Other'];
+
+function isItemUnlocked(item: Item): boolean {
+  if (item.constraintType === 'goals') return false;
+  if (item.constraintType === 'time' && item.waitUntilDate) {
+    return new Date() >= new Date(item.waitUntilDate);
+  }
+  return true; // no wait date = available
+}
+
+function sortUnlockedFirst(items: Item[]): Item[] {
+  return [...items].sort((a, b) => {
+    const aUnlocked = isItemUnlocked(a) ? 0 : 1;
+    const bUnlocked = isItemUnlocked(b) ? 0 : 1;
+    return aUnlocked - bUnlocked;
+  });
+}
 
 function ItemCard({
   item,
@@ -11,12 +27,14 @@ function ItemCard({
   item: Item;
   onItemClick: (itemId: string) => void;
 }) {
+  const unlocked = isItemUnlocked(item);
+
   return (
     <div
       onClick={() => onItemClick(item.id)}
       className="bg-card rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden border border-border/50 hover:border-primary/30"
     >
-      <div className="aspect-square bg-muted/30 overflow-hidden">
+      <div className="aspect-square bg-muted/30 overflow-hidden relative">
         {(item.imageUrl && item.imageUrl.trim()) ? (
           <img
             src={item.imageUrl.trim()}
@@ -30,6 +48,12 @@ function ItemCard({
           <div className="w-full h-full flex items-center justify-center bg-muted/50">
             <ShoppingBag className="w-16 h-16 text-muted-foreground/30" />
           </div>
+        )}
+        {unlocked && item.constraintType === 'time' && (
+          <span className="absolute top-2 right-2 flex items-center gap-1 bg-primary/90 text-primary-foreground text-xs font-medium px-2 py-1 rounded-full shadow">
+            <CheckCircle className="w-3.5 h-3.5" />
+            Ready
+          </span>
         )}
       </div>
       <div className="p-5">
@@ -231,7 +255,7 @@ export function Home({ items, onItemClick, onAddItem }: HomeProps) {
                 </span>
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {itemsByCategory[category].map((item) => (
+                {sortUnlockedFirst(itemsByCategory[category]).map((item) => (
                   <ItemCard key={item.id} item={item} onItemClick={onItemClick} />
                 ))}
               </div>
