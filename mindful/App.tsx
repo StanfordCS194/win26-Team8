@@ -9,6 +9,7 @@ import { Profile } from './components/Profile';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { fetchItems, saveItem, deleteItem as deleteItemDb } from './lib/database';
 import { saveItemDirect } from './lib/database-alt';
+import { normalizeProductUrl } from './lib/urlUtils';
 import { Plus, User } from 'lucide-react';
 import './styles/globals.css';
 import logoImage from './assets/logo.png';
@@ -386,6 +387,10 @@ function AppContent() {
             <AddItemForm
               onSubmit={handleAddItem}
               onCancel={() => setCurrentView('home')}
+              checkUrlInInventory={async (url) => {
+                const normalized = normalizeProductUrl(url);
+                return items.some((i) => i.productUrl && normalizeProductUrl(i.productUrl) === normalized);
+              }}
             />
           ) : (
             <SignInRequired />

@@ -1,11 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { AddItemForm } from '../../components/AddItemForm';
 import { Auth } from '../../components/Auth';
 import { supabase } from './supabaseClient';
+import { itemToDbItem } from './itemToDbItem';
+import { normalizeProductUrl } from '../../lib/urlUtils';
 import type { Item } from '../../types/item';
 import type { Session } from '@supabase/supabase-js';
-import { itemToDbItem } from './itemToDbItem';
 
 declare const chrome: any;
 
@@ -96,6 +97,21 @@ const App = () => {
     }
   };
 
+  const checkUrlInInventory = useCallback(
+    async (url: string): Promise<boolean> => {
+      if (!session?.user) return false;
+      const { data, error } = await supabase
+        .from('items')
+        .select('product_url')
+        .eq('user_id', session.user.id)
+        .not('product_url', 'is', null);
+      if (error || !data) return false;
+      const normalized = normalizeProductUrl(url);
+      return data.some((r) => r.product_url && normalizeProductUrl(r.product_url) === normalized);
+    },
+    [session?.user?.id]
+  );
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[200px]">
@@ -136,6 +152,7 @@ const App = () => {
         onSubmit={handleSubmit}
         onCancel={() => window.close()}
         initialUrl={activeUrl}
+        checkUrlInInventory={checkUrlInInventory}
       />
     </div>
   );

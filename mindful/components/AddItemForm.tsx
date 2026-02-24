@@ -99,9 +99,11 @@ interface AddItemFormProps {
   onSubmit: (item: Omit<Item, 'id' | 'addedDate'>) => void;
   onCancel: () => void;
   initialUrl?: string;
+  /** If provided, called when moving to dynamic questions. Return true to block and show "already in inventory". */
+  checkUrlInInventory?: (url: string) => Promise<boolean>;
 }
 
-export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps) {
+export function AddItemForm({ onSubmit, onCancel, initialUrl, checkUrlInInventory }: AddItemFormProps) {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [productUrl, setProductUrl] = useState(initialUrl ?? '');
   const [name, setName] = useState('');
@@ -117,6 +119,10 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
   const [goalDescription, setGoalDescription] = useState('');
   const [friendName, setFriendName] = useState('');
   const [friendEmail, setFriendEmail] = useState('');
+
+  // Already-in-inventory state (stops flow and shows message)
+  const [showAlreadyInInventory, setShowAlreadyInInventory] = useState(false);
+  const [isCheckingUrl, setIsCheckingUrl] = useState(false);
 
   // Dynamic questions state
   const [questions, setQuestions] = useState<GeneratedQuestion[]>([]);
@@ -167,6 +173,7 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
     setGoalDescription('');
     setFriendName('');
     setFriendEmail('');
+    setShowAlreadyInInventory(false);
   };
 
   const handleFetchMetadata = async () => {
@@ -260,6 +267,22 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
       setName(itemName);
     }
 
+    // Check if this URL is already in the user's inventory (before dynamic questions)
+    if (productUrl.trim() && checkUrlInInventory) {
+      setIsCheckingUrl(true);
+      try {
+        const alreadyInInventory = await checkUrlInInventory(productUrl.trim());
+        if (alreadyInInventory) {
+          setShowAlreadyInInventory(true);
+          return;
+        }
+      } catch (err) {
+        console.error('Error checking URL in inventory:', err);
+      } finally {
+        setIsCheckingUrl(false);
+      }
+    }
+
     setIsLoadingQuestions(true);
 
     try {
@@ -340,6 +363,7 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
     onSubmit({
       name,
       imageUrl: imageUrl?.trim() || undefined,
+      productUrl: productUrl?.trim() || undefined,
       category,
       constraintType,
       consumptionScore: calculatedMindfulnessScore,
@@ -370,7 +394,26 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
           </p>
         </div>
 
-        {step === 1 && (
+        {showAlreadyInInventory && (
+          <div className="space-y-6 py-4">
+            <p className="text-lg text-foreground">
+              This item is already in your inventory!
+            </p>
+            <p className="text-sm text-muted-foreground">
+              You've already saved this product. No need to add it again.
+            </p>
+            <button
+              type="button"
+              onClick={onCancel}
+              className="px-4 py-3 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-colors"
+            >
+              Back
+            </button>
+          </div>
+        )}
+
+        {!showAlreadyInInventory && step === 1 && (
+          <>
           <form onSubmit={handleStep1Submit} className="space-y-6">
           {/* Product URL - Auto-fetch metadata */}
           <div>
@@ -491,10 +534,15 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
           <div className="flex gap-3 pt-4">
             <button
               type="submit"
-              disabled={isLoadingQuestions || !productUrl}
+              disabled={isLoadingQuestions || isCheckingUrl || !productUrl}
               className="flex-1 bg-primary text-primary-foreground px-6 py-3 rounded-full hover:bg-primary/90 transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {isLoadingQuestions ? (
+              {isCheckingUrl ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Checking...
+                </>
+              ) : isLoadingQuestions ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
                   Generating Questions...
@@ -506,13 +554,14 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl }: AddItemFormProps
             <button
               type="button"
               onClick={onCancel}
-              disabled={isLoadingQuestions}
+              disabled={isLoadingQuestions || isCheckingUrl}
               className="px-8 py-3 border border-border text-foreground rounded-full hover:bg-muted/30 transition-colors disabled:opacity-50"
             >
               Cancel
             </button>
           </div>
         </form>
+          </>
         )}
 
         {step === 2 && (

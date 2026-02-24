@@ -10,6 +10,7 @@ export interface Item {
   id: string;
   name: string;
   imageUrl?: string;
+  productUrl?: string;
   category?: ItemCategory;
   constraintType: 'time' | 'goals';
   consumptionScore: number;

@@ -10,6 +10,7 @@ export interface DbItem {
   user_id: string;
   name: string;
   image_url: string | null;
+  product_url: string | null;
   category: string | null;
   constraint_type: 'time' | 'goals';
   consumption_score: number;
@@ -36,6 +37,7 @@ function itemToDb(item: Item, userId: string): Omit<DbItem, 'created_at' | 'upda
     user_id: userId,
     name: item.name,
     image_url: item.imageUrl || null,
+    product_url: item.productUrl || null,
     category: item.category || null,
     constraint_type: item.constraintType,
     consumption_score: item.consumptionScore,
@@ -60,6 +62,7 @@ function dbToItem(dbItem: DbItem): Item {
     id: dbItem.id,
     name: dbItem.name,
     imageUrl: dbItem.image_url || undefined,
+    productUrl: dbItem.product_url || undefined,
     category: dbItem.category as ItemCategory | undefined,
     constraintType: dbItem.constraint_type,
     consumptionScore: dbItem.consumption_score,
@@ -76,7 +79,7 @@ function dbToItem(dbItem: DbItem): Item {
 
 // Columns needed for list/detail – include friend/unlock fields so guard info is preserved
 const ITEMS_SELECT =
-  'id, user_id, name, image_url, category, constraint_type, consumption_score, wait_until_date, difficulty, questionnaire, added_date, created_at, updated_at, friend_name, friend_email, unlock_password, is_unlocked';
+  'id, user_id, name, image_url, product_url, category, constraint_type, consumption_score, wait_until_date, difficulty, questionnaire, added_date, created_at, updated_at, friend_name, friend_email, unlock_password, is_unlocked';
 
 /**
  * FETCH ALL ITEMS FOR A USER
@@ -109,6 +112,25 @@ export async function fetchItems(userId: string): Promise<{ items: Item[]; error
   } catch (error) {
     console.error('❌ Fetch exception:', error);
     return { items: [], error };
+  }
+}
+
+/**
+ * Fetch product_url values for a user (for duplicate-URL check).
+ */
+export async function fetchUserProductUrls(userId: string): Promise<{ urls: string[]; error: any }> {
+  try {
+    const { data, error } = await supabase
+      .from('items')
+      .select('product_url')
+      .eq('user_id', userId)
+      .not('product_url', 'is', null);
+
+    if (error) return { urls: [], error };
+    const urls = (data || []).map((r: { product_url: string | null }) => r.product_url).filter(Boolean) as string[];
+    return { urls, error: null };
+  } catch (error) {
+    return { urls: [], error };
   }
 }
 
