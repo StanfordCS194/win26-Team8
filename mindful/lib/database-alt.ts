@@ -37,6 +37,7 @@ export async function saveItemDirect(
       user_id: userId,
       name: item.name,
       image_url: imageUrl,
+      product_url: item.productUrl || null,
       category: item.category || null,
       constraint_type: item.constraintType,
       consumption_score: item.consumptionScore,
