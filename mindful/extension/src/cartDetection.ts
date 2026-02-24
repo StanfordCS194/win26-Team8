@@ -138,7 +138,20 @@ export function isRemoveOrDecreaseControl(element: Element): boolean {
   return false;
 }
 
-/** True if element is a button, submit input, or role=button. We do not treat links as add-to-cart to avoid opening on product/detail links. */
+/** True if element has id/data/aria that explicitly marks it as add-to-cart/bag (e.g. Nordstrom, retail sites). */
+function hasExplicitAddToCartSemantics(element: Element): boolean {
+  const id = (element.getAttribute('id') || '').toLowerCase();
+  const dataAction = (element.getAttribute('data-action') || '').toLowerCase();
+  const dataTestId = (element.getAttribute('data-testid') || '').toLowerCase();
+  const ariaLabel = (element.getAttribute('aria-label') || '').toLowerCase();
+  const combined = [id, dataAction, dataTestId, ariaLabel].join(' ');
+  return (
+    /add[-_]?to[-_]?(cart|bag|basket)/.test(combined) ||
+    /addtocart|addtobag/.test(combined)
+  );
+}
+
+/** True if element is a button, submit input, role=button, or has explicit add-to-cart semantics (so Nordstrom-style controls work). */
 function isButtonLike(element: Element): boolean {
   const tag = (element.tagName || '').toLowerCase();
   const role = (element.getAttribute('role') || '').toLowerCase();
@@ -146,6 +159,7 @@ function isButtonLike(element: Element): boolean {
   if (tag === 'button') return true;
   if (tag === 'input' && (type === 'submit' || type === 'button')) return true;
   if (role === 'button') return true;
+  if (hasExplicitAddToCartSemantics(element)) return true;
   return false;
 }
 
@@ -170,10 +184,17 @@ function isCartAddSubmitButton(element: Element): boolean {
   return false;
 }
 
-export function matchesAddToCart(element: Element): boolean {
-  // Only consider button-like elements (button, input[submit], role=button) to avoid opening on product links/cards
-  if (!isButtonLike(element)) return false;
+// Selectors that are on the actual CTA (not on a card wrapper). Nordstrom and similar may use these on div/span.
+const EXPLICIT_ADD_TO_CART_SELECTORS = [
+  '[id*="add-to-cart"]', '[id*="addToCart"]', '[id*="add-to-bag"]', '[id*="addToBag"]',
+  '[data-action*="add-to-cart"]', '[data-action*="add-to-bag"]', '[data-action*="addToCart"]', '[data-action*="addToBag"]',
+  '[data-testid*="add-to-cart"]', '[data-testid*="addToCart"]', '[data-testid*="add-to-bag"]', '[data-testid*="addToBag"]',
+  '[aria-label*="add to cart" i]', '[aria-label*="add to bag" i]', '[aria-label*="add to basket" i]',
+  '[class*="add-to-bag"]', '[class*="addToBag"]', '[class*="add_to_bag"]',
+  '[class*="add-to-cart"]', '[class*="addToCart"]', '[class*="add_to_cart"]',
+];
 
+export function matchesAddToCart(element: Element): boolean {
   if (isCartAddSubmitButton(element)) return true;
 
   const text = (element.textContent || '').trim();
@@ -194,15 +215,39 @@ export function matchesAddToCart(element: Element): boolean {
   // Exclude "add to wishlist", "view cart", "see more", etc.
   if (NOT_ADD_TO_CART_PATTERNS.some((re) => re.test(combined))) return false;
 
-  if (ADD_TO_CART_PATTERNS.some((re) => re.test(combined))) return true;
+  const matchesPattern = ADD_TO_CART_PATTERNS.some((re) => re.test(combined));
+  const matchesExplicitSelector = EXPLICIT_ADD_TO_CART_SELECTORS.some((sel) => {
+    try {
+      return element.matches?.(sel) ?? false;
+    } catch {
+      return false;
+    }
+  });
+
+  // Button-like (button, input, role=button, or has id/data/aria add-to-cart): require pattern or any selector
+  if (isButtonLike(element)) {
+    if (matchesPattern) return true;
+    try {
+      if (ADD_TO_CART_SELECTORS.some((sel) => element.matches?.(sel))) return true;
+      for (const sel of ADD_TO_CART_SELECTORS) {
+        const closestEl = element.closest?.(sel);
+        if (closestEl && isButtonLike(closestEl)) return true;
+      }
+    } catch {
+      // ignore
+    }
+    return false;
+  }
+
+  // Not button-like (e.g. Nordstrom div/link): only accept if it matches an explicit add-to-cart selector AND has the text pattern
+  if (matchesExplicitSelector && matchesPattern) return true;
   try {
-    if (ADD_TO_CART_SELECTORS.some((sel) => element.matches?.(sel))) return true;
-    for (const sel of ADD_TO_CART_SELECTORS) {
+    for (const sel of EXPLICIT_ADD_TO_CART_SELECTORS) {
       const closestEl = element.closest?.(sel);
-      if (closestEl && isButtonLike(closestEl)) return true;
+      if (closestEl && matchesPattern && ADD_TO_CART_PATTERNS.some((re) => re.test((closestEl.textContent || ''))) ) return true;
     }
   } catch {
-    // ignore selector errors
+    // ignore
   }
 
   return false;

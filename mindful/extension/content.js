@@ -12428,6 +12428,14 @@
     }
     return false;
   }
+  function hasExplicitAddToCartSemantics(element) {
+    const id = (element.getAttribute("id") || "").toLowerCase();
+    const dataAction = (element.getAttribute("data-action") || "").toLowerCase();
+    const dataTestId = (element.getAttribute("data-testid") || "").toLowerCase();
+    const ariaLabel = (element.getAttribute("aria-label") || "").toLowerCase();
+    const combined = [id, dataAction, dataTestId, ariaLabel].join(" ");
+    return /add[-_]?to[-_]?(cart|bag|basket)/.test(combined) || /addtocart|addtobag/.test(combined);
+  }
   function isButtonLike(element) {
     const tag = (element.tagName || "").toLowerCase();
     const role = (element.getAttribute("role") || "").toLowerCase();
@@ -12435,6 +12443,7 @@
     if (tag === "button") return true;
     if (tag === "input" && (type === "submit" || type === "button")) return true;
     if (role === "button") return true;
+    if (hasExplicitAddToCartSemantics(element)) return true;
     return false;
   }
   function isCartAddSubmitButton(element) {
@@ -12456,8 +12465,30 @@
     }
     return false;
   }
+  var EXPLICIT_ADD_TO_CART_SELECTORS = [
+    '[id*="add-to-cart"]',
+    '[id*="addToCart"]',
+    '[id*="add-to-bag"]',
+    '[id*="addToBag"]',
+    '[data-action*="add-to-cart"]',
+    '[data-action*="add-to-bag"]',
+    '[data-action*="addToCart"]',
+    '[data-action*="addToBag"]',
+    '[data-testid*="add-to-cart"]',
+    '[data-testid*="addToCart"]',
+    '[data-testid*="add-to-bag"]',
+    '[data-testid*="addToBag"]',
+    '[aria-label*="add to cart" i]',
+    '[aria-label*="add to bag" i]',
+    '[aria-label*="add to basket" i]',
+    '[class*="add-to-bag"]',
+    '[class*="addToBag"]',
+    '[class*="add_to_bag"]',
+    '[class*="add-to-cart"]',
+    '[class*="addToCart"]',
+    '[class*="add_to_cart"]'
+  ];
   function matchesAddToCart(element) {
-    if (!isButtonLike(element)) return false;
     if (isCartAddSubmitButton(element)) return true;
     const text = (element.textContent || "").trim();
     const innerText = typeof element.innerText === "string" ? element.innerText.trim() : "";
@@ -12473,12 +12504,31 @@
     const dataAutomation = element.getAttribute("data-automation") || element.getAttribute("data-automation-id") || "";
     const combined = [text, innerText, value, ariaLabel, title, id, className, name, dataAction, dataTestId, dataName, dataAutomation].join(" ");
     if (NOT_ADD_TO_CART_PATTERNS.some((re) => re.test(combined))) return false;
-    if (ADD_TO_CART_PATTERNS.some((re) => re.test(combined))) return true;
+    const matchesPattern = ADD_TO_CART_PATTERNS.some((re) => re.test(combined));
+    const matchesExplicitSelector = EXPLICIT_ADD_TO_CART_SELECTORS.some((sel) => {
+      try {
+        return element.matches?.(sel) ?? false;
+      } catch {
+        return false;
+      }
+    });
+    if (isButtonLike(element)) {
+      if (matchesPattern) return true;
+      try {
+        if (ADD_TO_CART_SELECTORS.some((sel) => element.matches?.(sel))) return true;
+        for (const sel of ADD_TO_CART_SELECTORS) {
+          const closestEl = element.closest?.(sel);
+          if (closestEl && isButtonLike(closestEl)) return true;
+        }
+      } catch {
+      }
+      return false;
+    }
+    if (matchesExplicitSelector && matchesPattern) return true;
     try {
-      if (ADD_TO_CART_SELECTORS.some((sel) => element.matches?.(sel))) return true;
-      for (const sel of ADD_TO_CART_SELECTORS) {
+      for (const sel of EXPLICIT_ADD_TO_CART_SELECTORS) {
         const closestEl = element.closest?.(sel);
-        if (closestEl && isButtonLike(closestEl)) return true;
+        if (closestEl && matchesPattern && ADD_TO_CART_PATTERNS.some((re) => re.test(closestEl.textContent || ""))) return true;
       }
     } catch {
     }
