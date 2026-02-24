@@ -4,18 +4,30 @@
 
 export const ADD_TO_CART_PATTERNS = [
   /\badd\s+to\s+(cart|bag|basket)\b/i,
+  /\badd\s+to\s+(my|your)\s+(cart|bag|basket)\b/i,
   /\badd\s+to\s+shopping\s+cart\b/i,
   /\bbuy\s+now\b/i,
-  /\badd\s+to\s+bag\b/i,
-  /\badd\s+to\s+basket\b/i,
-  /\badd\s+to\s+cart\b/i,
   /\bcart\s*[&+]\s*save\b/i,
-  /^add\s+to\s+cart$/i,
-  /\badd\s+cart\b/i,
-  /\badd\s+bag\b/i,
-  /\bpurchase\b/i,
-  /^add\s+to\s+bag\s*$/i,
-  /^add\s+to\s+cart\s*$/i,
+];
+
+// Text/context that means this is NOT an add-to-cart button
+const NOT_ADD_TO_CART_PATTERNS = [
+  /\badd\s+to\s+wishlist\b/i,
+  /\badd\s+to\s+list\b/i,
+  /\badd\s+to\s+registry\b/i,
+  /\badd\s+to\s+saved\b/i,
+  /\badd\s+address\b/i,
+  /\badd\s+payment\b/i,
+  /\badd\s+card\b/i,
+  /\bview\s+(cart|bag|basket)\b/i,
+  /\bsee\s+(cart|bag)\b/i,
+  /\bshop\s+now\b/i,
+  /\bsee\s+more\b/i,
+  /\bview\s+product\b/i,
+  /\bview\s+item\b/i,
+  /\bproduct\s+details?\b/i,
+  /\bpurchase\s+history\b/i,
+  /\bpurchase\s+protection\b/i,
 ];
 
 export const ADD_TO_CART_SELECTORS = [
@@ -28,16 +40,23 @@ export const ADD_TO_CART_SELECTORS = [
   '[id="addToCart"]',
   '[data-action*="add-to-cart"]',
   '[data-action*="add-to-bag"]',
+  '[data-action*="addToCart"]',
+  '[data-action*="addToBag"]',
   '[data-testid*="add-to-cart"]',
   '[data-testid*="addToCart"]',
+  '[data-testid*="add-to-bag"]',
+  '[data-testid*="addToBag"]',
   '[data-name*="add-to-cart" i]',
   '[data-add-to-cart]',
   '[data-add-to-cart-trigger]',
+  '[data-automation*="add-to-bag" i]',
+  '[data-automation*="add-to-cart" i]',
   '[class*="add-to-cart"]',
   '[class*="add_to_cart"]',
   '[class*="addToCart"]',
   '[class*="add-to-bag"]',
   '[class*="add_to_bag"]',
+  '[class*="addToBag"]',
   '[class*="product-form__submit"]',
   '[class*="btn--add-to-cart"]',
   '[name="add"]',
@@ -108,6 +127,17 @@ export function isRemoveOrDecreaseControl(element: Element): boolean {
   return false;
 }
 
+/** True if element is a button, submit input, or role=button. */
+function isButtonLike(element: Element): boolean {
+  const tag = (element.tagName || '').toLowerCase();
+  const role = (element.getAttribute('role') || '').toLowerCase();
+  const type = (element.getAttribute('type') || (element as HTMLInputElement).type || '').toLowerCase();
+  if (tag === 'button') return true;
+  if (tag === 'input' && (type === 'submit' || type === 'button')) return true;
+  if (role === 'button') return true;
+  return false;
+}
+
 /** True if element is a submit button for a Shopify-style cart add form */
 function isCartAddSubmitButton(element: Element): boolean {
   const tag = (element.tagName || '').toLowerCase();
@@ -130,9 +160,13 @@ function isCartAddSubmitButton(element: Element): boolean {
 }
 
 export function matchesAddToCart(element: Element): boolean {
+  // Only consider button-like elements to avoid triggering on links, divs, etc.
+  if (!isButtonLike(element)) return false;
+
   if (isCartAddSubmitButton(element)) return true;
 
   const text = (element.textContent || '').trim();
+  const innerText = typeof (element as HTMLElement).innerText === 'string' ? (element as HTMLElement).innerText.trim() : '';
   const value = element.getAttribute('value') || (element as HTMLInputElement).value || '';
   const ariaLabel = element.getAttribute('aria-label') || '';
   const title = element.getAttribute('title') || '';
@@ -142,14 +176,19 @@ export function matchesAddToCart(element: Element): boolean {
   const dataAction = element.getAttribute('data-action') || '';
   const dataTestId = element.getAttribute('data-testid') || '';
   const dataName = element.getAttribute('data-name') || '';
+  const dataAutomation = element.getAttribute('data-automation') || element.getAttribute('data-automation-id') || '';
 
-  const combined = [text, value, ariaLabel, title, id, className, name, dataAction, dataTestId, dataName].join(' ');
+  const combined = [text, innerText, value, ariaLabel, title, id, className, name, dataAction, dataTestId, dataName, dataAutomation].join(' ');
+
+  // Exclude false positives like "add to wishlist", "view cart", etc.
+  if (NOT_ADD_TO_CART_PATTERNS.some((re) => re.test(combined))) return false;
 
   if (ADD_TO_CART_PATTERNS.some((re) => re.test(combined))) return true;
   try {
     if (ADD_TO_CART_SELECTORS.some((sel) => element.matches?.(sel))) return true;
     for (const sel of ADD_TO_CART_SELECTORS) {
-      if (element.closest?.(sel)) return true;
+      const closestEl = element.closest?.(sel);
+      if (closestEl && isButtonLike(closestEl)) return true;
     }
   } catch {
     // ignore selector errors
