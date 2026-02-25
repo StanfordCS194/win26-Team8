@@ -28,11 +28,12 @@ export async function fetchUserProductUrlsWithClient(
 
 export interface ItemByProductUrl {
   wait_until_date: string | null;
+  friend_name: string | null;
 }
 
 /**
- * Fetch the item (product_url + wait_until_date) for a user that matches the given page URL.
- * Uses same URL normalization as duplicate check. For extension banner "unlocks on [date]" display.
+ * Fetch the item (product_url, wait_until_date, friend_name) for a user that matches the given page URL.
+ * Uses same URL normalization as duplicate check. For extension banner "unlocks on [date]" or friend-unlock text.
  */
 export async function fetchItemByProductUrlWithClient(
   supabaseClient: SupabaseClient,
@@ -42,18 +43,25 @@ export async function fetchItemByProductUrlWithClient(
   try {
     const { data, error } = await supabaseClient
       .from('items')
-      .select('product_url, wait_until_date')
+      .select('product_url, wait_until_date, friend_name')
       .eq('user_id', userId)
       .not('product_url', 'is', null);
 
     if (error) return { item: null, error };
-    const rows = (data || []) as { product_url: string | null; wait_until_date: string | null }[];
+    const rows = (data || []) as {
+      product_url: string | null;
+      wait_until_date: string | null;
+      friend_name: string | null;
+    }[];
     const normalizedPage = normalizeProductUrl(pageUrl);
     const match = rows.find(
       (r) => r.product_url && normalizeProductUrl(r.product_url) === normalizedPage
     );
     if (!match) return { item: null, error: null };
-    return { item: { wait_until_date: match.wait_until_date }, error: null };
+    return {
+      item: { wait_until_date: match.wait_until_date, friend_name: match.friend_name },
+      error: null,
+    };
   } catch (error) {
     return { item: null, error };
   }

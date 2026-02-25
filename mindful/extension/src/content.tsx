@@ -57,12 +57,9 @@ function onDocumentClick(e: MouseEvent) {
   setTimeout(showOverlay, 100);
 }
 
-function showUrlBanner(opts: { daysRemaining: number; unlockDate: string }) {
+function showUrlBanner(text: string) {
   const doc = document;
   if (doc.getElementById(BANNER_ID)) return;
-  const { daysRemaining, unlockDate } = opts;
-  const text =
-    `You have not yet unlocked this item in your mindful cart! ${daysRemaining} days remaining. Unlocks on ${unlockDate}.`;
   const bar = doc.createElement('div');
   bar.id = BANNER_ID;
   bar.className = 'st-url-banner';
@@ -96,10 +93,10 @@ async function checkUrlAndShowBanner() {
     if (!session?.user?.id) return;
     const { item, error } = await fetchItemByProductUrlWithClient(supabase, session.user.id, url);
     if (error || !item) return;
-    const waitUntil = item.wait_until_date ?? '';
-    const daysRemaining = daysRemainingUntil(waitUntil);
-    const unlockDate = formatUnlockDate(waitUntil);
-    showUrlBanner({ daysRemaining, unlockDate });
+    const text = item.wait_until_date
+      ? `You have not yet unlocked this item in your mindful cart! ${daysRemainingUntil(item.wait_until_date)} days remaining. Unlocks on ${formatUnlockDate(item.wait_until_date)}.`
+      : `You have not yet unlocked this item in your mindful cart! You must complete your set goal and receive a password from ${item.friend_name?.trim() || 'your friend'} to unlock.`;
+    showUrlBanner(text);
   } catch {
     // ignore
   }
