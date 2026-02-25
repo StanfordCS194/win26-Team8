@@ -29823,6 +29823,13 @@ ${suffix}`;
       return url.trim();
     }
   }
+  function isUrlInStoredUrls(url, storedUrls) {
+    if (!url || !storedUrls?.length) return false;
+    const normalized = normalizeProductUrl(url);
+    return storedUrls.some(
+      (stored) => stored && normalizeProductUrl(stored) === normalized
+    );
+  }
 
   // extension/src/ContentOverlay.tsx
   var import_jsx_runtime11 = __toESM(require_jsx_runtime());
@@ -29975,10 +29982,23 @@ ${suffix}`;
     ] }) }) });
   }
 
+  // lib/fetchUserProductUrls.ts
+  async function fetchUserProductUrlsWithClient(supabaseClient, userId) {
+    try {
+      const { data, error } = await supabaseClient.from("items").select("product_url").eq("user_id", userId).not("product_url", "is", null);
+      if (error) return { urls: [], error };
+      const urls = (data || []).map((r2) => r2.product_url).filter(Boolean);
+      return { urls, error: null };
+    } catch (error) {
+      return { urls: [], error };
+    }
+  }
+
   // extension/src/content.tsx
   var import_jsx_runtime12 = __toESM(require_jsx_runtime());
   var DEBUG = false;
   var CLOSE_COOLDOWN_MS = 800;
+  var BANNER_ID = "second-thought-url-banner";
   var lastOverlayCloseTime = 0;
   function showOverlay() {
     const doc = document;
@@ -30011,8 +30031,47 @@ ${suffix}`;
     if (DEBUG) console.log("Second Thought: add-to-cart detected", addToCartEl);
     setTimeout(showOverlay, 100);
   }
+  function showUrlBanner() {
+    const doc = document;
+    if (doc.getElementById(BANNER_ID)) return;
+    const bar = doc.createElement("div");
+    bar.id = BANNER_ID;
+    bar.className = "st-url-banner";
+    bar.innerHTML = `
+    <span class="st-url-banner-text">This item is already in your mindful cart.</span>
+    <button type="button" class="st-url-banner-dismiss" aria-label="Dismiss">\xD7</button>
+  `;
+    const dismiss = bar.querySelector(".st-url-banner-dismiss");
+    if (dismiss) {
+      dismiss.addEventListener("click", () => {
+        bar.remove();
+      });
+    }
+    doc.body.insertBefore(bar, doc.body.firstChild);
+  }
+  async function checkUrlAndShowBanner() {
+    if (window !== window.top) return;
+    const url = document.location?.href || "";
+    if (!url || url.startsWith("chrome:") || url.startsWith("edge:") || url.startsWith("about:")) return;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) return;
+      const { urls, error } = await fetchUserProductUrlsWithClient(supabase, session.user.id);
+      if (error || !urls?.length) return;
+      if (isUrlInStoredUrls(url, urls)) showUrlBanner();
+    } catch {
+    }
+  }
   function init() {
     document.addEventListener("click", onDocumentClick, true);
+    chrome.runtime?.onMessage?.addListener((message) => {
+      if (message.type === "SHOW_URL_BANNER" && window === window.top) {
+        showUrlBanner();
+      }
+    });
+    if (window === window.top) {
+      checkUrlAndShowBanner();
+    }
     if (DEBUG) console.log("Second Thought: content script loaded");
   }
   init();
