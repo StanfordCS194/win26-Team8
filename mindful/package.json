@@ -8,12 +8,11 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "build:web": "expo export --platform web",
-    "build:extension": "expo export --platform web --output-dir extension/dist",
     "build:popup:css": "tailwindcss -i extension/src/popup.css -o extension/popup.css",
     "build:popup": "npm run build:popup:css && node extension/build.mjs",
     "build:content:css": "tailwindcss -i extension/src/content.css -o extension/content.css",
     "build:content": "npm run build:content:css && node extension/build-content.mjs",
-    "build:extension:all": "npm run build:popup && npm run build:content",
+    "build:extension": "npm run build:popup && npm run build:content",
     "test": "vitest run"
   },
   "dependencies": {
