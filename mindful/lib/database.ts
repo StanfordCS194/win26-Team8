@@ -1,5 +1,6 @@
 import { supabase } from '../env';
-import { fetchUserProductUrlsWithClient } from './fetchUserProductUrls';
+import { fetchUserProductUrlsWithClient, fetchItemByProductUrlWithClient } from './fetchUserProductUrls';
+import { daysRemainingUntil, formatUnlockDate } from './dateUtils';
 import type { Item, ItemCategory, QuestionAnswer } from '../types/item';
 
 /**
@@ -122,6 +123,20 @@ export async function fetchItems(userId: string): Promise<{ items: Item[]; error
  */
 export async function fetchUserProductUrls(userId: string): Promise<{ urls: string[]; error: any }> {
   return fetchUserProductUrlsWithClient(supabase, userId);
+}
+
+/** Re-export for app use (extension uses fetchItemByProductUrlWithClient + its own client). */
+export { daysRemainingUntil, formatUnlockDate };
+
+/**
+ * Fetch the item matching a product URL for the current user (app supabase).
+ * Returns wait_until_date for "unlocks on [date]" / days-remaining display.
+ */
+export async function fetchItemByProductUrl(
+  userId: string,
+  pageUrl: string
+): Promise<{ item: { wait_until_date: string | null } | null; error: any }> {
+  return fetchItemByProductUrlWithClient(supabase, userId, pageUrl);
 }
 
 /**

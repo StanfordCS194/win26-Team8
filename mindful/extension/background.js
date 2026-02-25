@@ -11393,18 +11393,6 @@ ${suffix}`;
     }
   });
 
-  // lib/fetchUserProductUrls.ts
-  async function fetchUserProductUrlsWithClient(supabaseClient, userId) {
-    try {
-      const { data, error } = await supabaseClient.from("items").select("product_url").eq("user_id", userId).not("product_url", "is", null);
-      if (error) return { urls: [], error };
-      const urls = (data || []).map((r) => r.product_url).filter(Boolean);
-      return { urls, error: null };
-    } catch (error) {
-      return { urls: [], error };
-    }
-  }
-
   // lib/urlUtils.ts
   function normalizeProductUrl(url) {
     if (!url || !url.trim()) return "";
@@ -11423,6 +11411,18 @@ ${suffix}`;
     return storedUrls.some(
       (stored) => stored && normalizeProductUrl(stored) === normalized
     );
+  }
+
+  // lib/fetchUserProductUrls.ts
+  async function fetchUserProductUrlsWithClient(supabaseClient, userId) {
+    try {
+      const { data, error } = await supabaseClient.from("items").select("product_url").eq("user_id", userId).not("product_url", "is", null);
+      if (error) return { urls: [], error };
+      const urls = (data || []).map((r) => r.product_url).filter(Boolean);
+      return { urls, error: null };
+    } catch (error) {
+      return { urls: [], error };
+    }
   }
 
   // extension/src/background.ts

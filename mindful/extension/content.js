@@ -29823,13 +29823,6 @@ ${suffix}`;
       return url.trim();
     }
   }
-  function isUrlInStoredUrls(url, storedUrls) {
-    if (!url || !storedUrls?.length) return false;
-    const normalized = normalizeProductUrl(url);
-    return storedUrls.some(
-      (stored) => stored && normalizeProductUrl(stored) === normalized
-    );
-  }
 
   // extension/src/ContentOverlay.tsx
   var import_jsx_runtime11 = __toESM(require_jsx_runtime());
@@ -29983,14 +29976,50 @@ ${suffix}`;
   }
 
   // lib/fetchUserProductUrls.ts
-  async function fetchUserProductUrlsWithClient(supabaseClient, userId) {
+  async function fetchItemByProductUrlWithClient(supabaseClient, userId, pageUrl) {
     try {
-      const { data, error } = await supabaseClient.from("items").select("product_url").eq("user_id", userId).not("product_url", "is", null);
-      if (error) return { urls: [], error };
-      const urls = (data || []).map((r2) => r2.product_url).filter(Boolean);
-      return { urls, error: null };
+      const { data, error } = await supabaseClient.from("items").select("product_url, wait_until_date").eq("user_id", userId).not("product_url", "is", null);
+      if (error) return { item: null, error };
+      const rows = data || [];
+      const normalizedPage = normalizeProductUrl(pageUrl);
+      const match = rows.find(
+        (r2) => r2.product_url && normalizeProductUrl(r2.product_url) === normalizedPage
+      );
+      if (!match) return { item: null, error: null };
+      return { item: { wait_until_date: match.wait_until_date }, error: null };
     } catch (error) {
-      return { urls: [], error };
+      return { item: null, error };
+    }
+  }
+
+  // lib/dateUtils.ts
+  function daysRemainingUntil(dateStr) {
+    if (!dateStr || !dateStr.trim()) return 0;
+    try {
+      const d = new Date(dateStr.trim());
+      if (Number.isNaN(d.getTime())) return 0;
+      const today = /* @__PURE__ */ new Date();
+      today.setHours(0, 0, 0, 0);
+      d.setHours(0, 0, 0, 0);
+      const diffMs = d.getTime() - today.getTime();
+      const days = Math.floor(diffMs / (24 * 60 * 60 * 1e3));
+      return Math.max(0, days);
+    } catch {
+      return 0;
+    }
+  }
+  function formatUnlockDate(dateStr) {
+    if (!dateStr || !dateStr.trim()) return "\u2014";
+    try {
+      const d = new Date(dateStr.trim());
+      if (Number.isNaN(d.getTime())) return "\u2014";
+      return d.toLocaleDateString(void 0, {
+        month: "short",
+        day: "numeric",
+        year: "numeric"
+      });
+    } catch {
+      return "\u2014";
     }
   }
 
@@ -30031,14 +30060,16 @@ ${suffix}`;
     if (DEBUG) console.log("Second Thought: add-to-cart detected", addToCartEl);
     setTimeout(showOverlay, 100);
   }
-  function showUrlBanner() {
+  function showUrlBanner(opts) {
     const doc = document;
     if (doc.getElementById(BANNER_ID)) return;
+    const { daysRemaining, unlockDate } = opts;
+    const text = `You have not yet unlocked this item in your mindful cart! ${daysRemaining} days remaining. Unlocks on ${unlockDate}.`;
     const bar = doc.createElement("div");
     bar.id = BANNER_ID;
     bar.className = "st-url-banner";
     bar.innerHTML = `
-    <span class="st-url-banner-text">This item is already in your mindful cart.</span>
+    <span class="st-url-banner-text">${escapeHtml(text)}</span>
     <button type="button" class="st-url-banner-dismiss" aria-label="Dismiss">\xD7</button>
   `;
     const dismiss = bar.querySelector(".st-url-banner-dismiss");
@@ -30049,6 +30080,11 @@ ${suffix}`;
     }
     doc.body.insertBefore(bar, doc.body.firstChild);
   }
+  function escapeHtml(s) {
+    const div = document.createElement("div");
+    div.textContent = s;
+    return div.innerHTML;
+  }
   async function checkUrlAndShowBanner() {
     if (window !== window.top) return;
     const url = document.location?.href || "";
@@ -30056,9 +30092,12 @@ ${suffix}`;
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user?.id) return;
-      const { urls, error } = await fetchUserProductUrlsWithClient(supabase, session.user.id);
-      if (error || !urls?.length) return;
-      if (isUrlInStoredUrls(url, urls)) showUrlBanner();
+      const { item, error } = await fetchItemByProductUrlWithClient(supabase, session.user.id, url);
+      if (error || !item) return;
+      const waitUntil = item.wait_until_date ?? "";
+      const daysRemaining = daysRemainingUntil(waitUntil);
+      const unlockDate = formatUnlockDate(waitUntil);
+      showUrlBanner({ daysRemaining, unlockDate });
     } catch {
     }
   }
@@ -30066,7 +30105,7 @@ ${suffix}`;
     document.addEventListener("click", onDocumentClick, true);
     chrome.runtime?.onMessage?.addListener((message) => {
       if (message.type === "SHOW_URL_BANNER" && window === window.top) {
-        showUrlBanner();
+        checkUrlAndShowBanner();
       }
     });
     if (window === window.top) {
