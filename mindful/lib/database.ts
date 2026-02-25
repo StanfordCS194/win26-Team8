@@ -130,12 +130,15 @@ export { daysRemainingUntil, formatUnlockDate };
 
 /**
  * Fetch the item matching a product URL for the current user (app supabase).
- * Returns wait_until_date and friend_name for extension banner (time-based or friend-unlock text).
+ * Returns wait_until_date, friend_name, and is_unlocked for extension banner (locked vs unlocked).
  */
 export async function fetchItemByProductUrl(
   userId: string,
   pageUrl: string
-): Promise<{ item: { wait_until_date: string | null; friend_name: string | null } | null; error: any }> {
+): Promise<{
+  item: { wait_until_date: string | null; friend_name: string | null; is_unlocked: boolean | null } | null;
+  error: any;
+}> {
   return fetchItemByProductUrlWithClient(supabase, userId, pageUrl);
 }
 

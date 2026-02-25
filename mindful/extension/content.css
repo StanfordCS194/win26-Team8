@@ -2853,6 +2853,17 @@ html {
   color: #fff;
 }
 
+/* Green variant when item is unlocked */
+
+.st-url-banner--unlocked {
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+}
+
+.st-url-banner--unlocked .st-url-banner-dismiss:hover {
+  background: rgba(255, 255, 255, 0.35);
+  color: #fff;
+}
+
 /* Second Thought content overlay – shown when user clicks add-to-cart on a site */
 
 #second-thought-overlay,

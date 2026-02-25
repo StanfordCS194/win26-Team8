@@ -29978,7 +29978,7 @@ ${suffix}`;
   // lib/fetchUserProductUrls.ts
   async function fetchItemByProductUrlWithClient(supabaseClient, userId, pageUrl) {
     try {
-      const { data, error } = await supabaseClient.from("items").select("product_url, wait_until_date, friend_name").eq("user_id", userId).not("product_url", "is", null);
+      const { data, error } = await supabaseClient.from("items").select("product_url, wait_until_date, friend_name, is_unlocked").eq("user_id", userId).not("product_url", "is", null);
       if (error) return { item: null, error };
       const rows = data || [];
       const normalizedPage = normalizeProductUrl(pageUrl);
@@ -29987,7 +29987,11 @@ ${suffix}`;
       );
       if (!match) return { item: null, error: null };
       return {
-        item: { wait_until_date: match.wait_until_date, friend_name: match.friend_name },
+        item: {
+          wait_until_date: match.wait_until_date,
+          friend_name: match.friend_name,
+          is_unlocked: match.is_unlocked
+        },
         error: null
       };
     } catch (error) {
@@ -30063,12 +30067,12 @@ ${suffix}`;
     if (DEBUG) console.log("Second Thought: add-to-cart detected", addToCartEl);
     setTimeout(showOverlay, 100);
   }
-  function showUrlBanner(text) {
+  function showUrlBanner(text, unlocked = false) {
     const doc = document;
     if (doc.getElementById(BANNER_ID)) return;
     const bar = doc.createElement("div");
     bar.id = BANNER_ID;
-    bar.className = "st-url-banner";
+    bar.className = unlocked ? "st-url-banner st-url-banner--unlocked" : "st-url-banner";
     bar.innerHTML = `
     <span class="st-url-banner-text">${escapeHtml(text)}</span>
     <button type="button" class="st-url-banner-dismiss" aria-label="Dismiss">\xD7</button>
@@ -30095,8 +30099,15 @@ ${suffix}`;
       if (!session?.user?.id) return;
       const { item, error } = await fetchItemByProductUrlWithClient(supabase, session.user.id, url);
       if (error || !item) return;
+      if (item.is_unlocked) {
+        showUrlBanner(
+          "Congratulations on reaching your mindfulness goal! This item is now unlocked from your mindful cart.",
+          true
+        );
+        return;
+      }
       const text = item.wait_until_date ? `You have not yet unlocked this item in your mindful cart! ${daysRemainingUntil(item.wait_until_date)} days remaining. Unlocks on ${formatUnlockDate(item.wait_until_date)}.` : `You have not yet unlocked this item in your mindful cart! You must complete your set goal and receive a password from ${item.friend_name?.trim() || "your friend"} to unlock.`;
-      showUrlBanner(text);
+      showUrlBanner(text, false);
     } catch {
     }
   }
