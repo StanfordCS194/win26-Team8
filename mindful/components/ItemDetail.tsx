@@ -1,11 +1,23 @@
 import type { Item, QuestionAnswer } from '../types/item';
 import { ArrowLeft, Calendar, Target, Trash2, ShoppingBag, Lock } from 'lucide-react';
 import { useState } from 'react';
+import { DeleteReasonDialog } from './DeleteReasonDialog';
 
 interface ItemDetailProps {
   item: Item;
   onBack: () => void;
   onDelete: (itemId: string) => void;
+}
+
+// Check if the item's constraint (time or goal) has been completed
+function isConstraintComplete(item: Item): boolean {
+  if (item.constraintType === 'time' && item.waitUntilDate) {
+    const today = new Date().toISOString().split('T')[0];
+    return today >= item.waitUntilDate;
+  }
+  // Goals-based: constraint is only "complete" when they unlock (separate flow).
+  // When using Delete button, they haven't completed the goal.
+  return false;
 }
 
 // Generate intuitive explanation of how mindfulness score reflects the user's responses
@@ -98,11 +110,25 @@ export function ItemDetail({ item, onBack, onDelete }: ItemDetailProps) {
   const [unlockError, setUnlockError] = useState('');
   const [unlockSuccess, setUnlockSuccess] = useState(false);
   const [isUnlocking, setIsUnlocking] = useState(false);
+  const [showDeleteReasonDialog, setShowDeleteReasonDialog] = useState(false);
 
   const handleDelete = () => {
-    if (window.confirm('Are you sure you want to delete this item?')) {
-      onDelete(item.id);
+    if (!window.confirm('Are you sure you want to delete this item?')) {
+      return;
     }
+    if (isConstraintComplete(item)) {
+      onDelete(item.id);
+    } else {
+      setShowDeleteReasonDialog(true);
+    }
+  };
+
+  const handleDeleteReasonSelected = (
+    _reason: 'dont_want' | 'purchased_early',
+    _subReason?: string
+  ) => {
+    setShowDeleteReasonDialog(false);
+    onDelete(item.id);
   };
 
   const handlePasswordChange = (value: string) => {
@@ -153,6 +179,12 @@ export function ItemDetail({ item, onBack, onDelete }: ItemDetailProps) {
 
   return (
     <div className="max-w-4xl mx-auto">
+      <DeleteReasonDialog
+        open={showDeleteReasonDialog}
+        onOpenChange={setShowDeleteReasonDialog}
+        onSelect={handleDeleteReasonSelected}
+        constraintType={item.constraintType}
+      />
       <button
         onClick={onBack}
         className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors"

@@ -198,10 +198,6 @@ function AppContent() {
   const handleDeleteItem = async (itemId: string) => {
     if (!user) return;
 
-    if (!confirm('Are you sure you want to delete this item?')) {
-      return;
-    }
-
     console.log('Deleting item:', itemId);
 
     // Delete from Supabase
