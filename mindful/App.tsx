@@ -7,13 +7,14 @@ import { GoalsBasedView } from './components/GoalsBasedView';
 import { OurMission } from './components/OurMission';
 import { Profile } from './components/Profile';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { fetchItems, saveItem, deleteItem as deleteItemDb } from './lib/database';
+import { fetchItems, saveItem, deleteItem as deleteItemDb, saveDeletionReason } from './lib/database';
 import { saveItemDirect } from './lib/database-alt';
 import { normalizeProductUrl } from './lib/urlUtils';
 import { Plus, User } from 'lucide-react';
 import './styles/globals.css';
 import logoImage from './assets/logo.png';
 import type { Item } from './types/item';
+import type { DeletionReasonData } from './components/ItemDetail';
 
 const FETCH_ITEMS_TIMEOUT_MS = 20000;
 
@@ -195,11 +196,20 @@ function AppContent() {
     setCurrentView('item');
   };
 
-  const handleDeleteItem = async (itemId: string) => {
+  const handleDeleteItem = async (itemId: string, deletionReason?: DeletionReasonData) => {
     if (!user) return;
 
-    if (!confirm('Are you sure you want to delete this item?')) {
-      return;
+    const item = items.find((i) => i.id === itemId);
+
+    if (deletionReason && item) {
+      await saveDeletionReason({
+        itemId,
+        itemName: item.name,
+        userId: user.id,
+        reason: deletionReason.reason,
+        subReason: deletionReason.subReason ?? '',
+        constraintType: item.constraintType,
+      });
     }
 
     console.log('Deleting item:', itemId);

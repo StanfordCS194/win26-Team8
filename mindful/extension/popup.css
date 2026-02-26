@@ -833,6 +833,10 @@ h1, h2, h3, h4, h5, h6 {
   margin-bottom: 0.25rem;
 }
 
+.-ml-1{
+  margin-left: -0.25rem;
+}
+
 .-ml-4{
   margin-left: -1rem;
 }
@@ -1498,6 +1502,10 @@ h1, h2, h3, h4, h5, h6 {
 
 .cursor-default{
   cursor: default;
+}
+
+.cursor-not-allowed{
+  cursor: not-allowed;
 }
 
 .cursor-pointer{
@@ -2442,6 +2450,10 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--destructive);
 }
 
+.text-destructive-foreground{
+  color: var(--destructive-foreground);
+}
+
 .text-emerald-700{
   --tw-text-opacity: 1;
   color: rgb(4 120 87 / var(--tw-text-opacity, 1));
@@ -3002,6 +3014,11 @@ h1 {
   background-color: rgb(75 85 99 / var(--tw-bg-opacity, 1));
 }
 
+.hover\:bg-green-50:hover{
+  --tw-bg-opacity: 1;
+  background-color: rgb(240 253 244 / var(--tw-bg-opacity, 1));
+}
+
 .hover\:bg-muted:hover{
   background-color: var(--muted);
 }
@@ -3021,6 +3038,11 @@ h1 {
 
 .hover\:text-foreground:hover{
   color: var(--foreground);
+}
+
+.hover\:text-green-800:hover{
+  --tw-text-opacity: 1;
+  color: rgb(22 101 52 / var(--tw-text-opacity, 1));
 }
 
 .hover\:text-muted-foreground:hover{
@@ -3162,6 +3184,16 @@ h1 {
 
 .focus-visible\:ring-offset-1:focus-visible{
   --tw-ring-offset-width: 1px;
+}
+
+.active\:bg-green-50:active{
+  --tw-bg-opacity: 1;
+  background-color: rgb(240 253 244 / var(--tw-bg-opacity, 1));
+}
+
+.active\:text-green-800:active{
+  --tw-text-opacity: 1;
+  color: rgb(22 101 52 / var(--tw-text-opacity, 1));
 }
 
 .disabled\:pointer-events-none:disabled{
@@ -3795,6 +3827,10 @@ h1 {
 
   .sm\:max-w-lg{
     max-width: 32rem;
+  }
+
+  .sm\:max-w-md{
+    max-width: 28rem;
   }
 
   .sm\:max-w-sm{

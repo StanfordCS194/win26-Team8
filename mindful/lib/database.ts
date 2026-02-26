@@ -274,6 +274,43 @@ export async function saveItem(item: Item, userId: string): Promise<{ success: b
 }
 
 /**
+ * SAVE DELETION REASON (when user deletes before constraint completion)
+ *
+ * @param params - { itemId, itemName, userId, reason, subReason, constraintType }
+ * @returns { success: boolean, error: any }
+ */
+export async function saveDeletionReason(params: {
+  itemId: string;
+  itemName: string;
+  userId: string;
+  reason: 'dont_want' | 'purchased_early';
+  subReason: string;
+  constraintType: 'time' | 'goals';
+}): Promise<{ success: boolean; error: any }> {
+  try {
+    const { error } = await supabase.from('item_deletion_reasons').insert([
+      {
+        user_id: params.userId,
+        item_id: params.itemId,
+        item_name: params.itemName,
+        reason: params.reason,
+        sub_reason: params.subReason,
+        constraint_type: params.constraintType,
+      },
+    ]);
+
+    if (error) {
+      console.error('❌ Save deletion reason error:', error);
+      return { success: false, error };
+    }
+    return { success: true, error: null };
+  } catch (error) {
+    console.error('❌ Save deletion reason exception:', error);
+    return { success: false, error };
+  }
+}
+
+/**
  * DELETE AN ITEM FROM DATABASE
  * 
  * @param itemId - Item's UUID
