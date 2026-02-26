@@ -3,10 +3,15 @@ import { ArrowLeft, Calendar, Target, Trash2, ShoppingBag, Lock } from 'lucide-r
 import { useState } from 'react';
 import { DeleteReasonDialog } from './DeleteReasonDialog';
 
+export interface DeletionReasonData {
+  reason: 'dont_want' | 'purchased_early';
+  subReason?: string;
+}
+
 interface ItemDetailProps {
   item: Item;
   onBack: () => void;
-  onDelete: (itemId: string) => void;
+  onDelete: (itemId: string, deletionReason?: DeletionReasonData) => void;
 }
 
 // Check if the item's constraint (time or goal) has been completed
@@ -124,11 +129,11 @@ export function ItemDetail({ item, onBack, onDelete }: ItemDetailProps) {
   };
 
   const handleDeleteReasonSelected = (
-    _reason: 'dont_want' | 'purchased_early',
-    _subReason?: string
+    reason: 'dont_want' | 'purchased_early',
+    subReason?: string
   ) => {
     setShowDeleteReasonDialog(false);
-    onDelete(item.id);
+    onDelete(item.id, { reason, subReason });
   };
 
   const handlePasswordChange = (value: string) => {
