@@ -74,6 +74,8 @@ function ItemCard({
 interface HomeProps {
   items: Item[];
   unlockedItems?: Item[];
+  activeSubtab?: 'locked' | 'unlocked';
+  onSubtabChange?: (tab: 'locked' | 'unlocked') => void;
   onItemClick: (itemId: string) => void;
   onAddItem: () => void;
   onRefresh?: () => void;
@@ -83,11 +85,17 @@ interface HomeProps {
   loadError?: string | null;
 }
 
-export function Home({ items, unlockedItems = [], onItemClick, onAddItem, onRefresh, onRetry, isRefreshing, isLoading, loadError }: HomeProps) {
+export function Home({ items, unlockedItems = [], activeSubtab, onSubtabChange, onItemClick, onAddItem, onRefresh, onRetry, isRefreshing, isLoading, loadError }: HomeProps) {
   const [selectedCategories, setSelectedCategories] = useState<ItemCategory[] | null>(null); // null = All Categories
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const [activeTab, setActiveTab] = useState<'locked' | 'unlocked'>('locked');
+  const [internalTab, setInternalTab] = useState<'locked' | 'unlocked'>('locked');
+  const isControlled = activeSubtab !== undefined && onSubtabChange !== undefined;
+  const activeTab = isControlled ? activeSubtab : internalTab;
+  const setActiveTab = (tab: 'locked' | 'unlocked') => {
+    if (isControlled) onSubtabChange?.(tab);
+    else setInternalTab(tab);
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
