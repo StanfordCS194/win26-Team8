@@ -2,8 +2,13 @@ import { build } from 'esbuild';
 import { readFileSync, renameSync } from 'fs';
 import { join } from 'path';
 
-// Load .env file and extract EXPO_PUBLIC_ variables
-const envFile = readFileSync('.env', 'utf-8');
+// Load .env file and extract EXPO_PUBLIC_ variables (optional)
+let envFile = '';
+try {
+  envFile = readFileSync('.env', 'utf-8');
+} catch {
+  // .env may not exist (e.g. in CI or fresh clone)
+}
 const define = {
   'process.env.NODE_ENV': '"production"',
 };

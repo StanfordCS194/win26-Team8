@@ -100,14 +100,21 @@ function AppContent() {
       if (result.items?.length) setItems(result.items);
     }
 
-    // Also load unlocked items archive and combine with time-unlocked items
+    // Also load unlocked items: archive + time-unlocked from items + goals-unlocked from items
     const unlockedResult = await fetchUnlockedItems(user.id);
     if (!unlockedResult.error && unlockedResult.items) {
       const archiveItems = unlockedResult.items;
       const archiveIds = new Set(archiveItems.map((i) => i.id));
-      const timeUnlockedFromItems =
-        result.items?.filter((i) => isTimeUnlocked(i) && !archiveIds.has(i.id)) ?? [];
-      setUnlockedItems([...timeUnlockedFromItems, ...archiveItems]);
+      const fromItems = result.items ?? [];
+      const timeUnlockedFromItems = fromItems.filter((i) => isTimeUnlocked(i) && !archiveIds.has(i.id));
+      const goalsUnlockedFromItems = fromItems.filter((i) => i.isUnlocked === true && !archiveIds.has(i.id));
+      const seen = new Set<string>([...archiveIds]);
+      const extra = [...timeUnlockedFromItems, ...goalsUnlockedFromItems].filter((i) => {
+        if (seen.has(i.id)) return false;
+        seen.add(i.id);
+        return true;
+      });
+      setUnlockedItems([...extra, ...archiveItems]);
     }
   };
 
@@ -129,14 +136,21 @@ function AppContent() {
         setItemsLoadError(message);
       }
 
-      // Refresh unlocked items as well and combine with time-unlocked items
+      // Refresh unlocked items: archive + time-unlocked + goals-unlocked from items
       const unlockedResult = await fetchUnlockedItems(user.id);
       if (!unlockedResult.error && unlockedResult.items) {
         const archiveItems = unlockedResult.items;
         const archiveIds = new Set(archiveItems.map((i) => i.id));
-        const timeUnlockedFromItems =
-          result.items?.filter((i) => isTimeUnlocked(i) && !archiveIds.has(i.id)) ?? [];
-        setUnlockedItems([...timeUnlockedFromItems, ...archiveItems]);
+        const fromItems = result.items ?? [];
+        const timeUnlockedFromItems = fromItems.filter((i) => isTimeUnlocked(i) && !archiveIds.has(i.id));
+        const goalsUnlockedFromItems = fromItems.filter((i) => i.isUnlocked === true && !archiveIds.has(i.id));
+        const seen = new Set<string>([...archiveIds]);
+        const extra = [...timeUnlockedFromItems, ...goalsUnlockedFromItems].filter((i) => {
+          if (seen.has(i.id)) return false;
+          seen.add(i.id);
+          return true;
+        });
+        setUnlockedItems([...extra, ...archiveItems]);
       }
     } finally {
       setRefreshingItems(false);
@@ -315,13 +329,18 @@ function AppContent() {
       return;
     }
 
-    // Update local unlocked list so item appears in Unlocked tab
+    // Update item in items state so it drops out of Locked tab (isUnlocked: true)
     const item = items.find((i) => i.id === itemId) ?? unlockedItems.find((i) => i.id === itemId);
     if (item) {
-      setUnlockedItems((prev) => [item, ...prev.filter((i) => i.id !== itemId)]);
+      const updatedItem = { ...item, isUnlocked: true };
+      setItems((prev) => {
+        const next = prev.map((i) => (i.id === itemId ? updatedItem : i));
+        const localKey = `secondThought_user_${user.id}_items`;
+        localStorage.setItem(localKey, JSON.stringify(next));
+        return next;
+      });
+      setUnlockedItems((prev) => [updatedItem, ...prev.filter((i) => i.id !== itemId)]);
     }
-    const localKey = `secondThought_user_${user.id}_items`;
-    localStorage.setItem(localKey, JSON.stringify(items));
   };
 
   const selectedItem = items.find(item => item.id === selectedItemId)

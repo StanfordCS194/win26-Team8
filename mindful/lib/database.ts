@@ -97,6 +97,7 @@ function dbToItem(dbItem: DbItem): Item {
     friendName: dbItem.friend_name || undefined,
     friendEmail: dbItem.friend_email || undefined,
     unlockPassword: dbItem.unlock_password || undefined,
+    isUnlocked: dbItem.is_unlocked === true,
   };
 }
 

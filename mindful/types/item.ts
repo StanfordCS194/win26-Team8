@@ -21,4 +21,6 @@ export interface Item {
   friendName?: string;
   friendEmail?: string;
   unlockPassword?: string;
+  /** True when a goals-based item was unlocked via password (item still in items table). */
+  isUnlocked?: boolean;
 }
