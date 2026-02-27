@@ -30067,17 +30067,47 @@ ${suffix}`;
     if (DEBUG) console.log("Second Thought: add-to-cart detected", addToCartEl);
     setTimeout(showOverlay, 100);
   }
-  function showUrlBanner(detail, unlocked = false) {
+  function showUrlBanner(content) {
     const doc = document;
     if (doc.getElementById(BANNER_ID)) return;
     const bar = doc.createElement("div");
     bar.id = BANNER_ID;
-    bar.className = unlocked ? "st-url-banner st-url-banner--unlocked" : "st-url-banner";
+    const variantClass = content.variant === "unlocked" ? "st-url-banner st-url-banner--unlocked" : content.variant === "goals" ? "st-url-banner st-url-banner--goals" : "st-url-banner st-url-banner--time";
+    bar.className = variantClass;
+    const headingHtml = escapeHtml(content.title);
+    const subtitleHtml = content.subtitle ? escapeHtml(content.subtitle) : "";
+    const linesHtml = content.lines.map((line) => {
+      if (line.kind === "metrics") {
+        const [daysRaw, unlockRaw] = line.value.split("|");
+        const days = escapeHtml(daysRaw ?? "");
+        const unlock = escapeHtml(unlockRaw ?? "");
+        return `
+          <div class="st-url-banner-line st-url-banner-line--metrics">
+            <span class="st-url-banner-line-label">Days remaining</span>
+            <span class="st-url-banner-line-value st-url-banner-line-value-days">${days}</span>
+            <span class="st-url-banner-line-separator">\xB7</span>
+            <span class="st-url-banner-line-label st-url-banner-line-label-unlock">Unlocks on</span>
+            <span class="st-url-banner-line-value st-url-banner-line-value-unlock">${unlock}</span>
+          </div>
+        `;
+      }
+      const value = escapeHtml(line.value);
+      if (line.label) {
+        const label = escapeHtml(line.label);
+        return `<div class="st-url-banner-line"><span class="st-url-banner-line-label">${label}</span><span class="st-url-banner-line-value">${value}</span></div>`;
+      }
+      return `<div class="st-url-banner-line"><span class="st-url-banner-line-value">${value}</span></div>`;
+    }).join("");
     bar.innerHTML = `
     <div class="st-url-banner-inner">
       <div class="st-url-banner-content">
-        <div class="st-url-banner-heading">${unlocked ? "Mindfulness goal reached" : "Mindful constraint active"}</div>
-        <div class="st-url-banner-text">${escapeHtml(detail)}</div>
+        <div class="st-url-banner-heading-row">
+          <div class="st-url-banner-heading">${headingHtml}</div>
+          ${subtitleHtml ? `<div class="st-url-banner-subtitle">${subtitleHtml}</div>` : ""}
+        </div>
+        <div class="st-url-banner-lines">
+          ${linesHtml}
+        </div>
       </div>
       <button type="button" class="st-url-banner-dismiss" aria-label="Dismiss">\xD7</button>
     </div>
@@ -30105,31 +30135,42 @@ ${suffix}`;
       const { item, error } = await fetchItemByProductUrlWithClient(supabase, session.user.id, url);
       if (error || !item) return;
       if (item.is_unlocked) {
-        showUrlBanner(
-          [
-            "Goals-based constraint completed.",
-            "This item is now unlocked from your mindful cart."
-          ].join("\n"),
-          true
-        );
+        showUrlBanner({
+          variant: "unlocked",
+          title: "Mindfulness goal reached",
+          subtitle: "Goals-based constraint completed",
+          lines: [
+            { value: "This item is now unlocked from your mindful cart." }
+          ]
+        });
         return;
       }
       if (item.wait_until_date) {
         const days = daysRemainingUntil(item.wait_until_date);
         const unlockDate = formatUnlockDate(item.wait_until_date);
-        const lines = [
-          "Time-based constraint: this item is not unlocked yet.",
-          `Days remaining: ${days}`,
-          `Unlocks on: ${unlockDate}`
-        ];
-        showUrlBanner(lines.join("\n"), false);
+        showUrlBanner({
+          variant: "time",
+          title: "Mindful constraint active",
+          lines: [
+            { value: "Time-based constraint" },
+            {
+              kind: "metrics",
+              value: `${days}|${unlockDate}`
+            }
+          ]
+        });
       } else {
         const friendLabel = item.friend_name?.trim() || "your friend";
-        const lines = [
-          "Goals-based constraint: this item is not unlocked yet.",
-          `To unlock it, complete your goal and enter the password from ${friendLabel}.`
-        ];
-        showUrlBanner(lines.join("\n"), false);
+        showUrlBanner({
+          variant: "goals",
+          title: "Mindful constraint active",
+          subtitle: "Goals-based constraint",
+          lines: [
+            {
+              value: `To unlock this item, complete your goal and enter the password from ${friendLabel}.`
+            }
+          ]
+        });
       }
     } catch {
     }

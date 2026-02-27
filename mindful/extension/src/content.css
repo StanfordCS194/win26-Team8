@@ -22,7 +22,7 @@
   align-items: center;
   gap: 12px;
   padding: 10px 16px;
-  border-radius: 9999px;
+  border-radius: 18px; /* slightly less rounded than full pill */
   background: rgba(240, 253, 244, 0.98); /* light green, similar to app cards */
   color: #064e3b; /* dark green text */
   border: 1px solid rgba(34, 197, 94, 0.8);
@@ -35,7 +35,14 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
+}
+
+.st-url-banner-heading-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
 }
 
 .st-url-banner-heading {
@@ -47,12 +54,47 @@
   opacity: 0.9;
 }
 
-.st-url-banner-text {
+.st-url-banner-subtitle {
+  font-size: 11px;
+  font-weight: 500;
+  color: #065f46;
+  opacity: 0.9;
+}
+
+.st-url-banner-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.st-url-banner-line {
+  display: flex;
+  gap: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.st-url-banner-line--metrics {
+  font-size: 14px;
+}
+
+.st-url-banner-line-label {
+  font-weight: 600;
+}
+
+.st-url-banner-line-value {
   font-size: 13px;
   font-weight: 400;
-  line-height: 1.5;
   opacity: 0.96;
-  white-space: pre-line; /* respect \n from JS and break into lines */
+}
+
+.st-url-banner-line-separator {
+  margin: 0 6px;
+  opacity: 0.7;
+}
+
+.st-url-banner-line-label-unlock {
+  font-weight: 700; /* make "Unlocks on" bolder */
 }
 
 .st-url-banner-dismiss {
