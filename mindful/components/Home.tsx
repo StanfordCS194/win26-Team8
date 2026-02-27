@@ -266,7 +266,7 @@ export function Home({ items, unlockedItems = [], onItemClick, onAddItem, onRefr
                 : 'text-muted-foreground font-medium hover:text-foreground'
             }`}
           >
-            Locked
+            🔒 Locked
             {activeTab === 'locked' && (
               <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-foreground rounded-full" />
             )}
@@ -280,7 +280,7 @@ export function Home({ items, unlockedItems = [], onItemClick, onAddItem, onRefr
                 : 'text-muted-foreground font-medium hover:text-foreground'
             }`}
           >
-            Unlocked 🔓 
+            Unlocked
             {activeTab === 'unlocked' && (
               <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-foreground rounded-full" />
             )}
