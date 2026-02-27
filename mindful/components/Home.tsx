@@ -73,6 +73,9 @@ function ItemCard({
 
 interface HomeProps {
   items: Item[];
+  unlockedItems?: Item[];
+  activeSubtab?: 'locked' | 'unlocked';
+  onSubtabChange?: (tab: 'locked' | 'unlocked') => void;
   onItemClick: (itemId: string) => void;
   onAddItem: () => void;
   onRefresh?: () => void;
@@ -82,10 +85,17 @@ interface HomeProps {
   loadError?: string | null;
 }
 
-export function Home({ items, onItemClick, onAddItem, onRefresh, onRetry, isRefreshing, isLoading, loadError }: HomeProps) {
+export function Home({ items, unlockedItems = [], activeSubtab, onSubtabChange, onItemClick, onAddItem, onRefresh, onRetry, isRefreshing, isLoading, loadError }: HomeProps) {
   const [selectedCategories, setSelectedCategories] = useState<ItemCategory[] | null>(null); // null = All Categories
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [internalTab, setInternalTab] = useState<'locked' | 'unlocked'>('locked');
+  const isControlled = activeSubtab !== undefined && onSubtabChange !== undefined;
+  const activeTab = isControlled ? activeSubtab : internalTab;
+  const setActiveTab = (tab: 'locked' | 'unlocked') => {
+    if (isControlled) onSubtabChange?.(tab);
+    else setInternalTab(tab);
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -100,10 +110,31 @@ export function Home({ items, onItemClick, onAddItem, onRefresh, onRetry, isRefr
     }
   }, [dropdownOpen]);
 
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const isTimeUnlocked = (item: Item): boolean => {
+    if (item.constraintType !== 'time' || !item.waitUntilDate) return false;
+    const waitDate = new Date(item.waitUntilDate);
+    const waitDayStart = new Date(waitDate.getFullYear(), waitDate.getMonth(), waitDate.getDate());
+    return waitDayStart.getTime() <= today.getTime();
+  };
+
+  const lockedItems = items.filter((item) => {
+    if (item.constraintType === 'time' && item.waitUntilDate) {
+      return !isTimeUnlocked(item);
+    }
+    // Goals-based items remain locked until explicitly unlocked and removed
+    return true;
+  });
+
+  // For the Unlocked tab, rely primarily on archived unlocked items from Supabase
+  const baseItems = activeTab === 'locked' ? lockedItems : unlockedItems;
+
   const filteredItems =
     selectedCategories === null || selectedCategories.length === 0
-      ? items
-      : items.filter((item) => {
+      ? baseItems
+      : baseItems.filter((item) => {
           const cat = item.category || 'Other';
           return selectedCategories.includes(cat);
         });
@@ -231,7 +262,41 @@ export function Home({ items, onItemClick, onAddItem, onRefresh, onRetry, isRefr
         </div>
       </div>
 
-      {items.length === 0 && isLoading ? (
+      {/* Locked / Unlocked tabs — line style */}
+      <div className="mb-6 border-b border-border">
+        <div className="flex items-center gap-6 sm:gap-8">
+          <button
+            type="button"
+            onClick={() => setActiveTab('locked')}
+            className={`relative pb-3 pt-0.5 text-sm sm:text-base transition-colors ${
+              activeTab === 'locked'
+                ? 'text-foreground font-semibold'
+                : 'text-muted-foreground font-medium hover:text-foreground'
+            }`}
+          >
+            🔒 Locked
+            {activeTab === 'locked' && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-foreground rounded-full" />
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('unlocked')}
+            className={`relative pb-3 pt-0.5 text-sm sm:text-base transition-colors ${
+              activeTab === 'unlocked'
+                ? 'text-foreground font-semibold'
+                : 'text-muted-foreground font-medium hover:text-foreground'
+            }`}
+          >
+            Unlocked
+            {activeTab === 'unlocked' && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-foreground rounded-full" />
+            )}
+          </button>
+        </div>
+      </div>
+
+      {baseItems.length === 0 && isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <div key={i} className="rounded-2xl border border-border/50 overflow-hidden bg-card animate-pulse">
@@ -244,16 +309,28 @@ export function Home({ items, onItemClick, onAddItem, onRefresh, onRetry, isRefr
             </div>
           ))}
         </div>
-      ) : items.length === 0 ? (
-        <div className="text-center py-16">
-          <div className="text-muted-foreground/40 mb-4">
-            <ShoppingBag className="w-16 h-16 mx-auto" />
+      ) : baseItems.length === 0 ? (
+        activeTab === 'locked' ? (
+          <div className="text-center py-16">
+            <div className="text-muted-foreground/40 mb-4">
+              <ShoppingBag className="w-16 h-16 mx-auto" />
+            </div>
+            <h3 className="text-xl text-foreground/80 mb-2">No items yet</h3>
+            <p className="text-muted-foreground">
+              Start adding items you're considering purchasing to reflect on your decisions.
+            </p>
           </div>
-          <h3 className="text-xl text-foreground/80 mb-2">No items yet</h3>
-          <p className="text-muted-foreground">
-            Start adding items you're considering purchasing to reflect on your decisions.
-          </p>
-        </div>
+        ) : (
+          <div className="text-center py-16">
+            <div className="text-muted-foreground/40 mb-4">
+              <ShoppingBag className="w-16 h-16 mx-auto" />
+            </div>
+            <h3 className="text-xl text-foreground/80 mb-2">No unlocked items yet</h3>
+            <p className="text-muted-foreground">
+              Once the goal is completed or the time has passed, your unlocked items will show up here.
+            </p>
+          </div>
+        )
       ) : filteredItems.length === 0 ? (
         <div className="text-center py-16">
           <div className="text-muted-foreground/40 mb-4">
@@ -271,7 +348,8 @@ export function Home({ items, onItemClick, onAddItem, onRefresh, onRetry, isRefr
               <h3 className="text-lg font-semibold text-foreground font-serif mb-4 flex items-center gap-2">
                 <span className="text-primary">{category}</span>
                 <span className="text-sm font-normal text-muted-foreground">
-                  ({itemsByCategory[category].length} {itemsByCategory[category].length === 1 ? 'item' : 'items'})
+                  ({itemsByCategory[category].length}{' '}
+                  {itemsByCategory[category].length === 1 ? 'item' : 'items'})
                 </span>
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

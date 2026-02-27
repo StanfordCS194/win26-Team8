@@ -1,12 +1,29 @@
 import type { Item, QuestionAnswer } from '../types/item';
 import { ArrowLeft, Calendar, Target, Trash2, ShoppingBag, Lock } from 'lucide-react';
 import { useState } from 'react';
+import { DeleteReasonDialog } from './DeleteReasonDialog';
+
+export interface DeletionReasonData {
+  reason: 'dont_want' | 'purchased_early';
+  subReason?: string;
+}
 
 interface ItemDetailProps {
   item: Item;
   onBack: () => void;
-  onDelete: (itemId: string) => void;
+  onDelete: (itemId: string, deletionReason?: DeletionReasonData) => void;
   onUnlock?: (itemId: string) => void;
+}
+
+// Check if the item's constraint (time or goal) has been completed
+function isConstraintComplete(item: Item): boolean {
+  if (item.constraintType === 'time' && item.waitUntilDate) {
+    const today = new Date().toISOString().split('T')[0];
+    return today >= item.waitUntilDate;
+  }
+  // Goals-based: constraint is only "complete" when they unlock (separate flow).
+  // When using Delete button, they haven't completed the goal.
+  return false;
 }
 
 // Generate intuitive explanation of how mindfulness score reflects the user's responses
@@ -99,17 +116,33 @@ export function ItemDetail({ item, onBack, onDelete, onUnlock }: ItemDetailProps
   const [unlockError, setUnlockError] = useState('');
   const [unlockSuccess, setUnlockSuccess] = useState(false);
   const [isUnlocking, setIsUnlocking] = useState(false);
+  const [showDeleteReasonDialog, setShowDeleteReasonDialog] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
 
   const handleDelete = () => {
-    if (window.confirm('Are you sure you want to delete this item?')) {
-      onDelete(item.id);
+    if (!window.confirm('Are you sure you want to delete this item?')) {
+      return;
     }
+    if (isConstraintComplete(item)) {
+      onDelete(item.id);
+    } else {
+      setShowDeleteReasonDialog(true);
+    }
+  };
+
+  const handleDeleteReasonSelected = (
+    reason: 'dont_want' | 'purchased_early',
+    subReason?: string
+  ) => {
+    setShowDeleteReasonDialog(false);
+    onDelete(item.id, { reason, subReason });
   };
 
   const handlePasswordChange = (value: string) => {
     setUnlockPassword(value);
     setUnlockError('');
     setUnlockSuccess(false);
+    setShowCelebration(false);
     
     // Real-time validation if password is set
     if (item.unlockPassword && value.trim()) {
@@ -167,6 +200,12 @@ export function ItemDetail({ item, onBack, onDelete, onUnlock }: ItemDetailProps
 
   return (
     <div className="max-w-4xl mx-auto">
+      <DeleteReasonDialog
+        open={showDeleteReasonDialog}
+        onOpenChange={setShowDeleteReasonDialog}
+        onSelect={handleDeleteReasonSelected}
+        constraintType={item.constraintType}
+      />
       <button
         onClick={onBack}
         className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors"
@@ -405,6 +444,39 @@ export function ItemDetail({ item, onBack, onDelete, onUnlock }: ItemDetailProps
           </div>
         </div>
       </div>
+
+      {showCelebration && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+          <div className="relative max-w-md w-full mx-4 bg-card rounded-3xl shadow-xl border border-primary/30 px-8 py-10 text-center overflow-hidden">
+            <div className="absolute inset-0 pointer-events-none">
+              <div className="confetti-container">
+                {Array.from({ length: 80 }).map((_, index) => (
+                  <span
+                    key={index}
+                    className="confetti-piece"
+                    style={{
+                      left: `${(index / 80) * 100}%`,
+                      animationDelay: `${(index % 10) * -0.25}s`,
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+            <div className="relative">
+              <p className="text-sm uppercase tracking-[0.2em] text-accent mb-2">
+                Goal Completed
+              </p>
+              <h2 className="text-2xl font-serif text-foreground mb-3">
+                Congratulations!
+              </h2>
+              <p className="text-sm text-foreground/80 leading-relaxed">
+                You completed your goal and have unlocked{' '}
+                <span className="font-semibold text-primary">{item.name}</span>.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

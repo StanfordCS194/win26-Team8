@@ -7,13 +7,14 @@ import { GoalsBasedView } from './components/GoalsBasedView';
 import { OurMission } from './components/OurMission';
 import { Profile } from './components/Profile';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { fetchItems, saveItem, deleteItem as deleteItemDb, markItemUnlocked } from './lib/database';
+import { fetchItems, fetchUnlockedItems, saveItem, deleteItem as deleteItemDb, saveDeletionReason, saveUnlockedItem, markItemUnlocked } from './lib/database';
 import { saveItemDirect } from './lib/database-alt';
 import { normalizeProductUrl } from './lib/urlUtils';
 import { Plus, User } from 'lucide-react';
 import './styles/globals.css';
 import logoImage from './assets/logo.png';
 import type { Item } from './types/item';
+import type { DeletionReasonData } from './components/ItemDetail';
 
 const FETCH_ITEMS_TIMEOUT_MS = 20000;
 
@@ -22,11 +23,24 @@ type View = 'home' | 'item' | 'add' | 'time' | 'goals' | 'mission' | 'profile';
 function AppContent() {
   const { user, session, loading } = useAuth();
   const [items, setItems] = useState<Item[]>([]);
+  const [unlockedItems, setUnlockedItems] = useState<Item[]>([]);
   const [currentView, setCurrentView] = useState<View>('mission');
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [homeSubtab, setHomeSubtab] = useState<'locked' | 'unlocked'>('locked');
   const [refreshingItems, setRefreshingItems] = useState(false);
   const [itemsLoading, setItemsLoading] = useState(false);
   const [itemsLoadError, setItemsLoadError] = useState<string | null>(null);
+  const isTimeUnlocked = (item: Item): boolean => {
+    if (item.constraintType !== 'time' || !item.waitUntilDate) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const waitDate = new Date(item.waitUntilDate);
+    const waitDayStart = new Date(waitDate.getFullYear(), waitDate.getMonth(), waitDate.getDate());
+    return waitDayStart.getTime() <= today.getTime();
+  };
+
+  const [unlockingTodayItemIds, setUnlockingTodayItemIds] = useState<string[]>([]);
+  const [showUnlockingTodayPopup, setShowUnlockingTodayPopup] = useState(false);
 
   // Load items when user logs in
   useEffect(() => {
@@ -85,6 +99,16 @@ function AppContent() {
       setItemsLoadError(message);
       if (result.items?.length) setItems(result.items);
     }
+
+    // Also load unlocked items archive and combine with time-unlocked items
+    const unlockedResult = await fetchUnlockedItems(user.id);
+    if (!unlockedResult.error && unlockedResult.items) {
+      const archiveItems = unlockedResult.items;
+      const archiveIds = new Set(archiveItems.map((i) => i.id));
+      const timeUnlockedFromItems =
+        result.items?.filter((i) => isTimeUnlocked(i) && !archiveIds.has(i.id)) ?? [];
+      setUnlockedItems([...timeUnlockedFromItems, ...archiveItems]);
+    }
   };
 
   const handleRefreshItems = async () => {
@@ -103,6 +127,16 @@ function AppContent() {
       } else if (result.error) {
         const message = result.error instanceof Error ? result.error.message : 'Could not refresh. Try again.';
         setItemsLoadError(message);
+      }
+
+      // Refresh unlocked items as well and combine with time-unlocked items
+      const unlockedResult = await fetchUnlockedItems(user.id);
+      if (!unlockedResult.error && unlockedResult.items) {
+        const archiveItems = unlockedResult.items;
+        const archiveIds = new Set(archiveItems.map((i) => i.id));
+        const timeUnlockedFromItems =
+          result.items?.filter((i) => isTimeUnlocked(i) && !archiveIds.has(i.id)) ?? [];
+        setUnlockedItems([...timeUnlockedFromItems, ...archiveItems]);
       }
     } finally {
       setRefreshingItems(false);
@@ -195,11 +229,28 @@ function AppContent() {
     setCurrentView('item');
   };
 
-  const handleDeleteItem = async (itemId: string) => {
+  const handleDeleteItem = async (itemId: string, deletionReason?: DeletionReasonData) => {
     if (!user) return;
 
-    if (!confirm('Are you sure you want to delete this item?')) {
-      return;
+    const item = items.find((i) => i.id === itemId);
+
+    if (item) {
+      if (deletionReason) {
+        // Deleting before constraint completion – log reason only
+        await saveDeletionReason({
+          itemId,
+          itemName: item.name,
+          userId: user.id,
+          reason: deletionReason.reason,
+          subReason: deletionReason.subReason ?? '',
+          constraintType: item.constraintType,
+        });
+      } else {
+        // Constraint completed (time reached or goals password correct) – archive in unlocked_items
+        await saveUnlockedItem(item, user.id);
+        // Optimistically add to local unlocked archive so it appears immediately in the Unlocked tab
+        setUnlockedItems((prev) => [item, ...prev.filter((i) => i.id !== item.id)]);
+      }
     }
 
     console.log('Deleting item:', itemId);
@@ -219,7 +270,11 @@ function AppContent() {
       localStorage.setItem(localKey, JSON.stringify(updatedItems));
 
       setCurrentView('home');
-      alert('Item deleted successfully!');
+      if (item && item.constraintType === 'goals') {
+        alert(`Congratulations, you completed your goal and have unlocked "${item.name}".`);
+      } else {
+        alert('Item deleted successfully!');
+      }
     } else {
       console.error('Delete failed:', error);
       const errorMsg = error?.message || error?.toString() || 'Unknown error';
@@ -241,13 +296,79 @@ function AppContent() {
       return;
     }
 
-    // We don't need to change local UI much since unlock status is only used by the extension banner,
-    // but we persist current items back to localStorage so data stays in sync.
+    // Update local unlocked list so item appears in Unlocked tab
+    const item = items.find((i) => i.id === itemId) ?? unlockedItems.find((i) => i.id === itemId);
+    if (item) {
+      setUnlockedItems((prev) => [item, ...prev.filter((i) => i.id !== itemId)]);
+    }
     const localKey = `secondThought_user_${user.id}_items`;
     localStorage.setItem(localKey, JSON.stringify(items));
   };
 
-  const selectedItem = items.find(item => item.id === selectedItemId);
+  const selectedItem = items.find(item => item.id === selectedItemId)
+    ?? unlockedItems.find(item => item.id === selectedItemId);
+
+  const handleBackFromItem = () => {
+    if (selectedItem && (unlockedItems.some(u => u.id === selectedItem.id) || isTimeUnlocked(selectedItem))) {
+      setHomeSubtab('unlocked');
+    } else {
+      setHomeSubtab('locked');
+    }
+    setCurrentView('home');
+    setSelectedItemId(null);
+  };
+
+  // Detect time-based items that unlock today and show a celebratory popup
+  useEffect(() => {
+    if (!user || !items.length) {
+      setShowUnlockingTodayPopup(false);
+      setUnlockingTodayItemIds([]);
+      return;
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    const localKey = `secondThought_user_${user.id}_unlocking_today_${today}`;
+
+    let dismissedIds: string[] = [];
+    try {
+      const stored = localStorage.getItem(localKey);
+      if (stored) {
+        dismissedIds = JSON.parse(stored);
+      }
+    } catch {
+      // ignore parse errors
+    }
+
+    const unlockingToday = items.filter(
+      (item) =>
+        item.constraintType === 'time' &&
+        item.waitUntilDate === today &&
+        !dismissedIds.includes(item.id)
+    );
+
+    if (unlockingToday.length) {
+      setUnlockingTodayItemIds(unlockingToday.map((i) => i.id));
+      setShowUnlockingTodayPopup(true);
+    } else {
+      setUnlockingTodayItemIds([]);
+      setShowUnlockingTodayPopup(false);
+    }
+  }, [items, user]);
+
+  const handleDismissUnlockingTodayPopup = () => {
+    if (!user) {
+      setShowUnlockingTodayPopup(false);
+      return;
+    }
+    const today = new Date().toISOString().split('T')[0];
+    const localKey = `secondThought_user_${user.id}_unlocking_today_${today}`;
+    try {
+      localStorage.setItem(localKey, JSON.stringify(unlockingTodayItemIds));
+    } catch {
+      // ignore storage errors
+    }
+    setShowUnlockingTodayPopup(false);
+  };
 
   // Show loading spinner
   if (loading) {
@@ -296,7 +417,7 @@ function AppContent() {
   };
 
   return (
-    <div className="w-full min-h-screen bg-background overflow-y-auto">
+    <div className="w-full min-h-screen bg-background overflow-y-auto relative">
       {/* Header */}
       <header className="bg-card/80 backdrop-blur-sm border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -378,7 +499,10 @@ function AppContent() {
         {currentView === 'home' && (
           user ? (
             <Home 
-              items={items} 
+              items={items}
+              unlockedItems={unlockedItems}
+              activeSubtab={homeSubtab}
+              onSubtabChange={setHomeSubtab}
               onItemClick={handleItemClick}
               onAddItem={() => setCurrentView('add')}
               onRefresh={handleRefreshItems}
@@ -395,7 +519,7 @@ function AppContent() {
           user && selectedItem ? (
             <ItemDetail
               item={selectedItem}
-              onBack={() => setCurrentView('home')}
+              onBack={handleBackFromItem}
               onDelete={handleDeleteItem}
               onUnlock={handleUnlockItem}
             />
@@ -447,6 +571,40 @@ function AppContent() {
           )
         )}
       </main>
+
+      {showUnlockingTodayPopup && unlockingTodayItemIds.length > 0 && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-card rounded-3xl shadow-xl border border-primary/40 max-w-md w-full mx-4 p-8 relative">
+            <button
+              type="button"
+              onClick={handleDismissUnlockingTodayPopup}
+              className="absolute right-4 top-4 text-muted-foreground hover:text-foreground text-sm"
+            >
+              Dismiss
+            </button>
+            <p className="text-xs uppercase tracking-[0.2em] text-accent mb-2">
+              Exciting News
+            </p>
+            <h2 className="text-2xl font-serif text-foreground mb-3">
+              Your item is unlocking today!
+            </h2>
+            <div className="space-y-1 mb-4">
+              {unlockingTodayItemIds.map((id) => {
+                const item = items.find((i) => i.id === id);
+                if (!item) return null;
+                return (
+                  <p key={id} className="text-sm text-foreground/85">
+                    Exciting news: your <span className="font-semibold text-primary">{item.name}</span> is unlocking today!
+                  </p>
+                );
+              })}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              You can now revisit this item in your timeline and decide how you&apos;d like to move forward.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
