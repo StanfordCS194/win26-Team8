@@ -29,6 +29,15 @@ function AppContent() {
   const [refreshingItems, setRefreshingItems] = useState(false);
   const [itemsLoading, setItemsLoading] = useState(false);
   const [itemsLoadError, setItemsLoadError] = useState<string | null>(null);
+  const isTimeUnlocked = (item: Item): boolean => {
+    if (item.constraintType !== 'time' || !item.waitUntilDate) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const waitDate = new Date(item.waitUntilDate);
+    const waitDayStart = new Date(waitDate.getFullYear(), waitDate.getMonth(), waitDate.getDate());
+    return waitDayStart.getTime() <= today.getTime();
+  };
+
   const [unlockingTodayItemIds, setUnlockingTodayItemIds] = useState<string[]>([]);
   const [showUnlockingTodayPopup, setShowUnlockingTodayPopup] = useState(false);
 
@@ -90,10 +99,14 @@ function AppContent() {
       if (result.items?.length) setItems(result.items);
     }
 
-    // Also load unlocked items archive
+    // Also load unlocked items archive and combine with time-unlocked items
     const unlockedResult = await fetchUnlockedItems(user.id);
     if (!unlockedResult.error && unlockedResult.items) {
-      setUnlockedItems(unlockedResult.items);
+      const archiveItems = unlockedResult.items;
+      const archiveIds = new Set(archiveItems.map((i) => i.id));
+      const timeUnlockedFromItems =
+        result.items?.filter((i) => isTimeUnlocked(i) && !archiveIds.has(i.id)) ?? [];
+      setUnlockedItems([...timeUnlockedFromItems, ...archiveItems]);
     }
   };
 
@@ -115,10 +128,14 @@ function AppContent() {
         setItemsLoadError(message);
       }
 
-      // Refresh unlocked items as well
+      // Refresh unlocked items as well and combine with time-unlocked items
       const unlockedResult = await fetchUnlockedItems(user.id);
       if (!unlockedResult.error && unlockedResult.items) {
-        setUnlockedItems(unlockedResult.items);
+        const archiveItems = unlockedResult.items;
+        const archiveIds = new Set(archiveItems.map((i) => i.id));
+        const timeUnlockedFromItems =
+          result.items?.filter((i) => isTimeUnlocked(i) && !archiveIds.has(i.id)) ?? [];
+        setUnlockedItems([...timeUnlockedFromItems, ...archiveItems]);
       }
     } finally {
       setRefreshingItems(false);

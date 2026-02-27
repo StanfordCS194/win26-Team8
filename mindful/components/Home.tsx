@@ -254,30 +254,36 @@ export function Home({ items, unlockedItems = [], onItemClick, onAddItem, onRefr
         </div>
       </div>
 
-      {/* Locked / Unlocked tabs under title */}
-      <div className="mb-6">
-        <div className="inline-flex items-center rounded-full bg-muted/40 border border-border px-1.5 py-1 gap-1.5">
+      {/* Locked / Unlocked tabs — line style */}
+      <div className="mb-6 border-b border-border">
+        <div className="flex items-center gap-6 sm:gap-8">
           <button
             type="button"
             onClick={() => setActiveTab('locked')}
-            className={`px-4 py-2 text-sm sm:text-base rounded-full font-medium transition-colors ${
+            className={`relative pb-3 pt-0.5 text-sm sm:text-base transition-colors ${
               activeTab === 'locked'
-                ? 'bg-card text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
+                ? 'text-foreground font-semibold'
+                : 'text-muted-foreground font-medium hover:text-foreground'
             }`}
           >
             Locked
+            {activeTab === 'locked' && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-foreground rounded-full" />
+            )}
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('unlocked')}
-            className={`px-4 py-2 text-sm sm:text-base rounded-full font-medium transition-colors ${
+            className={`relative pb-3 pt-0.5 text-sm sm:text-base transition-colors ${
               activeTab === 'unlocked'
-                ? 'bg-card text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
+                ? 'text-foreground font-semibold'
+                : 'text-muted-foreground font-medium hover:text-foreground'
             }`}
           >
-            Unlocked
+            Unlocked 🔓 
+            {activeTab === 'unlocked' && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-foreground rounded-full" />
+            )}
           </button>
         </div>
       </div>
@@ -329,104 +335,22 @@ export function Home({ items, unlockedItems = [], onItemClick, onAddItem, onRefr
         </div>
       ) : (
         <div className="space-y-10">
-          {activeTab === 'unlocked' ? (
-            <>
-              {/* Goals-based unlocked items first */}
-              {(() => {
-                const goalsItems = filteredItems.filter((item) => item.constraintType === 'goals');
-                if (!goalsItems.length) return null;
-                const goalsByCategory = goalsItems.reduce<Record<string, Item[]>>((acc, item) => {
-                  const category = item.category || 'Other';
-                  if (!acc[category]) acc[category] = [];
-                  acc[category].push(item);
-                  return acc;
-                }, {});
-                return (
-                  <section>
-                    <h2 className="text-3xl font-serif text-foreground mb-3">
-                      <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/30 text-black font-semibold text-lg uppercase">
-                        Goals-based items
-                      </span>
-                    </h2>
-                    <div className="space-y-8">
-                      {CATEGORY_ORDER.filter((cat) => (goalsByCategory[cat]?.length ?? 0) > 0).map((category) => (
-                        <div key={category}>
-                          <h3 className="text-lg font-semibold text-foreground font-serif mb-3 flex items-center gap-2">
-                            <span className="text-primary">{category}</span>
-                            <span className="text-sm font-normal text-muted-foreground">
-                              ({goalsByCategory[category].length}{' '}
-                              {goalsByCategory[category].length === 1 ? 'item' : 'items'})
-                            </span>
-                          </h3>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                            {goalsByCategory[category].map((item) => (
-                              <ItemCard key={item.id} item={item} onItemClick={onItemClick} />
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-                );
-              })()}
-
-              {/* Time-based unlocked items second */}
-              {(() => {
-                const timeItems = filteredItems.filter((item) => item.constraintType === 'time');
-                if (!timeItems.length) return null;
-                const timeByCategory = timeItems.reduce<Record<string, Item[]>>((acc, item) => {
-                  const category = item.category || 'Other';
-                  if (!acc[category]) acc[category] = [];
-                  acc[category].push(item);
-                  return acc;
-                }, {});
-                return (
-                  <section>
-                    <h2 className="text-xl font-serif text-foreground mb-2">
-                      <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-muted/60 border border-border text-foreground font-semibold text-sm uppercase tracking-wide">
-                        Time-based items
-                      </span>
-                    </h2>
-                    <div className="space-y-8">
-                      {CATEGORY_ORDER.filter((cat) => (timeByCategory[cat]?.length ?? 0) > 0).map((category) => (
-                        <div key={category}>
-                          <h3 className="text-lg font-semibold text-foreground font-serif mb-3 flex items-center gap-2">
-                            <span className="text-primary">{category}</span>
-                            <span className="text-sm font-normal text-muted-foreground">
-                              ({timeByCategory[category].length}{' '}
-                              {timeByCategory[category].length === 1 ? 'item' : 'items'})
-                            </span>
-                          </h3>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                            {timeByCategory[category].map((item) => (
-                              <ItemCard key={item.id} item={item} onItemClick={onItemClick} />
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-                );
-              })()}
-            </>
-          ) : (
-            CATEGORY_ORDER.filter((cat) => (itemsByCategory[cat]?.length ?? 0) > 0).map((category) => (
-              <section key={category}>
-                <h3 className="text-lg font-semibold text-foreground font-serif mb-4 flex items-center gap-2">
-                  <span className="text-primary">{category}</span>
-                  <span className="text-sm font-normal text-muted-foreground">
-                    ({itemsByCategory[category].length}{' '}
-                    {itemsByCategory[category].length === 1 ? 'item' : 'items'})
-                  </span>
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {itemsByCategory[category].map((item) => (
-                    <ItemCard key={item.id} item={item} onItemClick={onItemClick} />
-                  ))}
-                </div>
-              </section>
-            ))
-          )}
+          {CATEGORY_ORDER.filter((cat) => (itemsByCategory[cat]?.length ?? 0) > 0).map((category) => (
+            <section key={category}>
+              <h3 className="text-lg font-semibold text-foreground font-serif mb-4 flex items-center gap-2">
+                <span className="text-primary">{category}</span>
+                <span className="text-sm font-normal text-muted-foreground">
+                  ({itemsByCategory[category].length}{' '}
+                  {itemsByCategory[category].length === 1 ? 'item' : 'items'})
+                </span>
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {itemsByCategory[category].map((item) => (
+                  <ItemCard key={item.id} item={item} onItemClick={onItemClick} />
+                ))}
+              </div>
+            </section>
+          ))}
         </div>
       )}
     </div>
