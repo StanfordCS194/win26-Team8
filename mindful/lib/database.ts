@@ -465,7 +465,7 @@ export async function saveUnlockedItem(
 
 /**
  * DELETE AN ITEM FROM DATABASE
- * 
+ *
  * @param itemId - Item's UUID
  * @param userId - User's UUID (for security)
  * @returns { success: boolean, error: any }
@@ -473,13 +473,13 @@ export async function saveUnlockedItem(
 export async function deleteItem(itemId: string, userId: string): Promise<{ success: boolean; error: any }> {
   try {
     console.log('🗑️ Deleting item:', itemId);
-    
+
     const { error } = await supabase
       .from('items')
       .delete()
       .eq('id', itemId)
       .eq('user_id', userId);
-    
+
     if (error) {
       console.error('❌ Delete error:', error);
       return { success: false, error };
@@ -489,6 +489,40 @@ export async function deleteItem(itemId: string, userId: string): Promise<{ succ
     return { success: true, error: null };
   } catch (error) {
     console.error('❌ Delete exception:', error);
+    return { success: false, error };
+  }
+}
+
+/**
+ * DELETE AN UNLOCKED ITEM FROM THE UNLOCKED_ITEMS ARCHIVE
+ * Use when the item exists only in unlocked_items (e.g. already archived after constraint completion).
+ *
+ * @param originalItemId - Original item UUID (id used in UI)
+ * @param userId - User's UUID (for security)
+ * @returns { success: boolean, error: any }
+ */
+export async function deleteUnlockedItem(
+  originalItemId: string,
+  userId: string
+): Promise<{ success: boolean; error: any }> {
+  try {
+    console.log('🗑️ Deleting unlocked item from archive:', originalItemId);
+
+    const { error } = await supabase
+      .from('unlocked_items')
+      .delete()
+      .eq('original_item_id', originalItemId)
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('❌ Delete unlocked_items error:', error);
+      return { success: false, error };
+    }
+
+    console.log('✅ Unlocked item deleted from archive');
+    return { success: true, error: null };
+  } catch (error) {
+    console.error('❌ Delete unlocked_items exception:', error);
     return { success: false, error };
   }
 }
