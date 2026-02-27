@@ -15,7 +15,7 @@
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
 }
 
-/* UNLOCKED BANNER STYLE*/
+/* LOCKED BANNER STYLE*/
 .st-url-banner-inner {
   max-width: 960px;
   width: 100%;
@@ -130,8 +130,8 @@
 
 /* Green variant when item is unlocked */
 .st-url-banner--unlocked .st-url-banner-inner {
-  background: #A3B9A4; /* green-100 */
-  border-color: rgba(34, 197, 94, 0.9);
+  background: #d7e4d8; /* green-100 */
+  border-color: #A3B9A4;
   color: #064e3b; /* dark green text */
 }
 
@@ -143,6 +143,16 @@
 
 .st-url-banner--unlocked .st-url-banner-dismiss:hover {
   background: rgba(22, 163, 74, 0.16);
+}
+
+/* Emphasize final line in unlocked banner ("This item is now unlocked…") */
+.st-url-banner--unlocked .st-url-banner-lines .st-url-banner-line:last-child .st-url-banner-line-value {
+  font-weight: 600;
+}
+
+/* Emphasize final line in locked goals-based banner ("To unlock this item…") */
+.st-url-banner--goals .st-url-banner-lines .st-url-banner-line:last-child .st-url-banner-line-value {
+  font-weight: 600;
 }
 
 /* Second Thought content overlay – shown when user clicks add-to-cart on a site */

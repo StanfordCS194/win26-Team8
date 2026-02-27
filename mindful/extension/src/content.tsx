@@ -153,11 +153,13 @@ async function checkUrlAndShowBanner() {
     const { item, error } = await fetchItemByProductUrlWithClient(supabase, session.user.id, url);
     if (error || !item) return;
     if (item.is_unlocked) {
+      const isTimeBased = !!item.wait_until_date;
       showUrlBanner({
         variant: 'unlocked',
-        title: 'Mindfulness goal reached',
-        subtitle: 'Goals-based constraint completed',
+        title: 'Mindfulness constraint reached',
+        // Second line: correct constraint type based on original item
         lines: [
+          { value: isTimeBased ? 'Time-based constraint' : 'Goals-based constraint' },
           { value: 'This item is now unlocked from your mindful cart.' },
         ],
       });
@@ -183,8 +185,9 @@ async function checkUrlAndShowBanner() {
       showUrlBanner({
         variant: 'goals',
         title: 'Mindful constraint active',
-        subtitle: 'Goals-based constraint',
+        // Second line: constraint type on its own line
         lines: [
+          { value: 'Goals-based constraint' },
           {
             value: `To unlock this item, complete your goal and enter the password from ${friendLabel}.`,
           },

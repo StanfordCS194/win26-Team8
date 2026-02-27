@@ -6,6 +6,7 @@ interface ItemDetailProps {
   item: Item;
   onBack: () => void;
   onDelete: (itemId: string) => void;
+  onUnlock?: (itemId: string) => void;
 }
 
 // Generate intuitive explanation of how mindfulness score reflects the user's responses
@@ -93,7 +94,7 @@ function generateMindfulnessExplanation(questionnaire: QuestionAnswer[], finalSc
   return explanation;
 }
 
-export function ItemDetail({ item, onBack, onDelete }: ItemDetailProps) {
+export function ItemDetail({ item, onBack, onDelete, onUnlock }: ItemDetailProps) {
   const [unlockPassword, setUnlockPassword] = useState('');
   const [unlockError, setUnlockError] = useState('');
   const [unlockSuccess, setUnlockSuccess] = useState(false);
@@ -122,7 +123,7 @@ export function ItemDetail({ item, onBack, onDelete }: ItemDetailProps) {
     }
   };
 
-  const handleUnlock = (e: React.FormEvent) => {
+  const handleUnlock = async (e: React.FormEvent) => {
     e.preventDefault();
     setUnlockError('');
     setUnlockSuccess(false);
@@ -138,13 +139,26 @@ export function ItemDetail({ item, onBack, onDelete }: ItemDetailProps) {
     }
 
     if (unlockPassword.trim() === item.unlockPassword) {
-      // Password matches - unlock by deleting the item
-      setUnlockSuccess(true);
+      // Password matches - confirm moving item to unlocked list
+      const confirmMove = window.confirm(
+        'Password correct.\n\nMove this item to your unlocked items list? It will no longer be protected by a friend password.'
+      );
+      if (!confirmMove) {
+        return;
+      }
+
       setIsUnlocking(true);
-      // Small delay for better UX
-      setTimeout(() => {
-        onDelete(item.id);
-      }, 500);
+      setUnlockSuccess(true);
+
+      try {
+        if (onUnlock) {
+          await Promise.resolve(onUnlock(item.id));
+        }
+        // After unlocking, return to the main list
+        onBack();
+      } finally {
+        setIsUnlocking(false);
+      }
     } else {
       setUnlockError('Incorrect password. Please check with your friend.');
       setUnlockSuccess(false);

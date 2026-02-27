@@ -282,6 +282,39 @@ export async function saveItem(item: Item, userId: string): Promise<{ success: b
 }
 
 /**
+ * MARK ITEM AS UNLOCKED (GOALS/TIME CONSTRAINT COMPLETED)
+ *
+ * @param itemId - Item's UUID
+ * @param userId - User's UUID (for security)
+ * @returns { success: boolean, error: any }
+ */
+export async function markItemUnlocked(
+  itemId: string,
+  userId: string
+): Promise<{ success: boolean; error: any }> {
+  try {
+    console.log('🔓 Marking item unlocked:', itemId);
+
+    const { error } = await supabase
+      .from('items')
+      .update({ is_unlocked: true })
+      .eq('id', itemId)
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('❌ Unlock update error:', error);
+      return { success: false, error };
+    }
+
+    console.log('✅ Item marked as unlocked');
+    return { success: true, error: null };
+  } catch (error) {
+    console.error('❌ Unlock update exception:', error);
+    return { success: false, error };
+  }
+}
+
+/**
  * DELETE AN ITEM FROM DATABASE
  * 
  * @param itemId - Item's UUID

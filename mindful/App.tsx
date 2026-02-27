@@ -7,7 +7,7 @@ import { GoalsBasedView } from './components/GoalsBasedView';
 import { OurMission } from './components/OurMission';
 import { Profile } from './components/Profile';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { fetchItems, saveItem, deleteItem as deleteItemDb } from './lib/database';
+import { fetchItems, saveItem, deleteItem as deleteItemDb, markItemUnlocked } from './lib/database';
 import { saveItemDirect } from './lib/database-alt';
 import { normalizeProductUrl } from './lib/urlUtils';
 import { Plus, User } from 'lucide-react';
@@ -227,6 +227,26 @@ function AppContent() {
     }
   };
 
+  const handleUnlockItem = async (itemId: string) => {
+    if (!user) return;
+
+    console.log('Marking item unlocked (password flow):', itemId);
+
+    const { success, error } = await markItemUnlocked(itemId, user.id);
+
+    if (!success) {
+      console.error('Unlock update failed:', error);
+      const errorMsg = error?.message || error?.toString() || 'Unknown error';
+      alert(`Failed to mark item as unlocked\n\nError: ${errorMsg}`);
+      return;
+    }
+
+    // We don't need to change local UI much since unlock status is only used by the extension banner,
+    // but we persist current items back to localStorage so data stays in sync.
+    const localKey = `secondThought_user_${user.id}_items`;
+    localStorage.setItem(localKey, JSON.stringify(items));
+  };
+
   const selectedItem = items.find(item => item.id === selectedItemId);
 
   // Show loading spinner
@@ -377,6 +397,7 @@ function AppContent() {
               item={selectedItem}
               onBack={() => setCurrentView('home')}
               onDelete={handleDeleteItem}
+              onUnlock={handleUnlockItem}
             />
           ) : (
             <SignInRequired />
