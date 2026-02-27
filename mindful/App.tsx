@@ -7,7 +7,7 @@ import { GoalsBasedView } from './components/GoalsBasedView';
 import { OurMission } from './components/OurMission';
 import { Profile } from './components/Profile';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { fetchItems, fetchUnlockedItems, saveItem, deleteItem as deleteItemDb, saveDeletionReason, saveUnlockedItem } from './lib/database';
+import { fetchItems, fetchUnlockedItems, saveItem, deleteItem as deleteItemDb, deleteUnlockedItem, saveDeletionReason, saveUnlockedItem } from './lib/database';
 import { saveItemDirect } from './lib/database-alt';
 import { normalizeProductUrl } from './lib/urlUtils';
 import { Plus, User } from 'lucide-react';
@@ -285,6 +285,21 @@ function AppContent() {
   const selectedItem = items.find(item => item.id === selectedItemId)
     ?? unlockedItems.find(item => item.id === selectedItemId);
 
+  const isSelectedUnlockedItem = selectedItemId != null && unlockedItems.some(u => u.id === selectedItemId);
+
+  const handleRemoveUnlockedItem = async (itemId: string, _subReason?: string) => {
+    if (!user) return;
+    const { success, error } = await deleteUnlockedItem(itemId, user.id);
+    if (success) {
+      setUnlockedItems((prev) => prev.filter((i) => i.id !== itemId));
+      setCurrentView('home');
+      setSelectedItemId(null);
+    } else {
+      const errorMsg = error?.message || error?.toString() || 'Unknown error';
+      alert(`Failed to remove item.\n\nError: ${errorMsg}`);
+    }
+  };
+
   const handleBackFromItem = () => {
     if (selectedItem && (unlockedItems.some(u => u.id === selectedItem.id) || isTimeUnlocked(selectedItem))) {
       setHomeSubtab('unlocked');
@@ -498,6 +513,8 @@ function AppContent() {
               item={selectedItem}
               onBack={handleBackFromItem}
               onDelete={handleDeleteItem}
+              isUnlockedItem={isSelectedUnlockedItem}
+              onRemoveUnlocked={handleRemoveUnlockedItem}
             />
           ) : (
             <SignInRequired />

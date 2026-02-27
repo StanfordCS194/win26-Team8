@@ -2,6 +2,8 @@ import type { Item, QuestionAnswer } from '../types/item';
 import { ArrowLeft, Calendar, Target, Trash2, ShoppingBag, Lock } from 'lucide-react';
 import { useState } from 'react';
 import { DeleteReasonDialog } from './DeleteReasonDialog';
+import { UnlockedItemRemoveDialog } from './UnlockedItemRemoveDialog';
+import type { DidntBuySubReason } from './UnlockedItemRemoveDialog';
 
 export interface DeletionReasonData {
   reason: 'dont_want' | 'purchased_early';
@@ -12,6 +14,9 @@ interface ItemDetailProps {
   item: Item;
   onBack: () => void;
   onDelete: (itemId: string, deletionReason?: DeletionReasonData) => void;
+  /** When true, this item is from the Unlocked tab; Delete shows reconsideration dialog and calls onRemoveUnlocked instead of onDelete. */
+  isUnlockedItem?: boolean;
+  onRemoveUnlocked?: (itemId: string, subReason: DidntBuySubReason | string) => void;
 }
 
 // Check if the item's constraint (time or goal) has been completed
@@ -110,15 +115,20 @@ function generateMindfulnessExplanation(questionnaire: QuestionAnswer[], finalSc
   return explanation;
 }
 
-export function ItemDetail({ item, onBack, onDelete }: ItemDetailProps) {
+export function ItemDetail({ item, onBack, onDelete, isUnlockedItem, onRemoveUnlocked }: ItemDetailProps) {
   const [unlockPassword, setUnlockPassword] = useState('');
   const [unlockError, setUnlockError] = useState('');
   const [unlockSuccess, setUnlockSuccess] = useState(false);
   const [isUnlocking, setIsUnlocking] = useState(false);
   const [showDeleteReasonDialog, setShowDeleteReasonDialog] = useState(false);
+  const [showUnlockedRemoveDialog, setShowUnlockedRemoveDialog] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
 
   const handleDelete = () => {
+    if (isUnlockedItem && onRemoveUnlocked) {
+      setShowUnlockedRemoveDialog(true);
+      return;
+    }
     if (!window.confirm('Are you sure you want to delete this item?')) {
       return;
     }
@@ -127,6 +137,10 @@ export function ItemDetail({ item, onBack, onDelete }: ItemDetailProps) {
     } else {
       setShowDeleteReasonDialog(true);
     }
+  };
+
+  const handleUnlockedRemoveConfirm = (subReason: DidntBuySubReason | string) => {
+    onRemoveUnlocked?.(item.id, subReason);
   };
 
   const handleDeleteReasonSelected = (
@@ -192,6 +206,11 @@ export function ItemDetail({ item, onBack, onDelete }: ItemDetailProps) {
         onOpenChange={setShowDeleteReasonDialog}
         onSelect={handleDeleteReasonSelected}
         constraintType={item.constraintType}
+      />
+      <UnlockedItemRemoveDialog
+        open={showUnlockedRemoveDialog}
+        onOpenChange={setShowUnlockedRemoveDialog}
+        onConfirm={handleUnlockedRemoveConfirm}
       />
       <button
         onClick={onBack}
@@ -272,7 +291,8 @@ export function ItemDetail({ item, onBack, onDelete }: ItemDetailProps) {
                         </div>
                       )}
 
-                      {/* Unlock Password Input - Show for all goal-based items */}
+                      {/* Unlock Password Input - hide when viewing from Unlocked tab (already unlocked) */}
+                      {!isUnlockedItem && (
                       <form onSubmit={handleUnlock} className="p-5 bg-primary/10 rounded-xl border border-primary/20">
                         <div className="flex items-start gap-3">
                           <Lock className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
@@ -335,6 +355,7 @@ export function ItemDetail({ item, onBack, onDelete }: ItemDetailProps) {
                           </div>
                         </div>
                       </form>
+                      )}
                     </div>
                   );
                 })()}
@@ -382,7 +403,7 @@ export function ItemDetail({ item, onBack, onDelete }: ItemDetailProps) {
               className="flex items-center justify-center gap-2 w-full px-4 py-3 border border-destructive/30 text-destructive rounded-xl hover:bg-destructive/10 transition-colors"
             >
               <Trash2 className="w-4 h-4" />
-              Delete Item
+              {isUnlockedItem ? 'Remove from list' : 'Delete Item'}
             </button>
           </div>
         </div>

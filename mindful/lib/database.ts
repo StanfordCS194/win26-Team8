@@ -453,6 +453,32 @@ export async function deleteItem(itemId: string, userId: string): Promise<{ succ
 }
 
 /**
+ * DELETE AN UNLOCKED ITEM FROM THE ARCHIVE (unlocked_items table)
+ * Uses original_item_id to identify the row.
+ */
+export async function deleteUnlockedItem(
+  originalItemId: string,
+  userId: string
+): Promise<{ success: boolean; error: any }> {
+  try {
+    const { error } = await supabase
+      .from('unlocked_items')
+      .delete()
+      .eq('original_item_id', originalItemId)
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('❌ Delete unlocked item error:', error);
+      return { success: false, error };
+    }
+    return { success: true, error: null };
+  } catch (error) {
+    console.error('❌ Delete unlocked item exception:', error);
+    return { success: false, error };
+  }
+}
+
+/**
  * TEST CONNECTION TO SUPABASE
  * Useful for debugging connection issues
  */
