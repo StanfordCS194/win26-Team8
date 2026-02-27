@@ -73,6 +73,7 @@ function ItemCard({
 
 interface HomeProps {
   items: Item[];
+  unlockedItems?: Item[];
   onItemClick: (itemId: string) => void;
   onAddItem: () => void;
   onRefresh?: () => void;
@@ -82,7 +83,7 @@ interface HomeProps {
   loadError?: string | null;
 }
 
-export function Home({ items, onItemClick, onAddItem, onRefresh, onRetry, isRefreshing, isLoading, loadError }: HomeProps) {
+export function Home({ items, unlockedItems = [], onItemClick, onAddItem, onRefresh, onRetry, isRefreshing, isLoading, loadError }: HomeProps) {
   const [selectedCategories, setSelectedCategories] = useState<ItemCategory[] | null>(null); // null = All Categories
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -119,8 +120,7 @@ export function Home({ items, onItemClick, onAddItem, onRefresh, onRetry, isRefr
     return true;
   });
 
-  const unlockedItems = items.filter(isTimeUnlocked);
-
+  // For the Unlocked tab, rely primarily on archived unlocked items from Supabase
   const baseItems = activeTab === 'locked' ? lockedItems : unlockedItems;
 
   const filteredItems =
