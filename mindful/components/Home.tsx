@@ -86,6 +86,7 @@ export function Home({ items, onItemClick, onAddItem, onRefresh, onRetry, isRefr
   const [selectedCategories, setSelectedCategories] = useState<ItemCategory[] | null>(null); // null = All Categories
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [activeTab, setActiveTab] = useState<'locked' | 'unlocked'>('locked');
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -100,10 +101,32 @@ export function Home({ items, onItemClick, onAddItem, onRefresh, onRetry, isRefr
     }
   }, [dropdownOpen]);
 
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const isTimeUnlocked = (item: Item): boolean => {
+    if (item.constraintType !== 'time' || !item.waitUntilDate) return false;
+    const waitDate = new Date(item.waitUntilDate);
+    const waitDayStart = new Date(waitDate.getFullYear(), waitDate.getMonth(), waitDate.getDate());
+    return waitDayStart.getTime() <= today.getTime();
+  };
+
+  const lockedItems = items.filter((item) => {
+    if (item.constraintType === 'time' && item.waitUntilDate) {
+      return !isTimeUnlocked(item);
+    }
+    // Goals-based items remain locked until explicitly unlocked and removed
+    return true;
+  });
+
+  const unlockedItems = items.filter(isTimeUnlocked);
+
+  const baseItems = activeTab === 'locked' ? lockedItems : unlockedItems;
+
   const filteredItems =
     selectedCategories === null || selectedCategories.length === 0
-      ? items
-      : items.filter((item) => {
+      ? baseItems
+      : baseItems.filter((item) => {
           const cat = item.category || 'Other';
           return selectedCategories.includes(cat);
         });
@@ -231,7 +254,35 @@ export function Home({ items, onItemClick, onAddItem, onRefresh, onRetry, isRefr
         </div>
       </div>
 
-      {items.length === 0 && isLoading ? (
+      {/* Locked / Unlocked tabs under title */}
+      <div className="mb-6">
+        <div className="inline-flex items-center rounded-full bg-muted/40 border border-border px-1.5 py-1 gap-1.5">
+          <button
+            type="button"
+            onClick={() => setActiveTab('locked')}
+            className={`px-4 py-2 text-sm sm:text-base rounded-full font-medium transition-colors ${
+              activeTab === 'locked'
+                ? 'bg-card text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Locked
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('unlocked')}
+            className={`px-4 py-2 text-sm sm:text-base rounded-full font-medium transition-colors ${
+              activeTab === 'unlocked'
+                ? 'bg-card text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Unlocked
+          </button>
+        </div>
+      </div>
+
+      {baseItems.length === 0 && isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <div key={i} className="rounded-2xl border border-border/50 overflow-hidden bg-card animate-pulse">
@@ -244,16 +295,28 @@ export function Home({ items, onItemClick, onAddItem, onRefresh, onRetry, isRefr
             </div>
           ))}
         </div>
-      ) : items.length === 0 ? (
-        <div className="text-center py-16">
-          <div className="text-muted-foreground/40 mb-4">
-            <ShoppingBag className="w-16 h-16 mx-auto" />
+      ) : baseItems.length === 0 ? (
+        activeTab === 'locked' ? (
+          <div className="text-center py-16">
+            <div className="text-muted-foreground/40 mb-4">
+              <ShoppingBag className="w-16 h-16 mx-auto" />
+            </div>
+            <h3 className="text-xl text-foreground/80 mb-2">No items yet</h3>
+            <p className="text-muted-foreground">
+              Start adding items you're considering purchasing to reflect on your decisions.
+            </p>
           </div>
-          <h3 className="text-xl text-foreground/80 mb-2">No items yet</h3>
-          <p className="text-muted-foreground">
-            Start adding items you're considering purchasing to reflect on your decisions.
-          </p>
-        </div>
+        ) : (
+          <div className="text-center py-16">
+            <div className="text-muted-foreground/40 mb-4">
+              <ShoppingBag className="w-16 h-16 mx-auto" />
+            </div>
+            <h3 className="text-xl text-foreground/80 mb-2">No unlocked items yet</h3>
+            <p className="text-muted-foreground">
+              Once your time-based items reach their wait date, they&apos;ll appear here as unlocked.
+            </p>
+          </div>
+        )
       ) : filteredItems.length === 0 ? (
         <div className="text-center py-16">
           <div className="text-muted-foreground/40 mb-4">
