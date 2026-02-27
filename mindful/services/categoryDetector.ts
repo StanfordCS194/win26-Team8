@@ -1,6 +1,7 @@
 // Category Detection Service using Claude API (Anthropic)
 // Intelligently detects item category from product name
 
+import { getExpoPublic } from './env';
 import type { ItemCategory } from '../types/item';
 
 const CATEGORIES: ItemCategory[] = ['Beauty', 'Clothes', 'Accessories', 'Sports', 'Electronics', 'Home', 'Other'];
@@ -18,13 +19,8 @@ Categories:
 
 Return ONLY the category name (one word: Beauty, Clothes, Accessories, Sports, Electronics, Home, or Other). Do not include any explanation or additional text.`;
 
-// Safe env access for both Expo and browser/extension
 function getApiKey(): string {
-  try {
-    return process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY || '';
-  } catch {
-    return '';
-  }
+  return getExpoPublic('EXPO_PUBLIC_ANTHROPIC_API_KEY');
 }
 
 // Fallback keyword-based detection (used when API is unavailable)

@@ -4,6 +4,7 @@
 
 export const ADD_TO_CART_PATTERNS = [
   /\badd\s+to\s+(cart|bag|basket)\b/i,
+  /\badd\s+to\s+(my|your)\s+bag\b/i,
   /\badd\s+to\s+shopping\s+cart\b/i,
   /\bbuy\s+now\b/i,
   /\badd\s+to\s+bag\b/i,
@@ -18,31 +19,60 @@ export const ADD_TO_CART_PATTERNS = [
   /^add\s+to\s+cart\s*$/i,
 ];
 
+// Text/context that means this is NOT an add-to-cart button (don't trigger overlay)
+const NOT_ADD_TO_CART_PATTERNS = [
+  /\badd\s+to\s+wishlist\b/i,
+  /\badd\s+to\s+list\b/i,
+  /\badd\s+to\s+registry\b/i,
+  /\badd\s+to\s+saved\b/i,
+  /\badd\s+address\b/i,
+  /\badd\s+payment\b/i,
+  /\badd\s+card\b/i,
+  /\bview\s+(cart|bag|basket)\b/i,
+  /\bsee\s+(cart|bag)\b/i,
+  /\bshop\s+now\b/i,
+  /\bsee\s+more\b/i,
+  /\bview\s+product\b/i,
+  /\bview\s+item\b/i,
+  /\bproduct\s+details?\b/i,
+];
+
 export const ADD_TO_CART_SELECTORS = [
   '[id*="add-to-cart"]',
   '[id*="addToCart"]',
   '[id*="add-to-bag"]',
+  '[id*="addToBag"]',
   '[id*="add_to_cart"]',
   '[id*="add_to_bag"]',
   '[id="add-to-cart-button"]',
   '[id="addToCart"]',
+  '[id="add-to-bag"]',
   '[data-action*="add-to-cart"]',
   '[data-action*="add-to-bag"]',
+  '[data-action*="addToCart"]',
+  '[data-action*="addToBag"]',
   '[data-testid*="add-to-cart"]',
   '[data-testid*="addToCart"]',
+  '[data-testid*="add-to-bag"]',
+  '[data-testid*="addToBag"]',
   '[data-name*="add-to-cart" i]',
   '[data-add-to-cart]',
   '[data-add-to-cart-trigger]',
+  '[data-automation*="add-to-bag" i]',
+  '[data-automation*="add-to-cart" i]',
   '[class*="add-to-cart"]',
   '[class*="add_to_cart"]',
   '[class*="addToCart"]',
   '[class*="add-to-bag"]',
+  '[class*="addToBag"]',
   '[class*="add_to_bag"]',
   '[class*="product-form__submit"]',
   '[class*="btn--add-to-cart"]',
+  '[class*="add-to-bag"]',
   '[name="add"]',
   '[name*="add-to-cart"]',
   '[name*="addToCart"]',
+  '[name*="add-to-bag"]',
   '[value*="add to cart" i]',
   '[value*="add to bag" i]',
   '[value*="add to basket" i]',
@@ -108,6 +138,31 @@ export function isRemoveOrDecreaseControl(element: Element): boolean {
   return false;
 }
 
+/** True if element has id/data/aria that explicitly marks it as add-to-cart/bag (e.g. Nordstrom, retail sites). */
+function hasExplicitAddToCartSemantics(element: Element): boolean {
+  const id = (element.getAttribute('id') || '').toLowerCase();
+  const dataAction = (element.getAttribute('data-action') || '').toLowerCase();
+  const dataTestId = (element.getAttribute('data-testid') || '').toLowerCase();
+  const ariaLabel = (element.getAttribute('aria-label') || '').toLowerCase();
+  const combined = [id, dataAction, dataTestId, ariaLabel].join(' ');
+  return (
+    /add[-_]?to[-_]?(cart|bag|basket)/.test(combined) ||
+    /addtocart|addtobag/.test(combined)
+  );
+}
+
+/** True if element is a button, submit input, role=button, or has explicit add-to-cart semantics (so Nordstrom-style controls work). */
+function isButtonLike(element: Element): boolean {
+  const tag = (element.tagName || '').toLowerCase();
+  const role = (element.getAttribute('role') || '').toLowerCase();
+  const type = (element.getAttribute('type') || (element as HTMLInputElement).type || '').toLowerCase();
+  if (tag === 'button') return true;
+  if (tag === 'input' && (type === 'submit' || type === 'button')) return true;
+  if (role === 'button') return true;
+  if (hasExplicitAddToCartSemantics(element)) return true;
+  return false;
+}
+
 /** True if element is a submit button for a Shopify-style cart add form */
 function isCartAddSubmitButton(element: Element): boolean {
   const tag = (element.tagName || '').toLowerCase();
@@ -129,10 +184,21 @@ function isCartAddSubmitButton(element: Element): boolean {
   return false;
 }
 
+// Selectors that are on the actual CTA (not on a card wrapper). Nordstrom and similar may use these on div/span.
+const EXPLICIT_ADD_TO_CART_SELECTORS = [
+  '[id*="add-to-cart"]', '[id*="addToCart"]', '[id*="add-to-bag"]', '[id*="addToBag"]',
+  '[data-action*="add-to-cart"]', '[data-action*="add-to-bag"]', '[data-action*="addToCart"]', '[data-action*="addToBag"]',
+  '[data-testid*="add-to-cart"]', '[data-testid*="addToCart"]', '[data-testid*="add-to-bag"]', '[data-testid*="addToBag"]',
+  '[aria-label*="add to cart" i]', '[aria-label*="add to bag" i]', '[aria-label*="add to basket" i]',
+  '[class*="add-to-bag"]', '[class*="addToBag"]', '[class*="add_to_bag"]',
+  '[class*="add-to-cart"]', '[class*="addToCart"]', '[class*="add_to_cart"]',
+];
+
 export function matchesAddToCart(element: Element): boolean {
   if (isCartAddSubmitButton(element)) return true;
 
   const text = (element.textContent || '').trim();
+  const innerText = typeof (element as HTMLElement).innerText === 'string' ? (element as HTMLElement).innerText.trim() : '';
   const value = element.getAttribute('value') || (element as HTMLInputElement).value || '';
   const ariaLabel = element.getAttribute('aria-label') || '';
   const title = element.getAttribute('title') || '';
@@ -142,17 +208,46 @@ export function matchesAddToCart(element: Element): boolean {
   const dataAction = element.getAttribute('data-action') || '';
   const dataTestId = element.getAttribute('data-testid') || '';
   const dataName = element.getAttribute('data-name') || '';
+  const dataAutomation = element.getAttribute('data-automation') || element.getAttribute('data-automation-id') || '';
 
-  const combined = [text, value, ariaLabel, title, id, className, name, dataAction, dataTestId, dataName].join(' ');
+  const combined = [text, innerText, value, ariaLabel, title, id, className, name, dataAction, dataTestId, dataName, dataAutomation].join(' ');
 
-  if (ADD_TO_CART_PATTERNS.some((re) => re.test(combined))) return true;
+  // Exclude "add to wishlist", "view cart", "see more", etc.
+  if (NOT_ADD_TO_CART_PATTERNS.some((re) => re.test(combined))) return false;
+
+  const matchesPattern = ADD_TO_CART_PATTERNS.some((re) => re.test(combined));
+  const matchesExplicitSelector = EXPLICIT_ADD_TO_CART_SELECTORS.some((sel) => {
+    try {
+      return element.matches?.(sel) ?? false;
+    } catch {
+      return false;
+    }
+  });
+
+  // Button-like (button, input, role=button, or has id/data/aria add-to-cart): require pattern or any selector
+  if (isButtonLike(element)) {
+    if (matchesPattern) return true;
+    try {
+      if (ADD_TO_CART_SELECTORS.some((sel) => element.matches?.(sel))) return true;
+      for (const sel of ADD_TO_CART_SELECTORS) {
+        const closestEl = element.closest?.(sel);
+        if (closestEl && isButtonLike(closestEl)) return true;
+      }
+    } catch {
+      // ignore
+    }
+    return false;
+  }
+
+  // Not button-like (e.g. Nordstrom div/link): only accept if it matches an explicit add-to-cart selector AND has the text pattern
+  if (matchesExplicitSelector && matchesPattern) return true;
   try {
-    if (ADD_TO_CART_SELECTORS.some((sel) => element.matches?.(sel))) return true;
-    for (const sel of ADD_TO_CART_SELECTORS) {
-      if (element.closest?.(sel)) return true;
+    for (const sel of EXPLICIT_ADD_TO_CART_SELECTORS) {
+      const closestEl = element.closest?.(sel);
+      if (closestEl && matchesPattern && ADD_TO_CART_PATTERNS.some((re) => re.test((closestEl.textContent || ''))) ) return true;
     }
   } catch {
-    // ignore selector errors
+    // ignore
   }
 
   return false;
@@ -186,12 +281,27 @@ export function findAddToCartTarget(clickEvent: MouseEvent, overlayRootId?: stri
       if (matchesAddToCart(el)) return el;
     }
   }
+  // Fallback: walk up the tree (including through shadow DOM) to find a matching add-to-cart element
   let current: Element | null = (clickEvent.target as Element) || null;
   while (current && current !== document.body) {
     if (overlayRoot && (current === overlayRoot || overlayRoot.contains(current))) return null;
     if (isRemoveOrDecreaseControl(current)) return null;
     if (matchesAddToCart(current)) return current;
-    current = current.parentElement;
+    // Cross shadow DOM: if parent is a shadow root, go to its host
+    const nextParent: Element | null = current.parentElement
+      ? current.parentElement
+      : current.parentNode && (current.parentNode as ShadowRoot).host !== undefined
+        ? ((current.parentNode as ShadowRoot).host as Element)
+        : null;
+    current = nextParent;
+  }
+  // Last resort: if click was on a child of a button, check closest button ancestor (no links – avoids product links)
+  const target = clickEvent.target as Element;
+  if (target) {
+    const interactive = target.closest?.('button, [role="button"], input[type="submit"]');
+    if (interactive && interactive !== overlayRoot && !(overlayRoot && overlayRoot.contains(interactive)) && !isRemoveOrDecreaseControl(interactive) && matchesAddToCart(interactive)) {
+      return interactive;
+    }
   }
   return null;
 }

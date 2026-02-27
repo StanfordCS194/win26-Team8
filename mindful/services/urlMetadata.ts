@@ -2,6 +2,8 @@
 // Tries Microlink scraping and AI inference in parallel.
 // Uses scrape result if good, otherwise falls back to AI inference from URL.
 
+import { getExpoPublic } from './env';
+
 export interface UrlMetadata {
   title: string | null;
   image: string | null;
@@ -74,7 +76,7 @@ async function scrapeMetadata(url: string): Promise<{ title: string | null; imag
  * URLs often contain product names in their path segments, query params, etc.
  */
 async function inferProductNameFromUrl(url: string): Promise<string | null> {
-  const apiKey = process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY || '';
+  const apiKey = getExpoPublic('EXPO_PUBLIC_ANTHROPIC_API_KEY');
   if (!apiKey || apiKey === 'your_api_key_here') {
     console.warn('No API key available for AI URL inference');
     return null;
