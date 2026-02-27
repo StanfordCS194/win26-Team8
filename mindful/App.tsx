@@ -7,7 +7,7 @@ import { GoalsBasedView } from './components/GoalsBasedView';
 import { OurMission } from './components/OurMission';
 import { Profile } from './components/Profile';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { fetchItems, saveItem, deleteItem as deleteItemDb, saveDeletionReason } from './lib/database';
+import { fetchItems, fetchUnlockedItems, saveItem, deleteItem as deleteItemDb, saveDeletionReason, saveUnlockedItem } from './lib/database';
 import { saveItemDirect } from './lib/database-alt';
 import { normalizeProductUrl } from './lib/urlUtils';
 import { Plus, User } from 'lucide-react';
@@ -23,11 +23,21 @@ type View = 'home' | 'item' | 'add' | 'time' | 'goals' | 'mission' | 'profile';
 function AppContent() {
   const { user, session, loading } = useAuth();
   const [items, setItems] = useState<Item[]>([]);
+  const [unlockedItems, setUnlockedItems] = useState<Item[]>([]);
   const [currentView, setCurrentView] = useState<View>('mission');
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [refreshingItems, setRefreshingItems] = useState(false);
   const [itemsLoading, setItemsLoading] = useState(false);
   const [itemsLoadError, setItemsLoadError] = useState<string | null>(null);
+  const isTimeUnlocked = (item: Item): boolean => {
+    if (item.constraintType !== 'time' || !item.waitUntilDate) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const waitDate = new Date(item.waitUntilDate);
+    const waitDayStart = new Date(waitDate.getFullYear(), waitDate.getMonth(), waitDate.getDate());
+    return waitDayStart.getTime() <= today.getTime();
+  };
+
   const [unlockingTodayItemIds, setUnlockingTodayItemIds] = useState<string[]>([]);
   const [showUnlockingTodayPopup, setShowUnlockingTodayPopup] = useState(false);
 
@@ -88,6 +98,16 @@ function AppContent() {
       setItemsLoadError(message);
       if (result.items?.length) setItems(result.items);
     }
+
+    // Also load unlocked items archive and combine with time-unlocked items
+    const unlockedResult = await fetchUnlockedItems(user.id);
+    if (!unlockedResult.error && unlockedResult.items) {
+      const archiveItems = unlockedResult.items;
+      const archiveIds = new Set(archiveItems.map((i) => i.id));
+      const timeUnlockedFromItems =
+        result.items?.filter((i) => isTimeUnlocked(i) && !archiveIds.has(i.id)) ?? [];
+      setUnlockedItems([...timeUnlockedFromItems, ...archiveItems]);
+    }
   };
 
   const handleRefreshItems = async () => {
@@ -106,6 +126,16 @@ function AppContent() {
       } else if (result.error) {
         const message = result.error instanceof Error ? result.error.message : 'Could not refresh. Try again.';
         setItemsLoadError(message);
+      }
+
+      // Refresh unlocked items as well and combine with time-unlocked items
+      const unlockedResult = await fetchUnlockedItems(user.id);
+      if (!unlockedResult.error && unlockedResult.items) {
+        const archiveItems = unlockedResult.items;
+        const archiveIds = new Set(archiveItems.map((i) => i.id));
+        const timeUnlockedFromItems =
+          result.items?.filter((i) => isTimeUnlocked(i) && !archiveIds.has(i.id)) ?? [];
+        setUnlockedItems([...timeUnlockedFromItems, ...archiveItems]);
       }
     } finally {
       setRefreshingItems(false);
@@ -203,15 +233,23 @@ function AppContent() {
 
     const item = items.find((i) => i.id === itemId);
 
-    if (deletionReason && item) {
-      await saveDeletionReason({
-        itemId,
-        itemName: item.name,
-        userId: user.id,
-        reason: deletionReason.reason,
-        subReason: deletionReason.subReason ?? '',
-        constraintType: item.constraintType,
-      });
+    if (item) {
+      if (deletionReason) {
+        // Deleting before constraint completion – log reason only
+        await saveDeletionReason({
+          itemId,
+          itemName: item.name,
+          userId: user.id,
+          reason: deletionReason.reason,
+          subReason: deletionReason.subReason ?? '',
+          constraintType: item.constraintType,
+        });
+      } else {
+        // Constraint completed (time reached or goals password correct) – archive in unlocked_items
+        await saveUnlockedItem(item, user.id);
+        // Optimistically add to local unlocked archive so it appears immediately in the Unlocked tab
+        setUnlockedItems((prev) => [item, ...prev.filter((i) => i.id !== item.id)]);
+      }
     }
 
     console.log('Deleting item:', itemId);
@@ -426,7 +464,8 @@ function AppContent() {
         {currentView === 'home' && (
           user ? (
             <Home 
-              items={items} 
+              items={items}
+              unlockedItems={unlockedItems}
               onItemClick={handleItemClick}
               onAddItem={() => setCurrentView('add')}
               onRefresh={handleRefreshItems}
