@@ -23,4 +23,6 @@ export interface Item {
   unlockPassword?: string;
   /** True when a goals-based item was unlocked via password (item still in items table). */
   isUnlocked?: boolean;
+  /** Goals-based: the goal the user wants to complete before purchasing. */
+  goal?: string;
 }

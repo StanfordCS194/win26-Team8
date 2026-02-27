@@ -27,6 +27,7 @@ export interface DbItem {
   friend_email: string | null;
   unlock_password: string | null;
   is_unlocked: boolean | null;
+  goal: string | null;
 }
 
 // Unlocked items table row
@@ -48,6 +49,7 @@ export interface DbUnlockedItem {
   friend_name: string | null;
   friend_email: string | null;
   unlock_password: string | null;
+  goal: string | null;
 }
 
 /**
@@ -55,6 +57,7 @@ export interface DbUnlockedItem {
  * Simple conversion: camelCase → snake_case
  */
 function itemToDb(item: Item, userId: string): Omit<DbItem, 'created_at' | 'updated_at'> {
+  const goalFromQuestionnaire = item.questionnaire?.find((q) => q.id === 'goal')?.answer?.trim();
   return {
     id: item.id,
     user_id: userId,
@@ -68,11 +71,11 @@ function itemToDb(item: Item, userId: string): Omit<DbItem, 'created_at' | 'upda
     wait_until_date: item.waitUntilDate || null,
     difficulty: item.difficulty || null,
     questionnaire: item.questionnaire,
-    // Friend unlock fields
     friend_name: item.friendName || null,
     friend_email: item.friendEmail || null,
     unlock_password: item.unlockPassword || null,
     is_unlocked: false,
+    goal: item.goal?.trim() || goalFromQuestionnaire || null,
   };
 }
 
@@ -98,6 +101,7 @@ function dbToItem(dbItem: DbItem): Item {
     friendEmail: dbItem.friend_email || undefined,
     unlockPassword: dbItem.unlock_password || undefined,
     isUnlocked: dbItem.is_unlocked === true,
+    goal: dbItem.goal || undefined,
   };
 }
 
@@ -118,14 +122,15 @@ function dbUnlockedToItem(row: DbUnlockedItem): Item {
     friendName: row.friend_name || undefined,
     friendEmail: row.friend_email || undefined,
     unlockPassword: row.unlock_password || undefined,
+    goal: row.goal || undefined,
   };
 }
 
 // Columns needed for list/detail – include friend/unlock fields so guard info is preserved
 const ITEMS_SELECT =
-  'id, user_id, name, image_url, product_url, category, constraint_type, consumption_score, wait_until_date, difficulty, questionnaire, added_date, created_at, updated_at, friend_name, friend_email, unlock_password, is_unlocked';
+  'id, user_id, name, image_url, product_url, category, constraint_type, consumption_score, wait_until_date, difficulty, questionnaire, added_date, created_at, updated_at, friend_name, friend_email, unlock_password, is_unlocked, goal';
 const UNLOCKED_ITEMS_SELECT =
-  'id, user_id, original_item_id, name, image_url, product_url, category, constraint_type, consumption_score, wait_until_date, difficulty, questionnaire, added_date, unlocked_at, friend_name, friend_email, unlock_password';
+  'id, user_id, original_item_id, name, image_url, product_url, category, constraint_type, consumption_score, wait_until_date, difficulty, questionnaire, added_date, unlocked_at, friend_name, friend_email, unlock_password, goal';
 
 /**
  * FETCH ALL ITEMS FOR A USER
@@ -448,6 +453,7 @@ export async function saveUnlockedItem(
       friend_name: item.friendName || null,
       friend_email: item.friendEmail || null,
       unlock_password: item.unlockPassword || null,
+      goal: item.goal || null,
     };
 
     const { error } = await supabase.from('unlocked_items').insert([payload]);

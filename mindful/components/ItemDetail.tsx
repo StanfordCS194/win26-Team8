@@ -260,17 +260,17 @@ export function ItemDetail({ item, onBack, onDelete, onUnlock }: ItemDetailProps
 
                 {/* Goal description for goals-based items */}
                 {item.constraintType === 'goals' && (() => {
-                  const goalQuestion = item.questionnaire?.find(qa => qa.id === 'goal');
+                  const goalText = item.goal || item.questionnaire?.find(qa => qa.id === 'goal')?.answer;
                   return (
                     <div className="space-y-4">
-                      {goalQuestion && goalQuestion.answer && (
+                      {goalText && (
                         <div className="p-5 bg-secondary/20 rounded-xl border border-secondary/30">
                           <div className="flex items-start gap-3">
                             <Target className="w-5 h-5 text-accent mt-0.5 flex-shrink-0" />
                             <div className="flex-1">
                               <div className="text-sm text-foreground/80 font-medium mb-2">Your Goal</div>
                               <p className="text-foreground/90 leading-relaxed mb-3">
-                                {goalQuestion.answer}
+                                {goalText}
                               </p>
                               {item.friendName && (
                                 <div className="pt-3 border-t border-secondary/30">

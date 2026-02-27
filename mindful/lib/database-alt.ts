@@ -45,11 +45,11 @@ export async function saveItemDirect(
       wait_until_date: item.waitUntilDate || null,
       difficulty: item.difficulty || null,
       questionnaire: item.questionnaire,
-      // Friend unlock fields
       friend_name: item.friendName || null,
       friend_email: item.friendEmail || null,
       unlock_password: item.unlockPassword || null,
       is_unlocked: false,
+      goal: item.goal || item.questionnaire?.find((q) => q.id === 'goal')?.answer?.trim() || null,
     };
     
     console.log('📝 [DIRECT] Item to insert:', JSON.stringify(dbItem, null, 2));

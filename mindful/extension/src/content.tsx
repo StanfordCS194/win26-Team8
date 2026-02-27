@@ -157,9 +157,11 @@ async function checkUrlAndShowBanner() {
       showUrlBanner({
         variant: 'unlocked',
         title: 'Mindfulness constraint reached',
-        // Second line: correct constraint type based on original item
         lines: [
           { value: isTimeBased ? 'Time-based constraint' : 'Goals-based constraint' },
+          ...(item.goal?.trim() && !isTimeBased
+            ? [{ label: 'Your goal:', value: item.goal.trim() }]
+            : []),
           { value: 'This item is now unlocked from your mindful cart.' },
         ],
       });
@@ -182,12 +184,13 @@ async function checkUrlAndShowBanner() {
       });
     } else {
       const friendLabel = item.friend_name?.trim() || 'your friend';
+      const goalText = item.goal?.trim();
       showUrlBanner({
         variant: 'goals',
         title: 'Mindful constraint active',
-        // Second line: constraint type on its own line
         lines: [
           { value: 'Goals-based constraint' },
+          ...(goalText ? [{ label: 'Your goal:', value: goalText }] : []),
           {
             value: `To unlock this item, complete your goal and enter the password from ${friendLabel}.`,
           },

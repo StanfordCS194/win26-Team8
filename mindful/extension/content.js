@@ -17769,7 +17769,8 @@ URL: ${url}`
           friendName: friendName.trim(),
           friendEmail: friendEmail.trim() || void 0,
           unlockPassword: generateUnlockPassword()
-        } : {}
+        } : {},
+        ...constraintType === "goals" && goalDescription.trim() ? { goal: goalDescription.trim() } : {}
       });
       resetForm();
     };
@@ -29816,7 +29817,8 @@ ${suffix}`;
       friend_name: item.friendName?.trim() || null,
       friend_email: item.friendEmail?.trim() || null,
       unlock_password: item.unlockPassword?.trim() || null,
-      is_unlocked: false
+      is_unlocked: false,
+      goal: item.goal?.trim() || item.questionnaire?.find((q) => q.id === "goal")?.answer?.trim() || null
     };
   }
 
@@ -29987,7 +29989,7 @@ ${suffix}`;
   // lib/fetchUserProductUrls.ts
   async function fetchItemByProductUrlWithClient(supabaseClient, userId, pageUrl) {
     try {
-      const { data, error } = await supabaseClient.from("items").select("product_url, wait_until_date, friend_name, is_unlocked").eq("user_id", userId).not("product_url", "is", null);
+      const { data, error } = await supabaseClient.from("items").select("product_url, wait_until_date, friend_name, is_unlocked, goal").eq("user_id", userId).not("product_url", "is", null);
       if (error) return { item: null, error };
       const rows = data || [];
       const normalizedPage = normalizeProductUrl(pageUrl);
@@ -29999,7 +30001,8 @@ ${suffix}`;
         item: {
           wait_until_date: match.wait_until_date,
           friend_name: match.friend_name,
-          is_unlocked: match.is_unlocked
+          is_unlocked: match.is_unlocked,
+          goal: match.goal
         },
         error: null
       };
@@ -30148,9 +30151,9 @@ ${suffix}`;
         showUrlBanner({
           variant: "unlocked",
           title: "Mindfulness constraint reached",
-          // Second line: correct constraint type based on original item
           lines: [
             { value: isTimeBased ? "Time-based constraint" : "Goals-based constraint" },
+            ...item.goal?.trim() && !isTimeBased ? [{ label: "Your goal:", value: item.goal.trim() }] : [],
             { value: "This item is now unlocked from your mindful cart." }
           ]
         });
@@ -30172,12 +30175,13 @@ ${suffix}`;
         });
       } else {
         const friendLabel = item.friend_name?.trim() || "your friend";
+        const goalText = item.goal?.trim();
         showUrlBanner({
           variant: "goals",
           title: "Mindful constraint active",
-          // Second line: constraint type on its own line
           lines: [
             { value: "Goals-based constraint" },
+            ...goalText ? [{ label: "Your goal:", value: goalText }] : [],
             {
               value: `To unlock this item, complete your goal and enter the password from ${friendLabel}.`
             }

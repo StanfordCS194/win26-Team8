@@ -30,10 +30,11 @@ export interface ItemByProductUrl {
   wait_until_date: string | null;
   friend_name: string | null;
   is_unlocked: boolean | null;
+  goal: string | null;
 }
 
 /**
- * Fetch the item (product_url, wait_until_date, friend_name, is_unlocked) for a user that matches the given page URL.
+ * Fetch the item (product_url, wait_until_date, friend_name, is_unlocked, goal) for a user that matches the given page URL.
  * Uses same URL normalization as duplicate check. For extension banner (locked vs unlocked).
  */
 export async function fetchItemByProductUrlWithClient(
@@ -44,7 +45,7 @@ export async function fetchItemByProductUrlWithClient(
   try {
     const { data, error } = await supabaseClient
       .from('items')
-      .select('product_url, wait_until_date, friend_name, is_unlocked')
+      .select('product_url, wait_until_date, friend_name, is_unlocked, goal')
       .eq('user_id', userId)
       .not('product_url', 'is', null);
 
@@ -54,6 +55,7 @@ export async function fetchItemByProductUrlWithClient(
       wait_until_date: string | null;
       friend_name: string | null;
       is_unlocked: boolean | null;
+      goal: string | null;
     }[];
     const normalizedPage = normalizeProductUrl(pageUrl);
     const match = rows.find(
@@ -65,6 +67,7 @@ export async function fetchItemByProductUrlWithClient(
         wait_until_date: match.wait_until_date,
         friend_name: match.friend_name,
         is_unlocked: match.is_unlocked,
+        goal: match.goal,
       },
       error: null,
     };

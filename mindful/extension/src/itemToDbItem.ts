@@ -19,5 +19,6 @@ export function itemToDbItem(item: Omit<Item, 'id' | 'addedDate'>, userId: strin
     friend_email: item.friendEmail?.trim() || null,
     unlock_password: item.unlockPassword?.trim() || null,
     is_unlocked: false,
+    goal: item.goal?.trim() || item.questionnaire?.find((q) => q.id === 'goal')?.answer?.trim() || null,
   };
 }
