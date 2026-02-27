@@ -26,6 +26,7 @@ function AppContent() {
   const [unlockedItems, setUnlockedItems] = useState<Item[]>([]);
   const [currentView, setCurrentView] = useState<View>('mission');
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [homeSubtab, setHomeSubtab] = useState<'locked' | 'unlocked'>('locked');
   const [refreshingItems, setRefreshingItems] = useState(false);
   const [itemsLoading, setItemsLoading] = useState(false);
   const [itemsLoadError, setItemsLoadError] = useState<string | null>(null);
@@ -281,7 +282,18 @@ function AppContent() {
     }
   };
 
-  const selectedItem = items.find(item => item.id === selectedItemId);
+  const selectedItem = items.find(item => item.id === selectedItemId)
+    ?? unlockedItems.find(item => item.id === selectedItemId);
+
+  const handleBackFromItem = () => {
+    if (selectedItem && (unlockedItems.some(u => u.id === selectedItem.id) || isTimeUnlocked(selectedItem))) {
+      setHomeSubtab('unlocked');
+    } else {
+      setHomeSubtab('locked');
+    }
+    setCurrentView('home');
+    setSelectedItemId(null);
+  };
 
   // Detect time-based items that unlock today and show a celebratory popup
   useEffect(() => {
@@ -466,6 +478,8 @@ function AppContent() {
             <Home 
               items={items}
               unlockedItems={unlockedItems}
+              activeSubtab={homeSubtab}
+              onSubtabChange={setHomeSubtab}
               onItemClick={handleItemClick}
               onAddItem={() => setCurrentView('add')}
               onRefresh={handleRefreshItems}
@@ -482,7 +496,7 @@ function AppContent() {
           user && selectedItem ? (
             <ItemDetail
               item={selectedItem}
-              onBack={() => setCurrentView('home')}
+              onBack={handleBackFromItem}
               onDelete={handleDeleteItem}
             />
           ) : (
