@@ -313,7 +313,7 @@ export function Home({ items, unlockedItems = [], onItemClick, onAddItem, onRefr
             </div>
             <h3 className="text-xl text-foreground/80 mb-2">No unlocked items yet</h3>
             <p className="text-muted-foreground">
-              Once your time-based items reach their wait date, they&apos;ll appear here as unlocked.
+              Once the goal is completed or the time has passed, your unlocked items will show up here.
             </p>
           </div>
         )
@@ -329,21 +329,104 @@ export function Home({ items, unlockedItems = [], onItemClick, onAddItem, onRefr
         </div>
       ) : (
         <div className="space-y-10">
-          {CATEGORY_ORDER.filter((cat) => (itemsByCategory[cat]?.length ?? 0) > 0).map((category) => (
-            <section key={category}>
-              <h3 className="text-lg font-semibold text-foreground font-serif mb-4 flex items-center gap-2">
-                <span className="text-primary">{category}</span>
-                <span className="text-sm font-normal text-muted-foreground">
-                  ({itemsByCategory[category].length} {itemsByCategory[category].length === 1 ? 'item' : 'items'})
-                </span>
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {itemsByCategory[category].map((item) => (
-                  <ItemCard key={item.id} item={item} onItemClick={onItemClick} />
-                ))}
-              </div>
-            </section>
-          ))}
+          {activeTab === 'unlocked' ? (
+            <>
+              {/* Goals-based unlocked items first */}
+              {(() => {
+                const goalsItems = filteredItems.filter((item) => item.constraintType === 'goals');
+                if (!goalsItems.length) return null;
+                const goalsByCategory = goalsItems.reduce<Record<string, Item[]>>((acc, item) => {
+                  const category = item.category || 'Other';
+                  if (!acc[category]) acc[category] = [];
+                  acc[category].push(item);
+                  return acc;
+                }, {});
+                return (
+                  <section>
+                    <h2 className="text-3xl font-serif text-foreground mb-3">
+                      <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/30 text-black font-semibold text-lg uppercase">
+                        Goals-based items
+                      </span>
+                    </h2>
+                    <div className="space-y-8">
+                      {CATEGORY_ORDER.filter((cat) => (goalsByCategory[cat]?.length ?? 0) > 0).map((category) => (
+                        <div key={category}>
+                          <h3 className="text-lg font-semibold text-foreground font-serif mb-3 flex items-center gap-2">
+                            <span className="text-primary">{category}</span>
+                            <span className="text-sm font-normal text-muted-foreground">
+                              ({goalsByCategory[category].length}{' '}
+                              {goalsByCategory[category].length === 1 ? 'item' : 'items'})
+                            </span>
+                          </h3>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            {goalsByCategory[category].map((item) => (
+                              <ItemCard key={item.id} item={item} onItemClick={onItemClick} />
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                );
+              })()}
+
+              {/* Time-based unlocked items second */}
+              {(() => {
+                const timeItems = filteredItems.filter((item) => item.constraintType === 'time');
+                if (!timeItems.length) return null;
+                const timeByCategory = timeItems.reduce<Record<string, Item[]>>((acc, item) => {
+                  const category = item.category || 'Other';
+                  if (!acc[category]) acc[category] = [];
+                  acc[category].push(item);
+                  return acc;
+                }, {});
+                return (
+                  <section>
+                    <h2 className="text-xl font-serif text-foreground mb-2">
+                      <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-muted/60 border border-border text-foreground font-semibold text-sm uppercase tracking-wide">
+                        Time-based items
+                      </span>
+                    </h2>
+                    <div className="space-y-8">
+                      {CATEGORY_ORDER.filter((cat) => (timeByCategory[cat]?.length ?? 0) > 0).map((category) => (
+                        <div key={category}>
+                          <h3 className="text-lg font-semibold text-foreground font-serif mb-3 flex items-center gap-2">
+                            <span className="text-primary">{category}</span>
+                            <span className="text-sm font-normal text-muted-foreground">
+                              ({timeByCategory[category].length}{' '}
+                              {timeByCategory[category].length === 1 ? 'item' : 'items'})
+                            </span>
+                          </h3>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            {timeByCategory[category].map((item) => (
+                              <ItemCard key={item.id} item={item} onItemClick={onItemClick} />
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                );
+              })()}
+            </>
+          ) : (
+            CATEGORY_ORDER.filter((cat) => (itemsByCategory[cat]?.length ?? 0) > 0).map((category) => (
+              <section key={category}>
+                <h3 className="text-lg font-semibold text-foreground font-serif mb-4 flex items-center gap-2">
+                  <span className="text-primary">{category}</span>
+                  <span className="text-sm font-normal text-muted-foreground">
+                    ({itemsByCategory[category].length}{' '}
+                    {itemsByCategory[category].length === 1 ? 'item' : 'items'})
+                  </span>
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {itemsByCategory[category].map((item) => (
+                    <ItemCard key={item.id} item={item} onItemClick={onItemClick} />
+                  ))}
+                </div>
+              </section>
+            ))
+          )}
         </div>
       )}
     </div>
