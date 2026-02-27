@@ -8,26 +8,51 @@
   right: 0;
   z-index: 2147483646;
   display: flex;
-  align-items: center;
   justify-content: center;
+  padding: 12px 16px;
+  box-sizing: border-box;
+  pointer-events: none;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
+}
+
+.st-url-banner-inner {
+  max-width: 960px;
+  width: 100%;
+  display: flex;
+  align-items: center;
   gap: 12px;
   padding: 10px 16px;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
-  font-size: 14px;
-  font-weight: 700;
-  color: #fff;
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-  border: none;
-  border-radius: 0 0 12px 12px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  border-radius: 9999px;
+  background: rgba(240, 253, 244, 0.98); /* light green, similar to app cards */
+  color: #064e3b; /* dark green text */
+  border: 1px solid rgba(34, 197, 94, 0.8);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.45);
   box-sizing: border-box;
+  pointer-events: auto;
+}
+
+.st-url-banner-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.st-url-banner-heading {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #047857;
+  opacity: 0.9;
 }
 
 .st-url-banner-text {
-  flex: 1;
-  text-align: center;
-  letter-spacing: 0.01em;
-  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.5;
+  opacity: 0.96;
+  white-space: pre-line; /* respect \n from JS and break into lines */
 }
 
 .st-url-banner-dismiss {
@@ -35,29 +60,24 @@
   width: 28px;
   height: 28px;
   padding: 0;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
   line-height: 1;
-  color: rgba(255, 255, 255, 0.95);
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
-  border-radius: 8px;
+  color: #064e3b;
+  background: rgba(22, 163, 74, 0.08);
+  border: 1px solid rgba(22, 163, 74, 0.25);
+  border-radius: 9999px;
   cursor: pointer;
 }
 
 .st-url-banner-dismiss:hover {
-  background: rgba(255, 255, 255, 0.35);
-  color: #fff;
+  background: rgba(22, 163, 74, 0.16);
 }
 
 /* Green variant when item is unlocked */
-.st-url-banner--unlocked {
-  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
-}
-
-.st-url-banner--unlocked .st-url-banner-dismiss:hover {
-  background: rgba(255, 255, 255, 0.35);
-  color: #fff;
+.st-url-banner--unlocked .st-url-banner-inner {
+  background: rgba(220, 252, 231, 0.98);
+  border-color: rgba(34, 197, 94, 0.9);
 }
 
 /* Second Thought content overlay – shown when user clicks add-to-cart on a site */

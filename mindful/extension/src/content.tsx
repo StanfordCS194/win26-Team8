@@ -57,15 +57,20 @@ function onDocumentClick(e: MouseEvent) {
   setTimeout(showOverlay, 100);
 }
 
-function showUrlBanner(text: string, unlocked: boolean = false) {
+function showUrlBanner(detail: string, unlocked: boolean = false) {
   const doc = document;
   if (doc.getElementById(BANNER_ID)) return;
   const bar = doc.createElement('div');
   bar.id = BANNER_ID;
   bar.className = unlocked ? 'st-url-banner st-url-banner--unlocked' : 'st-url-banner';
   bar.innerHTML = `
-    <span class="st-url-banner-text">${escapeHtml(text)}</span>
-    <button type="button" class="st-url-banner-dismiss" aria-label="Dismiss">×</button>
+    <div class="st-url-banner-inner">
+      <div class="st-url-banner-content">
+        <div class="st-url-banner-heading">${unlocked ? 'Mindfulness goal reached' : 'Mindful constraint active'}</div>
+        <div class="st-url-banner-text">${escapeHtml(detail)}</div>
+      </div>
+      <button type="button" class="st-url-banner-dismiss" aria-label="Dismiss">×</button>
+    </div>
   `;
   const dismiss = bar.querySelector('.st-url-banner-dismiss');
   if (dismiss) {
@@ -95,15 +100,32 @@ async function checkUrlAndShowBanner() {
     if (error || !item) return;
     if (item.is_unlocked) {
       showUrlBanner(
-        'Congratulations on reaching your mindfulness goal! This item is now unlocked from your mindful cart.',
+        [
+          'Goals-based constraint completed.',
+          'This item is now unlocked from your mindful cart.'
+        ].join('\n'),
         true
       );
       return;
     }
-    const text = item.wait_until_date
-      ? `You have not yet unlocked this item in your mindful cart! ${daysRemainingUntil(item.wait_until_date)} days remaining. Unlocks on ${formatUnlockDate(item.wait_until_date)}.`
-      : `You have not yet unlocked this item in your mindful cart! You must complete your set goal and receive a password from ${item.friend_name?.trim() || 'your friend'} to unlock.`;
-    showUrlBanner(text, false);
+
+    if (item.wait_until_date) {
+      const days = daysRemainingUntil(item.wait_until_date);
+      const unlockDate = formatUnlockDate(item.wait_until_date);
+      const lines = [
+        'Time-based constraint: this item is not unlocked yet.',
+        `Days remaining: ${days}`,
+        `Unlocks on: ${unlockDate}`,
+      ];
+      showUrlBanner(lines.join('\n'), false);
+    } else {
+      const friendLabel = item.friend_name?.trim() || 'your friend';
+      const lines = [
+        'Goals-based constraint: this item is not unlocked yet.',
+        `To unlock it, complete your goal and enter the password from ${friendLabel}.`,
+      ];
+      showUrlBanner(lines.join('\n'), false);
+    }
   } catch {
     // ignore
   }
