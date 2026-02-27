@@ -28,6 +28,8 @@ function AppContent() {
   const [refreshingItems, setRefreshingItems] = useState(false);
   const [itemsLoading, setItemsLoading] = useState(false);
   const [itemsLoadError, setItemsLoadError] = useState<string | null>(null);
+  const [unlockingTodayItemIds, setUnlockingTodayItemIds] = useState<string[]>([]);
+  const [showUnlockingTodayPopup, setShowUnlockingTodayPopup] = useState(false);
 
   // Load items when user logs in
   useEffect(() => {
@@ -243,6 +245,58 @@ function AppContent() {
 
   const selectedItem = items.find(item => item.id === selectedItemId);
 
+  // Detect time-based items that unlock today and show a celebratory popup
+  useEffect(() => {
+    if (!user || !items.length) {
+      setShowUnlockingTodayPopup(false);
+      setUnlockingTodayItemIds([]);
+      return;
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    const localKey = `secondThought_user_${user.id}_unlocking_today_${today}`;
+
+    let dismissedIds: string[] = [];
+    try {
+      const stored = localStorage.getItem(localKey);
+      if (stored) {
+        dismissedIds = JSON.parse(stored);
+      }
+    } catch {
+      // ignore parse errors
+    }
+
+    const unlockingToday = items.filter(
+      (item) =>
+        item.constraintType === 'time' &&
+        item.waitUntilDate === today &&
+        !dismissedIds.includes(item.id)
+    );
+
+    if (unlockingToday.length) {
+      setUnlockingTodayItemIds(unlockingToday.map((i) => i.id));
+      setShowUnlockingTodayPopup(true);
+    } else {
+      setUnlockingTodayItemIds([]);
+      setShowUnlockingTodayPopup(false);
+    }
+  }, [items, user]);
+
+  const handleDismissUnlockingTodayPopup = () => {
+    if (!user) {
+      setShowUnlockingTodayPopup(false);
+      return;
+    }
+    const today = new Date().toISOString().split('T')[0];
+    const localKey = `secondThought_user_${user.id}_unlocking_today_${today}`;
+    try {
+      localStorage.setItem(localKey, JSON.stringify(unlockingTodayItemIds));
+    } catch {
+      // ignore storage errors
+    }
+    setShowUnlockingTodayPopup(false);
+  };
+
   // Show loading spinner
   if (loading) {
     return (
@@ -290,7 +344,7 @@ function AppContent() {
   };
 
   return (
-    <div className="w-full min-h-screen bg-background overflow-y-auto">
+    <div className="w-full min-h-screen bg-background overflow-y-auto relative">
       {/* Header */}
       <header className="bg-card/80 backdrop-blur-sm border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -440,6 +494,40 @@ function AppContent() {
           )
         )}
       </main>
+
+      {showUnlockingTodayPopup && unlockingTodayItemIds.length > 0 && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-card rounded-3xl shadow-xl border border-primary/40 max-w-md w-full mx-4 p-8 relative">
+            <button
+              type="button"
+              onClick={handleDismissUnlockingTodayPopup}
+              className="absolute right-4 top-4 text-muted-foreground hover:text-foreground text-sm"
+            >
+              Dismiss
+            </button>
+            <p className="text-xs uppercase tracking-[0.2em] text-accent mb-2">
+              Exciting News
+            </p>
+            <h2 className="text-2xl font-serif text-foreground mb-3">
+              Your item is unlocking today!
+            </h2>
+            <div className="space-y-1 mb-4">
+              {unlockingTodayItemIds.map((id) => {
+                const item = items.find((i) => i.id === id);
+                if (!item) return null;
+                return (
+                  <p key={id} className="text-sm text-foreground/85">
+                    Exciting news: your <span className="font-semibold text-primary">{item.name}</span> is unlocking today!
+                  </p>
+                );
+              })}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              You can now revisit this item in your timeline and decide how you&apos;d like to move forward.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

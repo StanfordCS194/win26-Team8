@@ -317,7 +317,12 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl, checkUrlInInventor
 
     const calculatedScore = calculateMindfulnessScore(answers);
 
-    const days = calculatedScore * 7;
+    // Lower mindfulness score → longer wait, higher score → shorter wait
+    const MIN_DAYS = 3;   // very mindful
+    const MAX_DAYS = 21;  // least mindful
+    const daysRange = MAX_DAYS - MIN_DAYS;
+    const normalized = (10 - calculatedScore) / 9; // 0 when score=10, 1 when score=1
+    const days = Math.round(MIN_DAYS + normalized * daysRange);
     const waitDate = new Date();
     waitDate.setDate(waitDate.getDate() + days);
     setWaitUntilDate(waitDate.toISOString().split('T')[0]);
