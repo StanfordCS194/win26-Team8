@@ -158,3 +158,48 @@
 html {
   font-size: var(--font-size);
 }
+
+/* Simple confetti animation for goal unlock celebration */
+.confetti-container {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.confetti-piece {
+  position: absolute;
+  top: -10%;
+  width: 8px;
+  height: 14px;
+  border-radius: 999px;
+  background: var(--primary);
+  opacity: 0.85;
+  animation: confetti-fall 2.4s linear infinite;
+}
+
+.confetti-piece:nth-child(3n) {
+  background: var(--secondary);
+}
+
+.confetti-piece:nth-child(4n) {
+  background: var(--accent);
+}
+
+.confetti-piece:nth-child(5n) {
+  background: var(--destructive);
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translate3d(0, -100%, 0) rotateZ(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(0, 120vh, 0) rotateZ(360deg);
+    opacity: 0;
+  }
+}

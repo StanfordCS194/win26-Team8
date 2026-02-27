@@ -229,7 +229,11 @@ function AppContent() {
       localStorage.setItem(localKey, JSON.stringify(updatedItems));
 
       setCurrentView('home');
-      alert('Item deleted successfully!');
+      if (item && item.constraintType === 'goals') {
+        alert(`Congratulations, you completed your goal and have unlocked "${item.name}".`);
+      } else {
+        alert('Item deleted successfully!');
+      }
     } else {
       console.error('Delete failed:', error);
       const errorMsg = error?.message || error?.toString() || 'Unknown error';
