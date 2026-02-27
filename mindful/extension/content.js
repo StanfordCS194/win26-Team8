@@ -30083,10 +30083,10 @@ ${suffix}`;
         const unlock = escapeHtml(unlockRaw ?? "");
         return `
           <div class="st-url-banner-line st-url-banner-line--metrics">
-            <span class="st-url-banner-line-label">Days remaining</span>
+            <span class="st-url-banner-line-label">Days remaining:</span>
             <span class="st-url-banner-line-value st-url-banner-line-value-days">${days}</span>
             <span class="st-url-banner-line-separator">\xB7</span>
-            <span class="st-url-banner-line-label st-url-banner-line-label-unlock">Unlocks on</span>
+            <span class="st-url-banner-line-label st-url-banner-line-label-unlock">Unlocks on:</span>
             <span class="st-url-banner-line-value st-url-banner-line-value-unlock">${unlock}</span>
           </div>
         `;
