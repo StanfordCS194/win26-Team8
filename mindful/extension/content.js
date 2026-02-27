@@ -17716,7 +17716,11 @@ URL: ${url}`
     const handleStep2Submit = (e) => {
       e.preventDefault();
       const calculatedScore = calculateMindfulnessScore(answers);
-      const days = calculatedScore * 7;
+      const MIN_DAYS = 3;
+      const MAX_DAYS = 21;
+      const daysRange = MAX_DAYS - MIN_DAYS;
+      const normalized = (10 - calculatedScore) / 9;
+      const days = Math.round(MIN_DAYS + normalized * daysRange);
       const waitDate = /* @__PURE__ */ new Date();
       waitDate.setDate(waitDate.getDate() + days);
       setWaitUntilDate(waitDate.toISOString().split("T")[0]);
@@ -29807,7 +29811,12 @@ ${suffix}`;
       added_date: (/* @__PURE__ */ new Date()).toISOString(),
       wait_until_date: item.waitUntilDate || null,
       difficulty: item.difficulty || null,
-      questionnaire: item.questionnaire
+      questionnaire: item.questionnaire,
+      // Goals-based unlock: friend guardian and password
+      friend_name: item.friendName?.trim() || null,
+      friend_email: item.friendEmail?.trim() || null,
+      unlock_password: item.unlockPassword?.trim() || null,
+      is_unlocked: false
     };
   }
 

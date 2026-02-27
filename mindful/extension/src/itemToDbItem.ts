@@ -14,5 +14,10 @@ export function itemToDbItem(item: Omit<Item, 'id' | 'addedDate'>, userId: strin
     wait_until_date: item.waitUntilDate || null,
     difficulty: item.difficulty || null,
     questionnaire: item.questionnaire,
+    // Goals-based unlock: friend guardian and password
+    friend_name: item.friendName?.trim() || null,
+    friend_email: item.friendEmail?.trim() || null,
+    unlock_password: item.unlockPassword?.trim() || null,
+    is_unlocked: false,
   };
 }
