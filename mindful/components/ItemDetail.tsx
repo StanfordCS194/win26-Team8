@@ -14,6 +14,8 @@ interface ItemDetailProps {
   item: Item;
   onBack: () => void;
   onDelete: (itemId: string, deletionReason?: DeletionReasonData) => void;
+  /** Called when time has passed or goal password is correct; updates is_unlocked to true (does not delete). */
+  onUnlock?: (itemId: string) => void;
   /** When true, this item is from the Unlocked tab; Delete shows reconsideration dialog and calls onRemoveUnlocked instead of onDelete. */
   isUnlockedItem?: boolean;
   onRemoveUnlocked?: (itemId: string, subReason: DidntBuySubReason | string) => void;
@@ -115,7 +117,7 @@ function generateMindfulnessExplanation(questionnaire: QuestionAnswer[], finalSc
   return explanation;
 }
 
-export function ItemDetail({ item, onBack, onDelete, isUnlockedItem, onRemoveUnlocked }: ItemDetailProps) {
+export function ItemDetail({ item, onBack, onDelete, onUnlock, isUnlockedItem, onRemoveUnlocked }: ItemDetailProps) {
   const [unlockPassword, setUnlockPassword] = useState('');
   const [unlockError, setUnlockError] = useState('');
   const [unlockSuccess, setUnlockSuccess] = useState(false);
@@ -132,10 +134,12 @@ export function ItemDetail({ item, onBack, onDelete, isUnlockedItem, onRemoveUnl
     if (!window.confirm('Are you sure you want to delete this item?')) {
       return;
     }
-    if (isConstraintComplete(item)) {
-      onDelete(item.id);
-    } else {
+    if (isConstraintComplete(item) && onUnlock) {
+      onUnlock(item.id);
+    } else if (!isConstraintComplete(item)) {
       setShowDeleteReasonDialog(true);
+    } else {
+      onDelete(item.id);
     }
   };
 
@@ -185,14 +189,14 @@ export function ItemDetail({ item, onBack, onDelete, isUnlockedItem, onRemoveUnl
     }
 
     if (unlockPassword.trim() === item.unlockPassword) {
-      // Password matches - unlock by deleting the item
       setUnlockSuccess(true);
       setIsUnlocking(true);
       setShowCelebration(true);
-      // Small delay for better UX
-      setTimeout(() => {
-        onDelete(item.id);
-      }, 1500);
+      if (onUnlock) {
+        setTimeout(() => onUnlock(item.id), 1500);
+      } else {
+        setTimeout(() => onDelete(item.id), 1500);
+      }
     } else {
       setUnlockError('Incorrect password. Please check with your friend.');
       setUnlockSuccess(false);

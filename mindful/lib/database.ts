@@ -82,6 +82,7 @@ function dbToItem(dbItem: DbItem): Item {
   return {
     id: dbItem.id,
     name: dbItem.name,
+    isUnlocked: dbItem.is_unlocked ?? false,
     imageUrl: dbItem.image_url || undefined,
     productUrl: dbItem.product_url || undefined,
     category: dbItem.category as ItemCategory | undefined,
@@ -98,10 +99,11 @@ function dbToItem(dbItem: DbItem): Item {
   };
 }
 
-// Convert unlocked_items row back into an Item
+// Convert unlocked_items row back into an Item (legacy; app now uses items.is_unlocked)
 function dbUnlockedToItem(row: DbUnlockedItem): Item {
   return {
     id: row.original_item_id,
+    isUnlocked: true,
     name: row.name,
     imageUrl: row.image_url || undefined,
     productUrl: row.product_url || undefined,
@@ -423,6 +425,33 @@ export async function saveUnlockedItem(
 }
 
 /**
+ * UPDATE ITEM'S is_unlocked FLAG (time expired or goal password entered)
+ * Keeps the item in the items table; does not delete or move to another table.
+ */
+export async function updateItemUnlocked(
+  itemId: string,
+  userId: string,
+  isUnlocked: boolean
+): Promise<{ success: boolean; error: any }> {
+  try {
+    const { error } = await supabase
+      .from('items')
+      .update({ is_unlocked: isUnlocked })
+      .eq('id', itemId)
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('❌ Update is_unlocked error:', error);
+      return { success: false, error };
+    }
+    return { success: true, error: null };
+  } catch (error) {
+    console.error('❌ Update is_unlocked exception:', error);
+    return { success: false, error };
+  }
+}
+
+/**
  * DELETE AN ITEM FROM DATABASE
  * 
  * @param itemId - Item's UUID
@@ -454,23 +483,27 @@ export async function deleteItem(itemId: string, userId: string): Promise<{ succ
 
 /**
  * DELETE AN UNLOCKED ITEM FROM THE ARCHIVE (unlocked_items table)
- * Uses original_item_id to identify the row.
+ * Same flow as deleteItem for items: delete by table primary key (id) and user_id only.
  */
 export async function deleteUnlockedItem(
-  originalItemId: string,
+  rowId: string,
   userId: string
 ): Promise<{ success: boolean; error: any }> {
   try {
+    console.log('🗑️ Deleting unlocked item row:', rowId);
+
     const { error } = await supabase
       .from('unlocked_items')
       .delete()
-      .eq('original_item_id', originalItemId)
+      .eq('id', rowId)
       .eq('user_id', userId);
 
     if (error) {
       console.error('❌ Delete unlocked item error:', error);
       return { success: false, error };
     }
+
+    console.log('✅ Unlocked item deleted successfully');
     return { success: true, error: null };
   } catch (error) {
     console.error('❌ Delete unlocked item exception:', error);
