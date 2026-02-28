@@ -18,8 +18,7 @@ CREATE TABLE IF NOT EXISTS public.unlocked_items (
   unlocked_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
   friend_name TEXT,
   friend_email TEXT,
-  unlock_password TEXT,
-  goal TEXT
+  unlock_password TEXT
 );
 
 CREATE INDEX IF NOT EXISTS unlocked_items_user_id_idx ON public.unlocked_items(user_id);

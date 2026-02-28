@@ -12,8 +12,7 @@
     "build:popup": "npm run build:popup:css && node extension/build.mjs",
     "build:content:css": "tailwindcss -i extension/src/content.css -o extension/content.css",
     "build:content": "npm run build:content:css && node extension/build-content.mjs",
-    "build:background": "node extension/build-background.mjs",
-    "build:extension": "npm run build:popup && npm run build:content && npm run build:background",
+    "build:extension": "npm run build:popup && npm run build:content",
     "test": "vitest run"
   },
   "dependencies": {

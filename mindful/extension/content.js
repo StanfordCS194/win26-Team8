@@ -17716,11 +17716,7 @@ URL: ${url}`
     const handleStep2Submit = (e) => {
       e.preventDefault();
       const calculatedScore = calculateMindfulnessScore(answers);
-      const MIN_DAYS = 3;
-      const MAX_DAYS = 21;
-      const daysRange = MAX_DAYS - MIN_DAYS;
-      const normalized = (10 - calculatedScore) / 9;
-      const days = Math.round(MIN_DAYS + normalized * daysRange);
+      const days = calculatedScore * 7;
       const waitDate = /* @__PURE__ */ new Date();
       waitDate.setDate(waitDate.getDate() + days);
       setWaitUntilDate(waitDate.toISOString().split("T")[0]);
@@ -17769,8 +17765,7 @@ URL: ${url}`
           friendName: friendName.trim(),
           friendEmail: friendEmail.trim() || void 0,
           unlockPassword: generateUnlockPassword()
-        } : {},
-        ...constraintType === "goals" && goalDescription.trim() ? { goal: goalDescription.trim() } : {}
+        } : {}
       });
       resetForm();
     };
@@ -29812,13 +29807,7 @@ ${suffix}`;
       added_date: (/* @__PURE__ */ new Date()).toISOString(),
       wait_until_date: item.waitUntilDate || null,
       difficulty: item.difficulty || null,
-      questionnaire: item.questionnaire,
-      // Goals-based unlock: friend guardian and password
-      friend_name: item.friendName?.trim() || null,
-      friend_email: item.friendEmail?.trim() || null,
-      unlock_password: item.unlockPassword?.trim() || null,
-      is_unlocked: false,
-      goal: item.goal?.trim() || item.questionnaire?.find((q) => q.id === "goal")?.answer?.trim() || null
+      questionnaire: item.questionnaire
     };
   }
 
@@ -29986,67 +29975,10 @@ ${suffix}`;
     ] }) }) });
   }
 
-  // lib/fetchUserProductUrls.ts
-  async function fetchItemByProductUrlWithClient(supabaseClient, userId, pageUrl) {
-    try {
-      const { data, error } = await supabaseClient.from("items").select("product_url, wait_until_date, friend_name, is_unlocked, goal").eq("user_id", userId).not("product_url", "is", null);
-      if (error) return { item: null, error };
-      const rows = data || [];
-      const normalizedPage = normalizeProductUrl(pageUrl);
-      const match = rows.find(
-        (r2) => r2.product_url && normalizeProductUrl(r2.product_url) === normalizedPage
-      );
-      if (!match) return { item: null, error: null };
-      return {
-        item: {
-          wait_until_date: match.wait_until_date,
-          friend_name: match.friend_name,
-          is_unlocked: match.is_unlocked,
-          goal: match.goal
-        },
-        error: null
-      };
-    } catch (error) {
-      return { item: null, error };
-    }
-  }
-
-  // lib/dateUtils.ts
-  function daysRemainingUntil(dateStr) {
-    if (!dateStr || !dateStr.trim()) return 0;
-    try {
-      const d = new Date(dateStr.trim());
-      if (Number.isNaN(d.getTime())) return 0;
-      const today = /* @__PURE__ */ new Date();
-      today.setHours(0, 0, 0, 0);
-      d.setHours(0, 0, 0, 0);
-      const diffMs = d.getTime() - today.getTime();
-      const days = Math.floor(diffMs / (24 * 60 * 60 * 1e3));
-      return Math.max(0, days);
-    } catch {
-      return 0;
-    }
-  }
-  function formatUnlockDate(dateStr) {
-    if (!dateStr || !dateStr.trim()) return "\u2014";
-    try {
-      const d = new Date(dateStr.trim());
-      if (Number.isNaN(d.getTime())) return "\u2014";
-      return d.toLocaleDateString(void 0, {
-        month: "short",
-        day: "numeric",
-        year: "numeric"
-      });
-    } catch {
-      return "\u2014";
-    }
-  }
-
   // extension/src/content.tsx
   var import_jsx_runtime12 = __toESM(require_jsx_runtime());
   var DEBUG = false;
   var CLOSE_COOLDOWN_MS = 800;
-  var BANNER_ID = "second-thought-url-banner";
   var lastOverlayCloseTime = 0;
   function showOverlay() {
     const doc = document;
@@ -30079,128 +30011,8 @@ ${suffix}`;
     if (DEBUG) console.log("Second Thought: add-to-cart detected", addToCartEl);
     setTimeout(showOverlay, 100);
   }
-  function showUrlBanner(content) {
-    const doc = document;
-    if (doc.getElementById(BANNER_ID)) return;
-    const bar = doc.createElement("div");
-    bar.id = BANNER_ID;
-    const variantClass = content.variant === "unlocked" ? "st-url-banner st-url-banner--unlocked" : content.variant === "goals" ? "st-url-banner st-url-banner--goals" : "st-url-banner st-url-banner--time";
-    bar.className = variantClass;
-    const headingHtml = escapeHtml(content.title);
-    const subtitleHtml = content.subtitle ? escapeHtml(content.subtitle) : "";
-    const linesHtml = content.lines.map((line) => {
-      if (line.kind === "metrics") {
-        const [daysRaw, unlockRaw] = line.value.split("|");
-        const days = escapeHtml(daysRaw ?? "");
-        const unlock = escapeHtml(unlockRaw ?? "");
-        return `
-          <div class="st-url-banner-line st-url-banner-line--metrics">
-            <span class="st-url-banner-line-label">Days remaining:</span>
-            <span class="st-url-banner-line-value st-url-banner-line-value-days">${days}</span>
-            <span class="st-url-banner-line-separator">\xB7</span>
-            <span class="st-url-banner-line-label st-url-banner-line-label-unlock">Unlocks on:</span>
-            <span class="st-url-banner-line-value st-url-banner-line-value-unlock">${unlock}</span>
-          </div>
-        `;
-      }
-      const value = escapeHtml(line.value);
-      if (line.label) {
-        const label = escapeHtml(line.label);
-        return `<div class="st-url-banner-line"><span class="st-url-banner-line-label">${label}</span><span class="st-url-banner-line-value">${value}</span></div>`;
-      }
-      return `<div class="st-url-banner-line"><span class="st-url-banner-line-value">${value}</span></div>`;
-    }).join("");
-    bar.innerHTML = `
-    <div class="st-url-banner-inner">
-      <div class="st-url-banner-content">
-        <div class="st-url-banner-heading-row">
-          <div class="st-url-banner-heading">${headingHtml}</div>
-          ${subtitleHtml ? `<div class="st-url-banner-subtitle">${subtitleHtml}</div>` : ""}
-        </div>
-        <div class="st-url-banner-lines">
-          ${linesHtml}
-        </div>
-      </div>
-      <button type="button" class="st-url-banner-dismiss" aria-label="Dismiss">\xD7</button>
-    </div>
-  `;
-    const dismiss = bar.querySelector(".st-url-banner-dismiss");
-    if (dismiss) {
-      dismiss.addEventListener("click", () => {
-        bar.remove();
-      });
-    }
-    doc.body.insertBefore(bar, doc.body.firstChild);
-  }
-  function escapeHtml(s) {
-    const div = document.createElement("div");
-    div.textContent = s;
-    return div.innerHTML;
-  }
-  async function checkUrlAndShowBanner() {
-    if (window !== window.top) return;
-    const url = document.location?.href || "";
-    if (!url || url.startsWith("chrome:") || url.startsWith("edge:") || url.startsWith("about:")) return;
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user?.id) return;
-      const { item, error } = await fetchItemByProductUrlWithClient(supabase, session.user.id, url);
-      if (error || !item) return;
-      if (item.is_unlocked) {
-        const isTimeBased = !!item.wait_until_date;
-        showUrlBanner({
-          variant: "unlocked",
-          title: "Mindfulness constraint reached",
-          lines: [
-            { value: isTimeBased ? "Time-based constraint \u23F3" : "Goals-based constraint \u{1F3AF}" },
-            ...item.goal?.trim() && !isTimeBased ? [{ label: "Your goal:", value: item.goal.trim() }] : [],
-            { value: "Congrats on unlocking this item and making a more mindful purchase!" }
-          ]
-        });
-        return;
-      }
-      if (item.wait_until_date) {
-        const days = daysRemainingUntil(item.wait_until_date);
-        const unlockDate = formatUnlockDate(item.wait_until_date);
-        showUrlBanner({
-          variant: "time",
-          title: "Mindful constraint active",
-          lines: [
-            { value: "Time-based constraint \u23F3" },
-            {
-              kind: "metrics",
-              value: `${days}|${unlockDate}`
-            }
-          ]
-        });
-      } else {
-        const friendLabel = item.friend_name?.trim() || "your friend";
-        const goalText = item.goal?.trim();
-        showUrlBanner({
-          variant: "goals",
-          title: "Mindful constraint active",
-          lines: [
-            { value: "Goals-based constraint \u{1F3AF}" },
-            ...goalText ? [{ label: "Your goal:", value: goalText }] : [],
-            {
-              value: `To unlock this item, complete your goal and enter the password from ${friendLabel}.`
-            }
-          ]
-        });
-      }
-    } catch {
-    }
-  }
   function init() {
     document.addEventListener("click", onDocumentClick, true);
-    chrome.runtime?.onMessage?.addListener((message) => {
-      if (message.type === "SHOW_URL_BANNER" && window === window.top) {
-        checkUrlAndShowBanner();
-      }
-    });
-    if (window === window.top) {
-      checkUrlAndShowBanner();
-    }
     if (DEBUG) console.log("Second Thought: content script loaded");
   }
   init();

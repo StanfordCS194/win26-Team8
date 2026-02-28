@@ -12,7 +12,6 @@ interface ItemDetailProps {
   item: Item;
   onBack: () => void;
   onDelete: (itemId: string, deletionReason?: DeletionReasonData) => void;
-  onUnlock?: (itemId: string) => void;
 }
 
 // Check if the item's constraint (time or goal) has been completed
@@ -111,7 +110,7 @@ function generateMindfulnessExplanation(questionnaire: QuestionAnswer[], finalSc
   return explanation;
 }
 
-export function ItemDetail({ item, onBack, onDelete, onUnlock }: ItemDetailProps) {
+export function ItemDetail({ item, onBack, onDelete }: ItemDetailProps) {
   const [unlockPassword, setUnlockPassword] = useState('');
   const [unlockError, setUnlockError] = useState('');
   const [unlockSuccess, setUnlockSuccess] = useState(false);
@@ -156,7 +155,7 @@ export function ItemDetail({ item, onBack, onDelete, onUnlock }: ItemDetailProps
     }
   };
 
-  const handleUnlock = async (e: React.FormEvent) => {
+  const handleUnlock = (e: React.FormEvent) => {
     e.preventDefault();
     setUnlockError('');
     setUnlockSuccess(false);
@@ -172,26 +171,14 @@ export function ItemDetail({ item, onBack, onDelete, onUnlock }: ItemDetailProps
     }
 
     if (unlockPassword.trim() === item.unlockPassword) {
-      // Password matches - confirm moving item to unlocked list
-      const confirmMove = window.confirm(
-        'Password correct.\n\nMove this item to your unlocked items list? It will no longer be protected by a friend password.'
-      );
-      if (!confirmMove) {
-        return;
-      }
-
-      setIsUnlocking(true);
+      // Password matches - unlock by deleting the item
       setUnlockSuccess(true);
-
-      try {
-        if (onUnlock) {
-          await Promise.resolve(onUnlock(item.id));
-        }
-        // After unlocking, return to the main list
-        onBack();
-      } finally {
-        setIsUnlocking(false);
-      }
+      setIsUnlocking(true);
+      setShowCelebration(true);
+      // Small delay for better UX
+      setTimeout(() => {
+        onDelete(item.id);
+      }, 1500);
     } else {
       setUnlockError('Incorrect password. Please check with your friend.');
       setUnlockSuccess(false);
@@ -260,17 +247,17 @@ export function ItemDetail({ item, onBack, onDelete, onUnlock }: ItemDetailProps
 
                 {/* Goal description for goals-based items */}
                 {item.constraintType === 'goals' && (() => {
-                  const goalText = item.goal || item.questionnaire?.find(qa => qa.id === 'goal')?.answer;
+                  const goalQuestion = item.questionnaire?.find(qa => qa.id === 'goal');
                   return (
                     <div className="space-y-4">
-                      {goalText && (
+                      {goalQuestion && goalQuestion.answer && (
                         <div className="p-5 bg-secondary/20 rounded-xl border border-secondary/30">
                           <div className="flex items-start gap-3">
                             <Target className="w-5 h-5 text-accent mt-0.5 flex-shrink-0" />
                             <div className="flex-1">
                               <div className="text-sm text-foreground/80 font-medium mb-2">Your Goal</div>
                               <p className="text-foreground/90 leading-relaxed mb-3">
-                                {goalText}
+                                {goalQuestion.answer}
                               </p>
                               {item.friendName && (
                                 <div className="pt-3 border-t border-secondary/30">

@@ -12,15 +12,3 @@ export function normalizeProductUrl(url: string): string {
     return url.trim();
   }
 }
-
-/**
- * Returns true if the given URL matches any of the stored URLs (after normalization).
- * Used for duplicate-URL check and "already in cart" banner.
- */
-export function isUrlInStoredUrls(url: string, storedUrls: string[]): boolean {
-  if (!url || !storedUrls?.length) return false;
-  const normalized = normalizeProductUrl(url);
-  return storedUrls.some(
-    (stored) => stored && normalizeProductUrl(stored) === normalized
-  );
-}

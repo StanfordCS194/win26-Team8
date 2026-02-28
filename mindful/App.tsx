@@ -7,7 +7,7 @@ import { GoalsBasedView } from './components/GoalsBasedView';
 import { OurMission } from './components/OurMission';
 import { Profile } from './components/Profile';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { fetchItems, fetchUnlockedItems, saveItem, deleteItem as deleteItemDb, deleteUnlockedItem as deleteUnlockedItemDb, saveDeletionReason, saveUnlockedItem, markItemUnlocked } from './lib/database';
+import { fetchItems, fetchUnlockedItems, saveItem, deleteItem as deleteItemDb, saveDeletionReason, saveUnlockedItem } from './lib/database';
 import { saveItemDirect } from './lib/database-alt';
 import { normalizeProductUrl } from './lib/urlUtils';
 import { Plus, User } from 'lucide-react';
@@ -100,21 +100,14 @@ function AppContent() {
       if (result.items?.length) setItems(result.items);
     }
 
-    // Also load unlocked items: archive + time-unlocked from items + goals-unlocked from items
+    // Also load unlocked items archive and combine with time-unlocked items
     const unlockedResult = await fetchUnlockedItems(user.id);
     if (!unlockedResult.error && unlockedResult.items) {
       const archiveItems = unlockedResult.items;
       const archiveIds = new Set(archiveItems.map((i) => i.id));
-      const fromItems = result.items ?? [];
-      const timeUnlockedFromItems = fromItems.filter((i) => isTimeUnlocked(i) && !archiveIds.has(i.id));
-      const goalsUnlockedFromItems = fromItems.filter((i) => i.isUnlocked === true && !archiveIds.has(i.id));
-      const seen = new Set<string>([...archiveIds]);
-      const extra = [...timeUnlockedFromItems, ...goalsUnlockedFromItems].filter((i) => {
-        if (seen.has(i.id)) return false;
-        seen.add(i.id);
-        return true;
-      });
-      setUnlockedItems([...extra, ...archiveItems]);
+      const timeUnlockedFromItems =
+        result.items?.filter((i) => isTimeUnlocked(i) && !archiveIds.has(i.id)) ?? [];
+      setUnlockedItems([...timeUnlockedFromItems, ...archiveItems]);
     }
   };
 
@@ -136,21 +129,14 @@ function AppContent() {
         setItemsLoadError(message);
       }
 
-      // Refresh unlocked items: archive + time-unlocked + goals-unlocked from items
+      // Refresh unlocked items as well and combine with time-unlocked items
       const unlockedResult = await fetchUnlockedItems(user.id);
       if (!unlockedResult.error && unlockedResult.items) {
         const archiveItems = unlockedResult.items;
         const archiveIds = new Set(archiveItems.map((i) => i.id));
-        const fromItems = result.items ?? [];
-        const timeUnlockedFromItems = fromItems.filter((i) => isTimeUnlocked(i) && !archiveIds.has(i.id));
-        const goalsUnlockedFromItems = fromItems.filter((i) => i.isUnlocked === true && !archiveIds.has(i.id));
-        const seen = new Set<string>([...archiveIds]);
-        const extra = [...timeUnlockedFromItems, ...goalsUnlockedFromItems].filter((i) => {
-          if (seen.has(i.id)) return false;
-          seen.add(i.id);
-          return true;
-        });
-        setUnlockedItems([...extra, ...archiveItems]);
+        const timeUnlockedFromItems =
+          result.items?.filter((i) => isTimeUnlocked(i) && !archiveIds.has(i.id)) ?? [];
+        setUnlockedItems([...timeUnlockedFromItems, ...archiveItems]);
       }
     } finally {
       setRefreshingItems(false);
@@ -246,24 +232,7 @@ function AppContent() {
   const handleDeleteItem = async (itemId: string, deletionReason?: DeletionReasonData) => {
     if (!user) return;
 
-    const itemFromItems = items.find((i) => i.id === itemId);
-    const itemFromUnlocked = unlockedItems.find((i) => i.id === itemId);
-    const item = itemFromItems ?? itemFromUnlocked;
-
-    // Item exists only in unlocked archive (not in items table) – delete from unlocked_items only
-    if (!itemFromItems && itemFromUnlocked) {
-      const { success, error } = await deleteUnlockedItemDb(itemId, user.id);
-      if (success) {
-        setUnlockedItems((prev) => prev.filter((i) => i.id !== itemId));
-        setCurrentView('home');
-        setSelectedItemId(null);
-        alert('Item removed from your unlocked list.');
-      } else {
-        const errorMsg = error?.message || error?.toString() || 'Unknown error';
-        alert(`Failed to remove item\n\nError: ${errorMsg}`);
-      }
-      return;
-    }
+    const item = items.find((i) => i.id === itemId);
 
     if (item) {
       if (deletionReason) {
@@ -286,23 +255,21 @@ function AppContent() {
 
     console.log('Deleting item:', itemId);
 
-    // Delete from items table
+    // Delete from Supabase
     const { success, error } = await deleteItemDb(itemId, user.id);
 
     if (success) {
       console.log('Item deleted from Supabase');
 
-      // Update UI: remove from items and from unlocked list if present
-      setItems((prev) => prev.filter((i) => i.id !== itemId));
-      setUnlockedItems((prev) => prev.filter((i) => i.id !== itemId));
+      // Update UI
+      const updatedItems = items.filter(item => item.id !== itemId);
+      setItems(updatedItems);
 
       // Update localStorage
       const localKey = `secondThought_user_${user.id}_items`;
-      const updatedItems = items.filter((i) => i.id !== itemId);
       localStorage.setItem(localKey, JSON.stringify(updatedItems));
 
       setCurrentView('home');
-      setSelectedItemId(null);
       if (item && item.constraintType === 'goals') {
         alert(`Congratulations, you completed your goal and have unlocked "${item.name}".`);
       } else {
@@ -312,34 +279,6 @@ function AppContent() {
       console.error('Delete failed:', error);
       const errorMsg = error?.message || error?.toString() || 'Unknown error';
       alert(`Failed to delete item\n\nError: ${errorMsg}`);
-    }
-  };
-
-  const handleUnlockItem = async (itemId: string) => {
-    if (!user) return;
-
-    console.log('Marking item unlocked (password flow):', itemId);
-
-    const { success, error } = await markItemUnlocked(itemId, user.id);
-
-    if (!success) {
-      console.error('Unlock update failed:', error);
-      const errorMsg = error?.message || error?.toString() || 'Unknown error';
-      alert(`Failed to mark item as unlocked\n\nError: ${errorMsg}`);
-      return;
-    }
-
-    // Update item in items state so it drops out of Locked tab (isUnlocked: true)
-    const item = items.find((i) => i.id === itemId) ?? unlockedItems.find((i) => i.id === itemId);
-    if (item) {
-      const updatedItem = { ...item, isUnlocked: true };
-      setItems((prev) => {
-        const next = prev.map((i) => (i.id === itemId ? updatedItem : i));
-        const localKey = `secondThought_user_${user.id}_items`;
-        localStorage.setItem(localKey, JSON.stringify(next));
-        return next;
-      });
-      setUnlockedItems((prev) => [updatedItem, ...prev.filter((i) => i.id !== itemId)]);
     }
   };
 
@@ -559,7 +498,6 @@ function AppContent() {
               item={selectedItem}
               onBack={handleBackFromItem}
               onDelete={handleDeleteItem}
-              onUnlock={handleUnlockItem}
             />
           ) : (
             <SignInRequired />
