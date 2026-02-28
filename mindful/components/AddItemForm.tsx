@@ -176,6 +176,18 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl, checkUrlInInventor
     setShowAlreadyInInventory(false);
   };
 
+  const handleNameBlur = async () => {
+    const trimmed = name.trim();
+    if (trimmed.length < 2) return;
+    try {
+      const detectedCategory = await detectCategory(trimmed);
+      setCategory(detectedCategory);
+      setCategoryIsAISuggested(true);
+    } catch {
+      // keep current category on error
+    }
+  };
+
   const handleFetchMetadata = async () => {
     if (!productUrl) return;
 
@@ -465,6 +477,7 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl, checkUrlInInventor
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              onBlur={handleNameBlur}
               placeholder="Auto-filled from URL, or type manually"
               className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
             />
