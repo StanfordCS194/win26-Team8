@@ -21,7 +21,7 @@ const FETCH_ITEMS_TIMEOUT_MS = 20000;
 type View = 'home' | 'item' | 'add' | 'time' | 'goals' | 'mission' | 'profile';
 
 function AppContent() {
-  const { user, session, loading } = useAuth();
+  const { user, session, loading, profile } = useAuth();
   const [items, setItems] = useState<Item[]>([]);
   const [unlockedItems, setUnlockedItems] = useState<Item[]>([]);
   const [currentView, setCurrentView] = useState<View>('mission');
@@ -190,17 +190,34 @@ function AppContent() {
     if (success) {
       console.log('Item saved to Supabase');
 
-      // Store friend unlock email information if this is a goals-based constraint with a friend
-      if (item.constraintType === 'goals' && item.friendName && item.friendEmail && item.unlockPassword) {
-        const { createFriendUnlockEmail } = await import('./lib/friendUnlockService');
+      // Store friend unlock email record and send email if this is a goals-based constraint with a friend
+      if (item.constraintType === 'goals' && item.friendName && item.friendEmail) {
+        const { createFriendUnlockEmail, sendFriendEmail, markEmailAsSent } = await import('./lib/friendUnlockService');
         const emailRecord = await createFriendUnlockEmail(
           newItem.id,
-          item.friendEmail,
-          item.unlockPassword
+          item.friendEmail
         );
 
-        if (emailRecord.success) {
+        if (emailRecord.success && emailRecord.data) {
           console.log('Friend unlock email record created in database');
+
+          // Send the email to the friend via Resend
+          const setPasswordPageUrl = `${window.location.origin}/set-password.html`;
+          const emailResult = await sendFriendEmail({
+            friendEmail: item.friendEmail,
+            friendName: item.friendName,
+            friendToken: emailRecord.data.friend_token,
+            userName: profile?.first_name || user.email?.split('@')[0] || 'Your friend',
+            itemName: item.name,
+            setPasswordPageUrl,
+          });
+
+          if (emailResult.success) {
+            console.log('Friend email sent successfully');
+            await markEmailAsSent(emailRecord.data.id);
+          } else {
+            console.warn('Failed to send friend email:', emailResult.error);
+          }
         } else {
           console.warn('Failed to create friend unlock email record:', emailRecord.error);
         }
@@ -498,6 +515,7 @@ function AppContent() {
               item={selectedItem}
               onBack={handleBackFromItem}
               onDelete={handleDeleteItem}
+              onRefresh={handleRefreshItems}
             />
           ) : (
             <SignInRequired />
