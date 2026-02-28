@@ -379,7 +379,6 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl, checkUrlInInventor
         friendEmail: friendEmail.trim() || undefined,
         unlockPassword: generateUnlockPassword(),
       } : {}),
-      ...(constraintType === 'goals' && goalDescription.trim() ? { goal: goalDescription.trim() } : {}),
     });
 
     resetForm();

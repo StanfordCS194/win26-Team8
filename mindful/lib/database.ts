@@ -1,6 +1,4 @@
 import { supabase } from '../env';
-import { fetchUserProductUrlsWithClient, fetchItemByProductUrlWithClient } from './fetchUserProductUrls';
-import { daysRemainingUntil, formatUnlockDate } from './dateUtils';
 import type { Item, ItemCategory, QuestionAnswer } from '../types/item';
 
 /**
@@ -27,7 +25,6 @@ export interface DbItem {
   friend_email: string | null;
   unlock_password: string | null;
   is_unlocked: boolean | null;
-  goal: string | null;
 }
 
 // Unlocked items table row
@@ -49,7 +46,6 @@ export interface DbUnlockedItem {
   friend_name: string | null;
   friend_email: string | null;
   unlock_password: string | null;
-  goal: string | null;
 }
 
 /**
@@ -57,7 +53,6 @@ export interface DbUnlockedItem {
  * Simple conversion: camelCase → snake_case
  */
 function itemToDb(item: Item, userId: string): Omit<DbItem, 'created_at' | 'updated_at'> {
-  const goalFromQuestionnaire = item.questionnaire?.find((q) => q.id === 'goal')?.answer?.trim();
   return {
     id: item.id,
     user_id: userId,
@@ -71,11 +66,11 @@ function itemToDb(item: Item, userId: string): Omit<DbItem, 'created_at' | 'upda
     wait_until_date: item.waitUntilDate || null,
     difficulty: item.difficulty || null,
     questionnaire: item.questionnaire,
+    // Friend unlock fields
     friend_name: item.friendName || null,
     friend_email: item.friendEmail || null,
     unlock_password: item.unlockPassword || null,
     is_unlocked: false,
-    goal: item.goal?.trim() || goalFromQuestionnaire || null,
   };
 }
 
@@ -100,8 +95,6 @@ function dbToItem(dbItem: DbItem): Item {
     friendName: dbItem.friend_name || undefined,
     friendEmail: dbItem.friend_email || undefined,
     unlockPassword: dbItem.unlock_password || undefined,
-    isUnlocked: dbItem.is_unlocked === true,
-    goal: dbItem.goal || undefined,
   };
 }
 
@@ -122,15 +115,14 @@ function dbUnlockedToItem(row: DbUnlockedItem): Item {
     friendName: row.friend_name || undefined,
     friendEmail: row.friend_email || undefined,
     unlockPassword: row.unlock_password || undefined,
-    goal: row.goal || undefined,
   };
 }
 
 // Columns needed for list/detail – include friend/unlock fields so guard info is preserved
 const ITEMS_SELECT =
-  'id, user_id, name, image_url, product_url, category, constraint_type, consumption_score, wait_until_date, difficulty, questionnaire, added_date, created_at, updated_at, friend_name, friend_email, unlock_password, is_unlocked, goal';
+  'id, user_id, name, image_url, product_url, category, constraint_type, consumption_score, wait_until_date, difficulty, questionnaire, added_date, created_at, updated_at, friend_name, friend_email, unlock_password, is_unlocked';
 const UNLOCKED_ITEMS_SELECT =
-  'id, user_id, original_item_id, name, image_url, product_url, category, constraint_type, consumption_score, wait_until_date, difficulty, questionnaire, added_date, unlocked_at, friend_name, friend_email, unlock_password, goal';
+  'id, user_id, original_item_id, name, image_url, product_url, category, constraint_type, consumption_score, wait_until_date, difficulty, questionnaire, added_date, unlocked_at, friend_name, friend_email, unlock_password';
 
 /**
  * FETCH ALL ITEMS FOR A USER
@@ -196,27 +188,21 @@ export async function fetchUnlockedItems(userId: string): Promise<{ items: Item[
 
 /**
  * Fetch product_url values for a user (for duplicate-URL check).
- * Uses shared fetchUserProductUrlsWithClient with the app's supabase client.
  */
 export async function fetchUserProductUrls(userId: string): Promise<{ urls: string[]; error: any }> {
-  return fetchUserProductUrlsWithClient(supabase, userId);
-}
+  try {
+    const { data, error } = await supabase
+      .from('items')
+      .select('product_url')
+      .eq('user_id', userId)
+      .not('product_url', 'is', null);
 
-/** Re-export for app use (extension uses fetchItemByProductUrlWithClient + its own client). */
-export { daysRemainingUntil, formatUnlockDate };
-
-/**
- * Fetch the item matching a product URL for the current user (app supabase).
- * Returns wait_until_date, friend_name, and is_unlocked for extension banner (locked vs unlocked).
- */
-export async function fetchItemByProductUrl(
-  userId: string,
-  pageUrl: string
-): Promise<{
-  item: { wait_until_date: string | null; friend_name: string | null; is_unlocked: boolean | null } | null;
-  error: any;
-}> {
-  return fetchItemByProductUrlWithClient(supabase, userId, pageUrl);
+    if (error) return { urls: [], error };
+    const urls = (data || []).map((r: { product_url: string | null }) => r.product_url).filter(Boolean) as string[];
+    return { urls, error: null };
+  } catch (error) {
+    return { urls: [], error };
+  }
 }
 
 /**
@@ -359,39 +345,6 @@ export async function saveItem(item: Item, userId: string): Promise<{ success: b
 }
 
 /**
- * MARK ITEM AS UNLOCKED (GOALS PASSWORD FLOW – KEEP IN ITEMS TABLE)
- *
- * @param itemId - Item's UUID
- * @param userId - User's UUID (for security)
- * @returns { success: boolean, error: any }
- */
-export async function markItemUnlocked(
-  itemId: string,
-  userId: string
-): Promise<{ success: boolean; error: any }> {
-  try {
-    console.log('🔓 Marking item unlocked:', itemId);
-
-    const { error } = await supabase
-      .from('items')
-      .update({ is_unlocked: true })
-      .eq('id', itemId)
-      .eq('user_id', userId);
-
-    if (error) {
-      console.error('❌ Unlock update error:', error);
-      return { success: false, error };
-    }
-
-    console.log('✅ Item marked as unlocked');
-    return { success: true, error: null };
-  } catch (error) {
-    console.error('❌ Unlock update exception:', error);
-    return { success: false, error };
-  }
-}
-
-/**
  * SAVE DELETION REASON (when user deletes before constraint completion)
  *
  * @param params - { itemId, itemName, userId, reason, subReason, constraintType }
@@ -430,7 +383,7 @@ export async function saveDeletionReason(params: {
 
 /**
  * SAVE UNLOCKED ITEM TO SEPARATE ARCHIVE TABLE
- * Called when a constraint has been successfully completed (time or goals) and item is deleted from items.
+ * Called when a constraint has been successfully completed (time or goals).
  */
 export async function saveUnlockedItem(
   item: Item,
@@ -453,7 +406,6 @@ export async function saveUnlockedItem(
       friend_name: item.friendName || null,
       friend_email: item.friendEmail || null,
       unlock_password: item.unlockPassword || null,
-      goal: item.goal || null,
     };
 
     const { error } = await supabase.from('unlocked_items').insert([payload]);
@@ -472,7 +424,7 @@ export async function saveUnlockedItem(
 
 /**
  * DELETE AN ITEM FROM DATABASE
- *
+ * 
  * @param itemId - Item's UUID
  * @param userId - User's UUID (for security)
  * @returns { success: boolean, error: any }
@@ -480,13 +432,13 @@ export async function saveUnlockedItem(
 export async function deleteItem(itemId: string, userId: string): Promise<{ success: boolean; error: any }> {
   try {
     console.log('🗑️ Deleting item:', itemId);
-
+    
     const { error } = await supabase
       .from('items')
       .delete()
       .eq('id', itemId)
       .eq('user_id', userId);
-
+    
     if (error) {
       console.error('❌ Delete error:', error);
       return { success: false, error };
@@ -496,40 +448,6 @@ export async function deleteItem(itemId: string, userId: string): Promise<{ succ
     return { success: true, error: null };
   } catch (error) {
     console.error('❌ Delete exception:', error);
-    return { success: false, error };
-  }
-}
-
-/**
- * DELETE AN UNLOCKED ITEM FROM THE UNLOCKED_ITEMS ARCHIVE
- * Use when the item exists only in unlocked_items (e.g. already archived after constraint completion).
- *
- * @param originalItemId - Original item UUID (id used in UI)
- * @param userId - User's UUID (for security)
- * @returns { success: boolean, error: any }
- */
-export async function deleteUnlockedItem(
-  originalItemId: string,
-  userId: string
-): Promise<{ success: boolean; error: any }> {
-  try {
-    console.log('🗑️ Deleting unlocked item from archive:', originalItemId);
-
-    const { error } = await supabase
-      .from('unlocked_items')
-      .delete()
-      .eq('original_item_id', originalItemId)
-      .eq('user_id', userId);
-
-    if (error) {
-      console.error('❌ Delete unlocked_items error:', error);
-      return { success: false, error };
-    }
-
-    console.log('✅ Unlocked item deleted from archive');
-    return { success: true, error: null };
-  } catch (error) {
-    console.error('❌ Delete unlocked_items exception:', error);
     return { success: false, error };
   }
 }

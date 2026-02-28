@@ -121,12 +121,10 @@ export function Home({ items, unlockedItems = [], activeSubtab, onSubtabChange, 
   };
 
   const lockedItems = items.filter((item) => {
-    // Goals-based items that were unlocked via password are no longer locked
-    if (item.constraintType === 'goals' && item.isUnlocked) return false;
     if (item.constraintType === 'time' && item.waitUntilDate) {
       return !isTimeUnlocked(item);
     }
-    // Goals-based items remain locked until explicitly unlocked
+    // Goals-based items remain locked until explicitly unlocked and removed
     return true;
   });
 
