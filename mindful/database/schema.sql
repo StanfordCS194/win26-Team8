@@ -38,7 +38,8 @@ CREATE TABLE IF NOT EXISTS public.items (
   friend_name TEXT,
   friend_email TEXT,
   unlock_password TEXT,
-  is_unlocked BOOLEAN DEFAULT false
+  is_unlocked BOOLEAN DEFAULT false,
+  goal TEXT
 );
 
 -- Indexes (create if not exists; add items_user_id_created_at_idx for faster list/refresh)

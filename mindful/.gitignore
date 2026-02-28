@@ -44,3 +44,4 @@ yarn-error.*
 # extension build temp (Windows file-lock workaround)
 extension/popup.tmp.js
 extension/content.tmp.js
+extension/background.tmp.js

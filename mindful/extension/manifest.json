@@ -14,13 +14,20 @@
   ],
   "host_permissions": [
     "https://api.anthropic.com/*",
-    "https://api.microlink.io/*"
+    "https://api.microlink.io/*",
+    "https://mohgivduzthccoybnbnr.supabase.co/*"
   ],
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"],
-      "css": ["content.css"],
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
       "run_at": "document_end",
       "all_frames": true
     }
