@@ -19,10 +19,12 @@
 .st-url-banner-inner {
   max-width: 960px;
   width: 100%;
+  position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 10px 16px;
+  padding-right: 40px;
   border-radius: 18px; 
   background: #efdac1; 
   border: 1px solid #d8a56a;
@@ -98,24 +100,24 @@
 }
 
 .st-url-banner-dismiss {
-  flex-shrink: 0;
-  width: 36px;
-  height: 36px;
-  padding: 0;
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: auto;
+  height: auto;
+  padding: 4px;
   font-size: 20px;
   font-weight: 700;
   line-height: 1;
-  /* Default (locked) state: match warm yellow banner */
   color: #92400e;
-  background: #e0b194;
-  border: 1px solid #b55e28;
-  border-radius: 9999px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
   cursor: pointer;
 }
 
 .st-url-banner-dismiss:hover {
-  /* Slight, subtle tint on hover for locked (yellow) state */
-  background: #e7c2ab;
+  opacity: 0.8;
 }
 
 .st-url-banner--time .st-url-banner-heading,
@@ -137,12 +139,12 @@
 
 .st-url-banner--unlocked .st-url-banner-dismiss {
   color: #064e3b;
-  background: rgba(22, 163, 74, 0.08);
-  border: 1px solid rgba(22, 163, 74, 0.25);
+  background: transparent;
+  border: none;
 }
 
 .st-url-banner--unlocked .st-url-banner-dismiss:hover {
-  background: rgba(22, 163, 74, 0.16);
+  opacity: 0.8;
 }
 
 /* Emphasize final line in unlocked banner ("This item is now unlocked…") */
