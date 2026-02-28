@@ -30152,9 +30152,9 @@ ${suffix}`;
           variant: "unlocked",
           title: "Mindfulness constraint reached",
           lines: [
-            { value: isTimeBased ? "Time-based constraint" : "Goals-based constraint" },
+            { value: isTimeBased ? "Time-based constraint \u23F3" : "Goals-based constraint \u{1F3AF}" },
             ...item.goal?.trim() && !isTimeBased ? [{ label: "Your goal:", value: item.goal.trim() }] : [],
-            { value: "This item is now unlocked from your mindful cart." }
+            { value: "Congrats on unlocking this item and making a more mindful purchase!" }
           ]
         });
         return;
@@ -30166,7 +30166,7 @@ ${suffix}`;
           variant: "time",
           title: "Mindful constraint active",
           lines: [
-            { value: "Time-based constraint" },
+            { value: "Time-based constraint \u23F3" },
             {
               kind: "metrics",
               value: `${days}|${unlockDate}`
@@ -30180,7 +30180,7 @@ ${suffix}`;
           variant: "goals",
           title: "Mindful constraint active",
           lines: [
-            { value: "Goals-based constraint" },
+            { value: "Goals-based constraint \u{1F3AF}" },
             ...goalText ? [{ label: "Your goal:", value: goalText }] : [],
             {
               value: `To unlock this item, complete your goal and enter the password from ${friendLabel}.`

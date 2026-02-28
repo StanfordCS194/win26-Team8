@@ -158,11 +158,11 @@ async function checkUrlAndShowBanner() {
         variant: 'unlocked',
         title: 'Mindfulness constraint reached',
         lines: [
-          { value: isTimeBased ? 'Time-based constraint' : 'Goals-based constraint' },
+          { value: isTimeBased ? 'Time-based constraint ⏳' : 'Goals-based constraint 🎯' },
           ...(item.goal?.trim() && !isTimeBased
             ? [{ label: 'Your goal:', value: item.goal.trim() }]
             : []),
-          { value: 'This item is now unlocked from your mindful cart.' },
+          { value: 'Congrats on unlocking this item and making a more mindful purchase!' },
         ],
       });
       return;
@@ -175,7 +175,7 @@ async function checkUrlAndShowBanner() {
         variant: 'time',
         title: 'Mindful constraint active',
         lines: [
-          { value: 'Time-based constraint' },
+          { value: 'Time-based constraint ⏳' },
           {
             kind: 'metrics',
             value: `${days}|${unlockDate}`,
@@ -189,7 +189,7 @@ async function checkUrlAndShowBanner() {
         variant: 'goals',
         title: 'Mindful constraint active',
         lines: [
-          { value: 'Goals-based constraint' },
+          { value: 'Goals-based constraint 🎯' },
           ...(goalText ? [{ label: 'Your goal:', value: goalText }] : []),
           {
             value: `To unlock this item, complete your goal and enter the password from ${friendLabel}.`,
