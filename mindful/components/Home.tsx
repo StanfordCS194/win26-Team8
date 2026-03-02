@@ -73,7 +73,6 @@ function ItemCard({
 
 interface HomeProps {
   items: Item[];
-  unlockedItems?: Item[];
   activeSubtab?: 'locked' | 'unlocked';
   onSubtabChange?: (tab: 'locked' | 'unlocked') => void;
   onItemClick: (itemId: string) => void;
@@ -85,7 +84,7 @@ interface HomeProps {
   loadError?: string | null;
 }
 
-export function Home({ items, unlockedItems = [], activeSubtab, onSubtabChange, onItemClick, onAddItem, onRefresh, onRetry, isRefreshing, isLoading, loadError }: HomeProps) {
+export function Home({ items, activeSubtab, onSubtabChange, onItemClick, onAddItem, onRefresh, onRetry, isRefreshing, isLoading, loadError }: HomeProps) {
   const [selectedCategories, setSelectedCategories] = useState<ItemCategory[] | null>(null); // null = All Categories
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -110,25 +109,8 @@ export function Home({ items, unlockedItems = [], activeSubtab, onSubtabChange, 
     }
   }, [dropdownOpen]);
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const isTimeUnlocked = (item: Item): boolean => {
-    if (item.constraintType !== 'time' || !item.waitUntilDate) return false;
-    const waitDate = new Date(item.waitUntilDate);
-    const waitDayStart = new Date(waitDate.getFullYear(), waitDate.getMonth(), waitDate.getDate());
-    return waitDayStart.getTime() <= today.getTime();
-  };
-
-  const lockedItems = items.filter((item) => {
-    if (item.constraintType === 'time' && item.waitUntilDate) {
-      return !isTimeUnlocked(item);
-    }
-    // Goals-based items remain locked until explicitly unlocked and removed
-    return true;
-  });
-
-  // For the Unlocked tab, rely primarily on archived unlocked items from Supabase
+  const lockedItems = items.filter((i) => !i.isUnlocked);
+  const unlockedItems = items.filter((i) => i.isUnlocked);
   const baseItems = activeTab === 'locked' ? lockedItems : unlockedItems;
 
   const filteredItems =
