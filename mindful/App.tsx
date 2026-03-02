@@ -7,8 +7,8 @@ import { GoalsBasedView } from './components/GoalsBasedView';
 import { OurMission } from './components/OurMission';
 import { Profile } from './components/Profile';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { fetchItems, deleteItem as deleteItemDb, saveDeletionReason, updateItemUnlocked } from './lib/database';
-import { saveItemDirect } from './lib/database-alt';
+import { fetchItems, deleteItem as deleteItemDb, updateItemUnlocked } from './lib/database';
+import { saveItemDirect, saveDeletionReasonDirect } from './lib/database-alt';
 import { normalizeProductUrl } from './lib/urlUtils';
 import { Plus, User } from 'lucide-react';
 import './styles/globals.css';
@@ -270,14 +270,22 @@ function AppContent() {
 
     const item = items.find((i) => i.id === itemId);
     if (item && deletionReason) {
-      await saveDeletionReason({
-        itemId,
-        itemName: item.name,
-        userId: user.id,
-        reason: deletionReason.reason,
-        subReason: deletionReason.subReason ?? '',
-        constraintType: item.constraintType,
-      });
+      const accessToken = session?.access_token ?? null;
+      const { success: saveSuccess, error: saveError } = await saveDeletionReasonDirect(
+        {
+          itemId,
+          itemName: item.name,
+          userId: user.id,
+          reason: deletionReason.reason,
+          subReason: deletionReason.subReason ?? '',
+          constraintType: item.constraintType,
+        },
+        accessToken
+      );
+      if (!saveSuccess) {
+        console.error('Failed to save deletion reason:', saveError);
+        console.error('Error details:', saveError?.message, saveError?.code, saveError?.details);
+      }
     }
 
     const { success, error } = await deleteItemDb(itemId, user.id);
