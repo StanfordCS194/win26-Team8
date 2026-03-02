@@ -17,6 +17,10 @@ interface ItemDetailProps {
 
 // Check if the item's constraint (time or goal) has been completed
 function isConstraintComplete(item: Item): boolean {
+  // Any item that is already marked unlocked should delete without asking for a reason
+  if (item.isUnlocked) {
+    return true;
+  }
   if (item.constraintType === 'time' && item.waitUntilDate) {
     const today = new Date().toISOString().split('T')[0];
     return today >= item.waitUntilDate;
