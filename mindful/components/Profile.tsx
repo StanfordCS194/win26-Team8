@@ -1,10 +1,93 @@
 import { useAuth } from '../contexts/AuthContext';
 import type { Item } from '../types/item';
-import { User, Calendar, Target, Clock, TrendingUp } from 'lucide-react';
+import {
+  User,
+  Calendar,
+  Target,
+  Clock,
+  TrendingDown,
+  BarChart3,
+  ShoppingBag,
+  Tag,
+  Lightbulb,
+} from 'lucide-react';
 
 interface ProfileProps {
   items: Item[];
 }
+
+function formatTimeAgo(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays} days ago`;
+  if (diffDays < 30) {
+    const weeks = Math.floor(diffDays / 7);
+    return `${weeks} ${weeks === 1 ? 'week' : 'weeks'} ago`;
+  }
+  if (diffDays < 90) {
+    const months = Math.floor(diffDays / 30);
+    return `${months} ${months === 1 ? 'month' : 'months'} ago`;
+  }
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
+function getMostCommonCategory(items: Item[]): string {
+  if (items.length === 0) return 'N/A';
+  const counts: Record<string, number> = {};
+  for (const item of items) {
+    const cat = item.category || 'Other';
+    counts[cat] = (counts[cat] || 0) + 1;
+  }
+  let maxCat = 'Other';
+  let maxCount = 0;
+  for (const [cat, count] of Object.entries(counts)) {
+    if (count > maxCount) {
+      maxCount = count;
+      maxCat = cat;
+    }
+  }
+  return maxCat;
+}
+
+function getMostMindfulCategory(items: Item[]): string {
+  if (items.length === 0) return 'N/A';
+  const sums: Record<string, number> = {};
+  const counts: Record<string, number> = {};
+  for (const item of items) {
+    const cat = item.category || 'Other';
+    sums[cat] = (sums[cat] || 0) + item.consumptionScore;
+    counts[cat] = (counts[cat] || 0) + 1;
+  }
+  let minCat = 'Other';
+  let minAvg = Infinity;
+  for (const cat of Object.keys(sums)) {
+    const avg = sums[cat] / counts[cat];
+    if (avg < minAvg) {
+      minAvg = avg;
+      minCat = cat;
+    }
+  }
+  return minCat;
+}
+
+const CATEGORY_COLORS: Record<string, string> = {
+  Beauty: 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300',
+  Clothes: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  Accessories: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
+  Sports: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+  Electronics: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300',
+  Home: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
+  Other: 'bg-gray-100 text-gray-700 dark:bg-gray-800/50 dark:text-gray-300',
+};
 
 export function Profile({ items }: ProfileProps) {
   const { user, profile, signOut } = useAuth();
@@ -22,25 +105,28 @@ export function Profile({ items }: ProfileProps) {
     return 'User';
   };
 
-  const timeBasedItems = items.filter(item => item.constraintType === 'time');
-  const goalsBasedItems = items.filter(item => item.constraintType === 'goals');
-  
-  const easyGoals = goalsBasedItems.filter(item => item.difficulty === 'easy').length;
-  const mediumGoals = goalsBasedItems.filter(item => item.difficulty === 'medium').length;
-  const hardGoals = goalsBasedItems.filter(item => item.difficulty === 'hard').length;
+  const waitingItems = items.filter((item) => {
+    if (!item.waitUntilDate) return false;
+    return new Date(item.waitUntilDate) > new Date();
+  });
 
   const avgScore = items.length > 0
     ? (items.reduce((sum, item) => sum + item.consumptionScore, 0) / items.length).toFixed(1)
     : '0';
 
+  const mostCommonCategory = getMostCommonCategory(items);
+  const mostMindfulCategory = getMostMindfulCategory(items);
+
   const memberSince = user?.created_at
     ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
     : 'Recently';
 
-  const recentItems = items.slice(0, 5);
+  const sortedItems = [...items].sort(
+    (a, b) => new Date(b.addedDate).getTime() - new Date(a.addedDate).getTime()
+  );
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="max-w-4xl mx-auto space-y-8 pb-12">
       {/* Profile Header */}
       <div className="bg-card rounded-3xl shadow-lg border border-border p-8">
         <div className="flex items-start justify-between">
@@ -64,72 +150,182 @@ export function Profile({ items }: ProfileProps) {
       </div>
 
       {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-card rounded-2xl shadow-sm border border-border p-6">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <TrendingUp className="w-5 h-5 text-primary" />
-            </div>
-            <h3 className="font-semibold text-foreground">Total Items</h3>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-card rounded-2xl shadow-sm border border-border/50 p-5 text-center">
+          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mx-auto mb-3">
+            <ShoppingBag className="w-5 h-5 text-primary" />
           </div>
-          <p className="text-3xl font-bold text-foreground">{items.length}</p>
+          <p className="text-2xl font-bold text-foreground">{items.length}</p>
+          <p className="text-xs text-muted-foreground mt-1">Total Items</p>
         </div>
 
-        <div className="bg-card rounded-2xl shadow-sm border border-border p-6">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
-              <Clock className="w-5 h-5 text-accent" />
-            </div>
-            <h3 className="font-semibold text-foreground">Time-Based</h3>
+        <div className="bg-card rounded-2xl shadow-sm border border-border/50 p-5 text-center">
+          <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center mx-auto mb-3">
+            <Clock className="w-5 h-5 text-accent" />
           </div>
-          <p className="text-3xl font-bold text-foreground">{timeBasedItems.length}</p>
+          <p className="text-2xl font-bold text-foreground">{waitingItems.length}</p>
+          <p className="text-xs text-muted-foreground mt-1">In Waiting Period</p>
         </div>
 
-        <div className="bg-card rounded-2xl shadow-sm border border-border p-6">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center">
-              <Target className="w-5 h-5 text-secondary" />
-            </div>
-            <h3 className="font-semibold text-foreground">Goals-Based</h3>
+        <div className="bg-card rounded-2xl shadow-sm border border-border/50 p-5 text-center">
+          <div className="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center mx-auto mb-3">
+            <BarChart3 className="w-5 h-5 text-secondary-foreground" />
           </div>
-          <p className="text-3xl font-bold text-foreground">{goalsBasedItems.length}</p>
+          <p className="text-2xl font-bold text-foreground">
+            {avgScore}
+            <span className="text-sm text-muted-foreground font-normal">/10</span>
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">Avg. Score</p>
+        </div>
+
+        <div className="bg-card rounded-2xl shadow-sm border border-border/50 p-5 text-center">
+          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mx-auto mb-3">
+            <Tag className="w-5 h-5 text-primary" />
+          </div>
+          <p className="text-lg font-bold text-foreground leading-tight">{mostCommonCategory}</p>
+          <p className="text-xs text-muted-foreground mt-1">Most Common Category</p>
         </div>
       </div>
 
-      {/* Average Score */}
-      <div className="bg-card rounded-2xl shadow-sm border border-border p-6">
-        <h3 className="text-xl font-semibold text-foreground mb-2">Average Consumption Score</h3>
-        <p className="text-4xl font-bold text-primary">{avgScore}<span className="text-2xl text-muted-foreground">/10</span></p>
-      </div>
+      {/* Patterns */}
+      {items.length > 0 && (
+        <div className="bg-card rounded-2xl shadow-sm border border-border/50 p-6">
+          <h2 className="text-xl font-semibold text-foreground mb-5 flex items-center gap-2">
+            <Lightbulb className="w-5 h-5 text-primary" />
+            Your Patterns
+          </h2>
 
-      {/* Recent Activity */}
-      {recentItems.length > 0 && (
-        <div className="bg-card rounded-2xl shadow-sm border border-border p-6">
-          <h3 className="text-xl font-semibold text-foreground mb-4">Recent Activity</h3>
-          <div className="space-y-3">
-            {recentItems.map((item) => (
-              <div
-                key={item.id}
-                className="flex items-center justify-between p-4 bg-muted/30 rounded-xl"
-              >
-                <div className="flex items-center gap-4">
-                  <img
-                    src={item.imageUrl || 'https://via.placeholder.com/48'}
-                    alt={item.name}
-                    className="w-12 h-12 rounded-lg object-cover"
-                  />
-                  <div>
-                    <p className="font-medium text-foreground">{item.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(item.addedDate).toLocaleDateString()}
-                    </p>
+          <div className="space-y-4">
+            <div className="flex items-start gap-3 p-4 bg-muted/20 rounded-xl">
+              <Tag className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-foreground">Most Tracked Category</p>
+                <p className="text-sm text-muted-foreground">
+                  Your most tracked category is{' '}
+                  <span className="font-semibold text-foreground">{mostCommonCategory}</span>.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3 p-4 bg-muted/20 rounded-xl">
+              <BarChart3 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-foreground">Average Consumption Score</p>
+                <p className="text-sm text-muted-foreground">
+                  Your average consumption score is{' '}
+                  <span className="font-semibold text-foreground">{avgScore}/10</span>.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3 p-4 bg-muted/20 rounded-xl">
+              <TrendingDown className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-foreground">Most Mindful Category</p>
+                <p className="text-sm text-muted-foreground">
+                  You've been most mindful about{' '}
+                  <span className="font-semibold text-foreground">{mostMindfulCategory}</span>{' '}
+                  (lowest avg. score).
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Timeline */}
+      {sortedItems.length > 0 && (
+        <div>
+          <h2 className="text-xl font-semibold text-foreground mb-6 flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-primary" />
+            Your Timeline
+          </h2>
+
+          <div className="space-y-4">
+            {sortedItems.map((item) => {
+              const categoryColor =
+                CATEGORY_COLORS[item.category || 'Other'] || CATEGORY_COLORS.Other;
+
+              return (
+                <div key={item.id}>
+                  <div className="bg-card rounded-2xl shadow-sm border border-border/50 p-5">
+                    <div className="flex items-start gap-4">
+                      <div className="w-14 h-14 rounded-xl overflow-hidden bg-muted/30 shrink-0">
+                        {item.imageUrl && item.imageUrl.trim() ? (
+                          <img
+                            src={item.imageUrl.trim()}
+                            alt={item.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                              if (e.currentTarget.parentElement) {
+                                e.currentTarget.parentElement.classList.add(
+                                  'flex',
+                                  'items-center',
+                                  'justify-center'
+                                );
+                              }
+                            }}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <ShoppingBag className="w-6 h-6 text-muted-foreground/40" />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-3 mb-2">
+                          <h3 className="font-medium text-foreground truncate">
+                            {item.name}
+                          </h3>
+                          <span className="text-sm text-muted-foreground shrink-0">
+                            {formatTimeAgo(item.addedDate)}
+                          </span>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span
+                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${categoryColor}`}
+                          >
+                            {item.category || 'Other'}
+                          </span>
+
+                          <span
+                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                              item.consumptionScore >= 7
+                                ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+                                : item.consumptionScore >= 4
+                                  ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                                  : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                            }`}
+                          >
+                            Score: {item.consumptionScore}/10
+                          </span>
+
+                          {item.constraintType === 'time' && item.waitUntilDate && (
+                            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                              <Clock className="w-3 h-3" />
+                              Wait until{' '}
+                              {new Date(item.waitUntilDate).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                              })}
+                            </span>
+                          )}
+                          {item.constraintType === 'goals' && item.difficulty && (
+                            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                              <Target className="w-3 h-3" />
+                              <span className="capitalize">{item.difficulty} goal</span>
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <span className="text-sm font-medium text-foreground">
-                  Score: {item.consumptionScore}/10
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
