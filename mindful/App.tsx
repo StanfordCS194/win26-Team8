@@ -7,7 +7,7 @@ import { GoalsBasedView } from './components/GoalsBasedView';
 import { OurMission } from './components/OurMission';
 import { Profile } from './components/Profile';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { fetchItems, fetchUnlockedItems, saveItem, deleteItem as deleteItemDb, deleteUnlockedItem as deleteUnlockedItemDb, saveDeletionReason, saveUnlockedItem, markItemUnlocked } from './lib/database';
+import { fetchItems, deleteItem as deleteItemDb, saveDeletionReason, markItemUnlocked } from './lib/database';
 import { saveItemDirect } from './lib/database-alt';
 import { normalizeProductUrl } from './lib/urlUtils';
 import { Plus, User } from 'lucide-react';
@@ -41,6 +41,14 @@ function AppContent() {
 
   const [unlockingTodayItemIds, setUnlockingTodayItemIds] = useState<string[]>([]);
   const [showUnlockingTodayPopup, setShowUnlockingTodayPopup] = useState(false);
+
+  // Derive unlocked items from main items list (no separate unlocked_items table)
+  useEffect(() => {
+    const unlocked = items.filter(
+      (item) => item.isUnlocked || isTimeUnlocked(item)
+    );
+    setUnlockedItems(unlocked);
+  }, [items]);
 
   // Load items when user logs in
   useEffect(() => {
@@ -99,23 +107,6 @@ function AppContent() {
       setItemsLoadError(message);
       if (result.items?.length) setItems(result.items);
     }
-
-    // Also load unlocked items: archive + time-unlocked from items + goals-unlocked from items
-    const unlockedResult = await fetchUnlockedItems(user.id);
-    if (!unlockedResult.error && unlockedResult.items) {
-      const archiveItems = unlockedResult.items;
-      const archiveIds = new Set(archiveItems.map((i) => i.id));
-      const fromItems = result.items ?? [];
-      const timeUnlockedFromItems = fromItems.filter((i) => isTimeUnlocked(i) && !archiveIds.has(i.id));
-      const goalsUnlockedFromItems = fromItems.filter((i) => i.isUnlocked === true && !archiveIds.has(i.id));
-      const seen = new Set<string>([...archiveIds]);
-      const extra = [...timeUnlockedFromItems, ...goalsUnlockedFromItems].filter((i) => {
-        if (seen.has(i.id)) return false;
-        seen.add(i.id);
-        return true;
-      });
-      setUnlockedItems([...extra, ...archiveItems]);
-    }
   };
 
   const handleRefreshItems = async () => {
@@ -134,23 +125,6 @@ function AppContent() {
       } else if (result.error) {
         const message = result.error instanceof Error ? result.error.message : 'Could not refresh. Try again.';
         setItemsLoadError(message);
-      }
-
-      // Refresh unlocked items: archive + time-unlocked + goals-unlocked from items
-      const unlockedResult = await fetchUnlockedItems(user.id);
-      if (!unlockedResult.error && unlockedResult.items) {
-        const archiveItems = unlockedResult.items;
-        const archiveIds = new Set(archiveItems.map((i) => i.id));
-        const fromItems = result.items ?? [];
-        const timeUnlockedFromItems = fromItems.filter((i) => isTimeUnlocked(i) && !archiveIds.has(i.id));
-        const goalsUnlockedFromItems = fromItems.filter((i) => i.isUnlocked === true && !archiveIds.has(i.id));
-        const seen = new Set<string>([...archiveIds]);
-        const extra = [...timeUnlockedFromItems, ...goalsUnlockedFromItems].filter((i) => {
-          if (seen.has(i.id)) return false;
-          seen.add(i.id);
-          return true;
-        });
-        setUnlockedItems([...extra, ...archiveItems]);
       }
     } finally {
       setRefreshingItems(false);
@@ -246,24 +220,7 @@ function AppContent() {
   const handleDeleteItem = async (itemId: string, deletionReason?: DeletionReasonData) => {
     if (!user) return;
 
-    const itemFromItems = items.find((i) => i.id === itemId);
-    const itemFromUnlocked = unlockedItems.find((i) => i.id === itemId);
-    const item = itemFromItems ?? itemFromUnlocked;
-
-    // Item exists only in unlocked archive (not in items table) – delete from unlocked_items only
-    if (!itemFromItems && itemFromUnlocked) {
-      const { success, error } = await deleteUnlockedItemDb(itemId, user.id);
-      if (success) {
-        setUnlockedItems((prev) => prev.filter((i) => i.id !== itemId));
-        setCurrentView('home');
-        setSelectedItemId(null);
-        alert('Item removed from your unlocked list.');
-      } else {
-        const errorMsg = error?.message || error?.toString() || 'Unknown error';
-        alert(`Failed to remove item\n\nError: ${errorMsg}`);
-      }
-      return;
-    }
+    const item = items.find((i) => i.id === itemId);
 
     if (item) {
       if (deletionReason) {
@@ -276,11 +233,6 @@ function AppContent() {
           subReason: deletionReason.subReason ?? '',
           constraintType: item.constraintType,
         });
-      } else {
-        // Constraint completed (time reached or goals password correct) – archive in unlocked_items
-        await saveUnlockedItem(item, user.id);
-        // Optimistically add to local unlocked archive so it appears immediately in the Unlocked tab
-        setUnlockedItems((prev) => [item, ...prev.filter((i) => i.id !== item.id)]);
       }
     }
 
@@ -330,7 +282,7 @@ function AppContent() {
     }
 
     // Update item in items state so it drops out of Locked tab (isUnlocked: true)
-    const item = items.find((i) => i.id === itemId) ?? unlockedItems.find((i) => i.id === itemId);
+    const item = items.find((i) => i.id === itemId);
     if (item) {
       const updatedItem = { ...item, isUnlocked: true };
       setItems((prev) => {
@@ -339,7 +291,6 @@ function AppContent() {
         localStorage.setItem(localKey, JSON.stringify(next));
         return next;
       });
-      setUnlockedItems((prev) => [updatedItem, ...prev.filter((i) => i.id !== itemId)]);
     }
   };
 

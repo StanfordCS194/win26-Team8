@@ -119,6 +119,8 @@ export function ItemDetail({ item, onBack, onDelete, onUnlock }: ItemDetailProps
   const [showDeleteReasonDialog, setShowDeleteReasonDialog] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
 
+  const isAlreadyUnlocked = item.isUnlocked === true;
+
   const handleDelete = () => {
     if (!window.confirm('Are you sure you want to delete this item?')) {
       return;
@@ -285,69 +287,71 @@ export function ItemDetail({ item, onBack, onDelete, onUnlock }: ItemDetailProps
                         </div>
                       )}
 
-                      {/* Unlock Password Input - Show for all goal-based items */}
-                      <form onSubmit={handleUnlock} className="p-5 bg-primary/10 rounded-xl border border-primary/20">
-                        <div className="flex items-start gap-3">
-                          <Lock className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                          <div className="flex-1">
-                            <div className="text-sm text-foreground/80 font-medium mb-2">Unlock Item</div>
-                            <p className="text-xs text-muted-foreground mb-3">
-                              {item.friendName 
-                                ? `Enter the password sent to ${item.friendName} to unlock this item and mark your goal as complete.`
-                                : 'Enter the unlock password to unlock this item and mark your goal as complete.'}
-                            </p>
-                            <div className="flex gap-2">
-                              <div className="flex-1 relative">
-                                <input
-                                  type="text"
-                                  value={unlockPassword}
-                                  onChange={(e) => handlePasswordChange(e.target.value)}
-                                  placeholder="Enter unlock password"
-                                  className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 text-foreground placeholder:text-muted-foreground transition-colors ${
-                                    unlockSuccess
-                                      ? 'border-green-500 bg-green-50/50 focus:ring-green-500/50'
-                                      : unlockError
-                                      ? 'border-destructive bg-destructive/10 focus:ring-destructive/50'
-                                      : 'border-border bg-input-background focus:ring-primary/50'
-                                  }`}
-                                  disabled={isUnlocking}
-                                />
-                                {unlockPassword.trim() && item.unlockPassword && (
-                                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                                    {unlockSuccess ? (
-                                      <span className="text-green-600 text-sm font-medium">✓ Correct</span>
-                                    ) : unlockError && unlockPassword.trim().length >= item.unlockPassword.length ? (
-                                      <span className="text-destructive text-sm font-medium">✗ Incorrect</span>
-                                    ) : null}
-                                  </div>
-                                )}
+                      {/* Unlock Password Input - hide once item is unlocked */}
+                      {!isAlreadyUnlocked && (
+                        <form onSubmit={handleUnlock} className="p-5 bg-primary/10 rounded-xl border border-primary/20">
+                          <div className="flex items-start gap-3">
+                            <Lock className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                            <div className="flex-1">
+                              <div className="text-sm text-foreground/80 font-medium mb-2">Unlock Item</div>
+                              <p className="text-xs text-muted-foreground mb-3">
+                                {item.friendName 
+                                  ? `Enter the password sent to ${item.friendName} to unlock this item and mark your goal as complete.`
+                                  : 'Enter the unlock password to unlock this item and mark your goal as complete.'}
+                              </p>
+                              <div className="flex gap-2">
+                                <div className="flex-1 relative">
+                                  <input
+                                    type="text"
+                                    value={unlockPassword}
+                                    onChange={(e) => handlePasswordChange(e.target.value)}
+                                    placeholder="Enter unlock password"
+                                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 text-foreground placeholder:text-muted-foreground transition-colors ${
+                                      unlockSuccess
+                                        ? 'border-green-500 bg-green-50/50 focus:ring-green-500/50'
+                                        : unlockError
+                                        ? 'border-destructive bg-destructive/10 focus:ring-destructive/50'
+                                        : 'border-border bg-input-background focus:ring-primary/50'
+                                    }`}
+                                    disabled={isUnlocking}
+                                  />
+                                  {unlockPassword.trim() && item.unlockPassword && (
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                      {unlockSuccess ? (
+                                        <span className="text-green-600 text-sm font-medium">✓ Correct</span>
+                                      ) : unlockError && unlockPassword.trim().length >= item.unlockPassword.length ? (
+                                        <span className="text-destructive text-sm font-medium">✗ Incorrect</span>
+                                      ) : null}
+                                    </div>
+                                  )}
+                                </div>
+                                <button
+                                  type="submit"
+                                  disabled={isUnlocking || !unlockPassword.trim() || !item.unlockPassword}
+                                  className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                                >
+                                  {isUnlocking ? 'Unlocking...' : 'Unlock'}
+                                </button>
                               </div>
-                              <button
-                                type="submit"
-                                disabled={isUnlocking || !unlockPassword.trim() || !item.unlockPassword}
-                                className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                              >
-                                {isUnlocking ? 'Unlocking...' : 'Unlock'}
-                              </button>
+                              {unlockError && !unlockSuccess && (
+                                <p className="text-sm text-destructive mt-2">
+                                  {unlockError}
+                                </p>
+                              )}
+                              {unlockSuccess && (
+                                <p className="text-sm text-green-600 mt-2 font-medium">
+                                  Password correct! Unlocking item...
+                                </p>
+                              )}
+                              {!item.unlockPassword && (
+                                <p className="text-xs text-muted-foreground mt-2">
+                                  No unlock password is set for this item.
+                                </p>
+                              )}
                             </div>
-                            {unlockError && !unlockSuccess && (
-                              <p className="text-sm text-destructive mt-2">
-                                {unlockError}
-                              </p>
-                            )}
-                            {unlockSuccess && (
-                              <p className="text-sm text-green-600 mt-2 font-medium">
-                                Password correct! Unlocking item...
-                              </p>
-                            )}
-                            {!item.unlockPassword && (
-                              <p className="text-xs text-muted-foreground mt-2">
-                                No unlock password is set for this item.
-                              </p>
-                            )}
                           </div>
-                        </div>
-                      </form>
+                        </form>
+                      )}
                     </div>
                   );
                 })()}
