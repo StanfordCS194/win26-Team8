@@ -2,6 +2,8 @@ import type { Item, QuestionAnswer } from '../types/item';
 import { ArrowLeft, Calendar, Target, Trash2, ShoppingBag, Lock } from 'lucide-react';
 import { useState } from 'react';
 import { DeleteReasonDialog } from './DeleteReasonDialog';
+import { UnlockedItemRemoveDialog } from './UnlockedItemRemoveDialog';
+import type { DidntBuySubReason } from './UnlockedItemRemoveDialog';
 
 export interface DeletionReasonData {
   reason: 'dont_want' | 'purchased_early';
@@ -13,6 +15,11 @@ interface ItemDetailProps {
   onBack: () => void;
   onDelete: (itemId: string, deletionReason?: DeletionReasonData) => void;
   onRefresh?: () => void;
+  /** Called when time has passed or goal password is correct; updates is_unlocked to true (does not delete). */
+  onUnlock?: (itemId: string) => void;
+  /** When true, this item is from the Unlocked tab; Delete shows reconsideration dialog and calls onRemoveUnlocked instead of onDelete. */
+  isUnlockedItem?: boolean;
+  onRemoveUnlocked?: (itemId: string, subReason: DidntBuySubReason | string) => void;
 }
 
 // Check if the item's constraint (time or goal) has been completed
@@ -111,23 +118,34 @@ function generateMindfulnessExplanation(questionnaire: QuestionAnswer[], finalSc
   return explanation;
 }
 
-export function ItemDetail({ item, onBack, onDelete, onRefresh }: ItemDetailProps) {
+export function ItemDetail({ item, onBack, onDelete, onRefresh, onUnlock, isUnlockedItem, onRemoveUnlocked }: ItemDetailProps) {
   const [unlockPassword, setUnlockPassword] = useState('');
   const [unlockError, setUnlockError] = useState('');
   const [unlockSuccess, setUnlockSuccess] = useState(false);
   const [isUnlocking, setIsUnlocking] = useState(false);
   const [showDeleteReasonDialog, setShowDeleteReasonDialog] = useState(false);
+  const [showUnlockedRemoveDialog, setShowUnlockedRemoveDialog] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
 
   const handleDelete = () => {
+    if (isUnlockedItem && onRemoveUnlocked) {
+      setShowUnlockedRemoveDialog(true);
+      return;
+    }
     if (!window.confirm('Are you sure you want to delete this item?')) {
       return;
     }
-    if (isConstraintComplete(item)) {
-      onDelete(item.id);
-    } else {
+    if (isConstraintComplete(item) && onUnlock) {
+      onUnlock(item.id);
+    } else if (!isConstraintComplete(item)) {
       setShowDeleteReasonDialog(true);
+    } else {
+      onDelete(item.id);
     }
+  };
+
+  const handleUnlockedRemoveConfirm = (subReason: DidntBuySubReason | string) => {
+    onRemoveUnlocked?.(item.id, subReason);
   };
 
   const handleDeleteReasonSelected = (
@@ -172,14 +190,14 @@ export function ItemDetail({ item, onBack, onDelete, onRefresh }: ItemDetailProp
     }
 
     if (unlockPassword.trim() === item.unlockPassword) {
-      // Password matches - unlock by deleting the item
       setUnlockSuccess(true);
       setIsUnlocking(true);
       setShowCelebration(true);
-      // Small delay for better UX
-      setTimeout(() => {
-        onDelete(item.id);
-      }, 1500);
+      if (onUnlock) {
+        setTimeout(() => onUnlock(item.id), 1500);
+      } else {
+        setTimeout(() => onDelete(item.id), 1500);
+      }
     } else {
       setUnlockError('Incorrect password. Please check with your friend.');
       setUnlockSuccess(false);
@@ -193,6 +211,11 @@ export function ItemDetail({ item, onBack, onDelete, onRefresh }: ItemDetailProp
         onOpenChange={setShowDeleteReasonDialog}
         onSelect={handleDeleteReasonSelected}
         constraintType={item.constraintType}
+      />
+      <UnlockedItemRemoveDialog
+        open={showUnlockedRemoveDialog}
+        onOpenChange={setShowUnlockedRemoveDialog}
+        onConfirm={handleUnlockedRemoveConfirm}
       />
       <button
         onClick={onBack}
@@ -273,94 +296,96 @@ export function ItemDetail({ item, onBack, onDelete, onRefresh }: ItemDetailProp
                         </div>
                       )}
 
-                      {/* Unlock section - conditional on whether friend has set the password */}
-                      {!item.unlockPassword ? (
-                        <div className="p-5 bg-amber-50 rounded-xl border border-amber-200">
-                          <div className="flex items-start gap-3">
-                            <Lock className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
-                            <div className="flex-1">
-                              <div className="text-sm text-foreground/80 font-medium mb-2">
-                                Waiting for {item.friendName || 'your friend'}
-                              </div>
-                              <p className="text-xs text-muted-foreground mb-3">
-                                An email has been sent to {item.friendName || 'your friend'}
-                                {item.friendEmail ? ` (${item.friendEmail})` : ''} asking them to set a password.
-                                Once they set it, come back here and enter the password they give you.
-                              </p>
-                              <div className="flex items-center gap-2 text-xs text-amber-700">
-                                <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></div>
-                                Pending — password not yet set
-                              </div>
-                              {onRefresh && (
-                                <button
-                                  type="button"
-                                  onClick={onRefresh}
-                                  className="mt-3 text-xs text-amber-700 underline hover:text-amber-800"
-                                >
-                                  Check again
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <form onSubmit={handleUnlock} className="p-5 bg-primary/10 rounded-xl border border-primary/20">
-                          <div className="flex items-start gap-3">
-                            <Lock className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                            <div className="flex-1">
-                              <div className="text-sm text-foreground/80 font-medium mb-2">Unlock Item</div>
-                              <p className="text-xs text-muted-foreground mb-3">
-                                {item.friendName
-                                  ? `Enter the password from ${item.friendName} to unlock this item and mark your goal as complete.`
-                                  : 'Enter the unlock password to unlock this item and mark your goal as complete.'}
-                              </p>
-                              <div className="flex gap-2">
-                                <div className="flex-1 relative">
-                                  <input
-                                    type="text"
-                                    value={unlockPassword}
-                                    onChange={(e) => handlePasswordChange(e.target.value)}
-                                    placeholder="Enter unlock password"
-                                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 text-foreground placeholder:text-muted-foreground transition-colors ${
-                                      unlockSuccess
-                                        ? 'border-green-500 bg-green-50/50 focus:ring-green-500/50'
-                                        : unlockError
-                                        ? 'border-destructive bg-destructive/10 focus:ring-destructive/50'
-                                        : 'border-border bg-input-background focus:ring-primary/50'
-                                    }`}
-                                    disabled={isUnlocking}
-                                  />
-                                  {unlockPassword.trim() && item.unlockPassword && (
-                                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                                      {unlockSuccess ? (
-                                        <span className="text-green-600 text-sm font-medium">&#10003; Correct</span>
-                                      ) : unlockError && unlockPassword.trim().length >= item.unlockPassword.length ? (
-                                        <span className="text-destructive text-sm font-medium">&#10007; Incorrect</span>
-                                      ) : null}
-                                    </div>
-                                  )}
+                      {/* Unlock section - hide when viewing from Unlocked tab */}
+                      {!isUnlockedItem && (
+                        !item.unlockPassword ? (
+                          <div className="p-5 bg-amber-50 rounded-xl border border-amber-200">
+                            <div className="flex items-start gap-3">
+                              <Lock className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                              <div className="flex-1">
+                                <div className="text-sm text-foreground/80 font-medium mb-2">
+                                  Waiting for {item.friendName || 'your friend'}
                                 </div>
-                                <button
-                                  type="submit"
-                                  disabled={isUnlocking || !unlockPassword.trim() || !item.unlockPassword}
-                                  className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                                >
-                                  {isUnlocking ? 'Unlocking...' : 'Unlock'}
-                                </button>
+                                <p className="text-xs text-muted-foreground mb-3">
+                                  An email has been sent to {item.friendName || 'your friend'}
+                                  {item.friendEmail ? ` (${item.friendEmail})` : ''} asking them to set a password.
+                                  Once they set it, come back here and enter the password they give you.
+                                </p>
+                                <div className="flex items-center gap-2 text-xs text-amber-700">
+                                  <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></div>
+                                  Pending — password not yet set
+                                </div>
+                                {onRefresh && (
+                                  <button
+                                    type="button"
+                                    onClick={onRefresh}
+                                    className="mt-3 text-xs text-amber-700 underline hover:text-amber-800"
+                                  >
+                                    Check again
+                                  </button>
+                                )}
                               </div>
-                              {unlockError && !unlockSuccess && (
-                                <p className="text-sm text-destructive mt-2">
-                                  {unlockError}
-                                </p>
-                              )}
-                              {unlockSuccess && (
-                                <p className="text-sm text-green-600 mt-2 font-medium">
-                                  Password correct! Unlocking item...
-                                </p>
-                              )}
                             </div>
                           </div>
-                        </form>
+                        ) : (
+                          <form onSubmit={handleUnlock} className="p-5 bg-primary/10 rounded-xl border border-primary/20">
+                            <div className="flex items-start gap-3">
+                              <Lock className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                              <div className="flex-1">
+                                <div className="text-sm text-foreground/80 font-medium mb-2">Unlock Item</div>
+                                <p className="text-xs text-muted-foreground mb-3">
+                                  {item.friendName
+                                    ? `Enter the password from ${item.friendName} to unlock this item and mark your goal as complete.`
+                                    : 'Enter the unlock password to unlock this item and mark your goal as complete.'}
+                                </p>
+                                <div className="flex gap-2">
+                                  <div className="flex-1 relative">
+                                    <input
+                                      type="text"
+                                      value={unlockPassword}
+                                      onChange={(e) => handlePasswordChange(e.target.value)}
+                                      placeholder="Enter unlock password"
+                                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 text-foreground placeholder:text-muted-foreground transition-colors ${
+                                        unlockSuccess
+                                          ? 'border-green-500 bg-green-50/50 focus:ring-green-500/50'
+                                          : unlockError
+                                          ? 'border-destructive bg-destructive/10 focus:ring-destructive/50'
+                                          : 'border-border bg-input-background focus:ring-primary/50'
+                                      }`}
+                                      disabled={isUnlocking}
+                                    />
+                                    {unlockPassword.trim() && item.unlockPassword && (
+                                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                        {unlockSuccess ? (
+                                          <span className="text-green-600 text-sm font-medium">&#10003; Correct</span>
+                                        ) : unlockError && unlockPassword.trim().length >= item.unlockPassword.length ? (
+                                          <span className="text-destructive text-sm font-medium">&#10007; Incorrect</span>
+                                        ) : null}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <button
+                                    type="submit"
+                                    disabled={isUnlocking || !unlockPassword.trim() || !item.unlockPassword}
+                                    className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                                  >
+                                    {isUnlocking ? 'Unlocking...' : 'Unlock'}
+                                  </button>
+                                </div>
+                                {unlockError && !unlockSuccess && (
+                                  <p className="text-sm text-destructive mt-2">
+                                    {unlockError}
+                                  </p>
+                                )}
+                                {unlockSuccess && (
+                                  <p className="text-sm text-green-600 mt-2 font-medium">
+                                    Password correct! Unlocking item...
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </form>
+                        )
                       )}
                     </div>
                   );
@@ -409,7 +434,7 @@ export function ItemDetail({ item, onBack, onDelete, onRefresh }: ItemDetailProp
               className="flex items-center justify-center gap-2 w-full px-4 py-3 border border-destructive/30 text-destructive rounded-xl hover:bg-destructive/10 transition-colors"
             >
               <Trash2 className="w-4 h-4" />
-              Delete Item
+              {isUnlockedItem ? 'Remove from list' : 'Delete Item'}
             </button>
           </div>
         </div>

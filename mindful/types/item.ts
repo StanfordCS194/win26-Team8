@@ -8,6 +8,8 @@ export type ItemCategory = 'Beauty' | 'Clothes' | 'Accessories' | 'Sports' | 'El
 
 export interface Item {
   id: string;
+  /** True when user has completed the constraint (time passed or goal password entered). */
+  isUnlocked?: boolean;
   name: string;
   imageUrl?: string;
   productUrl?: string;
