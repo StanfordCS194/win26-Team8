@@ -312,8 +312,30 @@ function AppContent() {
   const selectedItem = items.find((i) => i.id === selectedItemId);
   const isSelectedUnlockedItem = selectedItem?.isUnlocked === true;
 
-  const handleRemoveUnlockedItem = async (itemId: string, _subReason?: string) => {
+  const handleRemoveUnlockedItem = async (itemId: string, subReason?: string) => {
     if (!user) return;
+
+    // Log deletion reason for unlocked items as a "dont_want" reason with detailed subReason
+    const item = items.find((i) => i.id === itemId);
+    if (item && subReason) {
+      const accessToken = session?.access_token ?? null;
+      const { success: saveSuccess, error: saveError } = await saveDeletionReasonDirect(
+        {
+          itemId,
+          itemName: item.name,
+          userId: user.id,
+          reason: 'dont_want',
+          subReason,
+          constraintType: item.constraintType,
+        },
+        accessToken
+      );
+      if (!saveSuccess) {
+        console.error('Failed to save deletion reason for unlocked item:', saveError);
+        console.error('Error details:', saveError?.message, saveError?.code, saveError?.details);
+      }
+    }
+
     const { success, error } = await deleteItemDb(itemId, user.id);
     if (success) {
       const updated = items.filter((i) => i.id !== itemId);
