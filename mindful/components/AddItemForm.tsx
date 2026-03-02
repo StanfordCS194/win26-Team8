@@ -377,7 +377,6 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl, checkUrlInInventor
       ...(constraintType === 'goals' && friendName.trim() ? {
         friendName: friendName.trim(),
         friendEmail: friendEmail.trim() || undefined,
-        unlockPassword: generateUnlockPassword(),
       } : {}),
     });
 
@@ -860,7 +859,7 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl, checkUrlInInventor
                   className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Your friend will receive an email with a password to unlock this item once you complete your goal.
+                  Your friend will receive an email with a link to set a password. Once you complete your goal, ask them for the password to unlock your item.
                 </p>
               </div>
             </div>

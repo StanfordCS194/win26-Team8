@@ -10,6 +10,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { fetchItems, deleteItem as deleteItemDb, saveDeletionReason, updateItemUnlocked } from './lib/database';
 import { saveItemDirect } from './lib/database-alt';
 import { normalizeProductUrl } from './lib/urlUtils';
+import { supabase } from './env';
 import { Plus, User } from 'lucide-react';
 import './styles/globals.css';
 import logoImage from './assets/logo.png';
@@ -21,7 +22,7 @@ const FETCH_ITEMS_TIMEOUT_MS = 20000;
 type View = 'home' | 'item' | 'add' | 'time' | 'goals' | 'mission' | 'profile';
 
 function AppContent() {
-  const { user, session, loading } = useAuth();
+  const { user, session, loading, profile } = useAuth();
   const [items, setItems] = useState<Item[]>([]);
   const [currentView, setCurrentView] = useState<View>('mission');
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
@@ -205,17 +206,32 @@ function AppContent() {
     if (success) {
       console.log('Item saved to Supabase');
 
-      // Store friend unlock email information if this is a goals-based constraint with a friend
-      if (item.constraintType === 'goals' && item.friendName && item.friendEmail && item.unlockPassword) {
+      // Store friend unlock email record and send email via RPC
+      if (item.constraintType === 'goals' && item.friendName && item.friendEmail) {
         const { createFriendUnlockEmail } = await import('./lib/friendUnlockService');
         const emailRecord = await createFriendUnlockEmail(
           newItem.id,
-          item.friendEmail,
-          item.unlockPassword
+          item.friendEmail
         );
 
-        if (emailRecord.success) {
-          console.log('Friend unlock email record created in database');
+        if (emailRecord.success && emailRecord.data) {
+          console.log('Friend unlock email record created');
+
+          // Send email via server-side RPC (pg_net + Resend)
+          const setPasswordUrl = `${window.location.origin}/set-password.html?token=${emailRecord.data.friend_token}`;
+          const { data: rpcResult, error: rpcError } = await supabase.rpc('send_friend_email', {
+            p_to: item.friendEmail,
+            p_friend_name: item.friendName,
+            p_user_name: profile?.first_name || user.email?.split('@')[0] || 'Your friend',
+            p_item_name: item.name,
+            p_set_password_url: setPasswordUrl,
+          });
+
+          if (rpcError) {
+            console.warn('Failed to send friend email:', rpcError);
+          } else {
+            console.log('Friend email sent via RPC, request ID:', rpcResult);
+          }
         } else {
           console.warn('Failed to create friend unlock email record:', emailRecord.error);
         }
@@ -527,6 +543,7 @@ function AppContent() {
               item={selectedItem}
               onBack={handleBackFromItem}
               onDelete={handleDeleteItem}
+              onRefresh={handleRefreshItems}
               onUnlock={handleUnlockItem}
               isUnlockedItem={isSelectedUnlockedItem}
               onRemoveUnlocked={handleRemoveUnlockedItem}
