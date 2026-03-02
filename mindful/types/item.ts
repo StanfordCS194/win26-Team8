@@ -8,6 +8,8 @@ export type ItemCategory = 'Beauty' | 'Clothes' | 'Accessories' | 'Sports' | 'El
 
 export interface Item {
   id: string;
+  /** True when user has completed the constraint (time passed or goal password entered). */
+  isUnlocked?: boolean;
   name: string;
   imageUrl?: string;
   productUrl?: string;
@@ -21,8 +23,4 @@ export interface Item {
   friendName?: string;
   friendEmail?: string;
   unlockPassword?: string;
-  /** True when a goals-based item was unlocked via password (item still in items table). */
-  isUnlocked?: boolean;
-  /** Goals-based: the goal the user wants to complete before purchasing. */
-  goal?: string;
 }

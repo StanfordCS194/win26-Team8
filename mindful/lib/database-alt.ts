@@ -45,11 +45,11 @@ export async function saveItemDirect(
       wait_until_date: item.waitUntilDate || null,
       difficulty: item.difficulty || null,
       questionnaire: item.questionnaire,
+      // Friend unlock fields
       friend_name: item.friendName || null,
       friend_email: item.friendEmail || null,
       unlock_password: item.unlockPassword || null,
       is_unlocked: false,
-      goal: item.goal || item.questionnaire?.find((q) => q.id === 'goal')?.answer?.trim() || null,
     };
     
     console.log('📝 [DIRECT] Item to insert:', JSON.stringify(dbItem, null, 2));
@@ -89,6 +89,60 @@ export async function saveItemDirect(
     return { success: true, error: null };
   } catch (error) {
     console.error('❌ [DIRECT] Exception:', error);
+    return { success: false, error };
+  }
+}
+
+/**
+ * Save deletion reason via direct REST API (with auth token).
+ * Uses same pattern as saveItemDirect to avoid session/RLS issues.
+ */
+export async function saveDeletionReasonDirect(
+  params: {
+    itemId: string;
+    itemName: string;
+    userId: string;
+    reason: 'dont_want' | 'purchased_early';
+    subReason: string;
+    constraintType: 'time' | 'goals';
+  },
+  accessToken: string | null
+): Promise<{ success: boolean; error: any }> {
+  try {
+    if (!accessToken) {
+      return { success: false, error: new Error('No auth token - user not logged in') };
+    }
+
+    const url = 'https://mohgivduzthccoybnbnr.supabase.co/rest/v1/item_deletion_reasons';
+    const body = {
+      user_id: params.userId,
+      item_id: params.itemId,
+      item_name: params.itemName,
+      reason: params.reason,
+      sub_reason: params.subReason,
+      constraint_type: params.constraintType,
+    };
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1vaGdpdmR1enRoY2NveWJuYm5yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk3MTA1MDUsImV4cCI6MjA4NTI4NjUwNX0.eoiFJ4fvJnIrV16uwL6Blr2rgMsXwoDE-vNPmY4K4d4',
+        Authorization: `Bearer ${accessToken}`,
+        Prefer: 'return=minimal',
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ [DIRECT] Save deletion reason failed:', response.status, errorText);
+      return { success: false, error: new Error(`HTTP ${response.status}: ${errorText}`) };
+    }
+
+    return { success: true, error: null };
+  } catch (error) {
+    console.error('❌ [DIRECT] Save deletion reason exception:', error);
     return { success: false, error };
   }
 }

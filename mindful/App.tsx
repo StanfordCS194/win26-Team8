@@ -7,8 +7,8 @@ import { GoalsBasedView } from './components/GoalsBasedView';
 import { OurMission } from './components/OurMission';
 import { Profile } from './components/Profile';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { fetchItems, deleteItem as deleteItemDb, saveDeletionReason, markItemUnlocked } from './lib/database';
-import { saveItemDirect } from './lib/database-alt';
+import { fetchItems, deleteItem as deleteItemDb, updateItemUnlocked } from './lib/database';
+import { saveItemDirect, saveDeletionReasonDirect } from './lib/database-alt';
 import { normalizeProductUrl } from './lib/urlUtils';
 import { Plus, User } from 'lucide-react';
 import './styles/globals.css';
@@ -23,13 +23,16 @@ type View = 'home' | 'item' | 'add' | 'time' | 'goals' | 'mission' | 'profile';
 function AppContent() {
   const { user, session, loading } = useAuth();
   const [items, setItems] = useState<Item[]>([]);
-  const [unlockedItems, setUnlockedItems] = useState<Item[]>([]);
   const [currentView, setCurrentView] = useState<View>('mission');
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [homeSubtab, setHomeSubtab] = useState<'locked' | 'unlocked'>('locked');
   const [refreshingItems, setRefreshingItems] = useState(false);
   const [itemsLoading, setItemsLoading] = useState(false);
   const [itemsLoadError, setItemsLoadError] = useState<string | null>(null);
+
+  const lockedItems = items.filter((i) => !i.isUnlocked);
+  const unlockedItems = items.filter((i) => i.isUnlocked);
+
   const isTimeUnlocked = (item: Item): boolean => {
     if (item.constraintType !== 'time' || !item.waitUntilDate) return false;
     const today = new Date();
@@ -41,14 +44,6 @@ function AppContent() {
 
   const [unlockingTodayItemIds, setUnlockingTodayItemIds] = useState<string[]>([]);
   const [showUnlockingTodayPopup, setShowUnlockingTodayPopup] = useState(false);
-
-  // Derive unlocked items from main items list (no separate unlocked_items table)
-  useEffect(() => {
-    const unlocked = items.filter(
-      (item) => item.isUnlocked || isTimeUnlocked(item)
-    );
-    setUnlockedItems(unlocked);
-  }, [items]);
 
   // Load items when user logs in
   useEffect(() => {
@@ -100,8 +95,24 @@ function AppContent() {
     setItemsLoading(false);
 
     if (!result.error && result.items) {
-      setItems(result.items);
-      localStorage.setItem(localStorageKey, JSON.stringify(result.items));
+      const toUnlock = result.items.filter(
+        (item) =>
+          item.constraintType === 'time' &&
+          item.waitUntilDate &&
+          !item.isUnlocked &&
+          isTimeUnlocked(item)
+      );
+      if (toUnlock.length > 0 && user) {
+        await Promise.all(toUnlock.map((item) => updateItemUnlocked(item.id, user!.id, true)));
+        const updated = result.items.map((i) =>
+          toUnlock.some((u) => u.id === i.id) ? { ...i, isUnlocked: true } : i
+        );
+        setItems(updated);
+        localStorage.setItem(localStorageKey, JSON.stringify(updated));
+      } else {
+        setItems(result.items);
+        localStorage.setItem(localStorageKey, JSON.stringify(result.items));
+      }
     } else if (result.error) {
       const message = result.error instanceof Error ? result.error.message : 'Could not load items. Try again.';
       setItemsLoadError(message);
@@ -120,8 +131,24 @@ function AppContent() {
         result = await fetchItemsWithTimeout();
       }
       if (!result.error && result.items) {
-        setItems(result.items);
-        localStorage.setItem(`secondThought_user_${user.id}_items`, JSON.stringify(result.items));
+        const toUnlock = result.items.filter(
+          (item) =>
+            item.constraintType === 'time' &&
+            item.waitUntilDate &&
+            !item.isUnlocked &&
+            isTimeUnlocked(item)
+        );
+        if (toUnlock.length > 0 && user) {
+          await Promise.all(toUnlock.map((item) => updateItemUnlocked(item.id, user.id, true)));
+          const updated = result.items.map((i) =>
+            toUnlock.some((u) => u.id === i.id) ? { ...i, isUnlocked: true } : i
+          );
+          setItems(updated);
+          localStorage.setItem(`secondThought_user_${user.id}_items`, JSON.stringify(updated));
+        } else {
+          setItems(result.items);
+          localStorage.setItem(`secondThought_user_${user.id}_items`, JSON.stringify(result.items));
+        }
       } else if (result.error) {
         const message = result.error instanceof Error ? result.error.message : 'Could not refresh. Try again.';
         setItemsLoadError(message);
@@ -217,92 +244,92 @@ function AppContent() {
     setCurrentView('item');
   };
 
+  const handleUnlockItem = async (itemId: string) => {
+    if (!user) return;
+    const item = items.find((i) => i.id === itemId);
+    const { success, error } = await updateItemUnlocked(itemId, user.id, true);
+    if (success) {
+      const updated = items.map((i) => (i.id === itemId ? { ...i, isUnlocked: true } : i));
+      setItems(updated);
+      const localKey = `secondThought_user_${user.id}_items`;
+      localStorage.setItem(localKey, JSON.stringify(updated));
+      setCurrentView('home');
+      setHomeSubtab('unlocked');
+      setSelectedItemId(null);
+      if (item?.constraintType === 'goals') {
+        alert(`Congratulations, you completed your goal and have unlocked "${item.name}".`);
+      }
+    } else {
+      const errorMsg = error?.message || error?.toString() || 'Unknown error';
+      alert(`Failed to unlock item.\n\nError: ${errorMsg}`);
+    }
+  };
+
   const handleDeleteItem = async (itemId: string, deletionReason?: DeletionReasonData) => {
     if (!user) return;
 
     const item = items.find((i) => i.id === itemId);
 
-    if (item) {
-      if (deletionReason) {
-        // Deleting before constraint completion – log reason only
-        await saveDeletionReason({
+    if (item && deletionReason) {
+      const accessToken = session?.access_token ?? null;
+      const { success: saveSuccess, error: saveError } = await saveDeletionReasonDirect(
+        {
           itemId,
           itemName: item.name,
           userId: user.id,
           reason: deletionReason.reason,
           subReason: deletionReason.subReason ?? '',
           constraintType: item.constraintType,
-        });
+        },
+        accessToken
+      );
+      if (!saveSuccess) {
+        console.error('Failed to save deletion reason:', saveError);
+        console.error('Error details:', saveError?.message, saveError?.code, saveError?.details);
       }
     }
 
-    console.log('Deleting item:', itemId);
-
-    // Delete from items table
     const { success, error } = await deleteItemDb(itemId, user.id);
 
     if (success) {
-      console.log('Item deleted from Supabase');
-
-      // Update UI: remove from items and from unlocked list if present
-      setItems((prev) => prev.filter((i) => i.id !== itemId));
-      setUnlockedItems((prev) => prev.filter((i) => i.id !== itemId));
-
-      // Update localStorage
-      const localKey = `secondThought_user_${user.id}_items`;
       const updatedItems = items.filter((i) => i.id !== itemId);
+      setItems(updatedItems);
+      const localKey = `secondThought_user_${user.id}_items`;
       localStorage.setItem(localKey, JSON.stringify(updatedItems));
-
       setCurrentView('home');
       setSelectedItemId(null);
-      if (item && item.constraintType === 'goals') {
-        alert(`Congratulations, you completed your goal and have unlocked "${item.name}".`);
+      if (item && deletionReason) {
+        // already showed DeleteReasonDialog
       } else {
-        alert('Item deleted successfully!');
+        alert('Item deleted.');
       }
     } else {
-      console.error('Delete failed:', error);
       const errorMsg = error?.message || error?.toString() || 'Unknown error';
-      alert(`Failed to delete item\n\nError: ${errorMsg}`);
+      alert(`Failed to delete item.\n\nError: ${errorMsg}`);
     }
   };
 
-  const handleUnlockItem = async (itemId: string) => {
+  const selectedItem = items.find((i) => i.id === selectedItemId);
+  const isSelectedUnlockedItem = selectedItem?.isUnlocked === true;
+
+  const handleRemoveUnlockedItem = async (itemId: string, _subReason?: string) => {
     if (!user) return;
-
-    console.log('Marking item unlocked (password flow):', itemId);
-
-    const { success, error } = await markItemUnlocked(itemId, user.id);
-
-    if (!success) {
-      console.error('Unlock update failed:', error);
+    const { success, error } = await deleteItemDb(itemId, user.id);
+    if (success) {
+      const updated = items.filter((i) => i.id !== itemId);
+      setItems(updated);
+      const localKey = `secondThought_user_${user.id}_items`;
+      localStorage.setItem(localKey, JSON.stringify(updated));
+      setCurrentView('home');
+      setSelectedItemId(null);
+    } else {
       const errorMsg = error?.message || error?.toString() || 'Unknown error';
-      alert(`Failed to mark item as unlocked\n\nError: ${errorMsg}`);
-      return;
-    }
-
-    // Update item in items state so it drops out of Locked tab (isUnlocked: true)
-    const item = items.find((i) => i.id === itemId);
-    if (item) {
-      const updatedItem = { ...item, isUnlocked: true };
-      setItems((prev) => {
-        const next = prev.map((i) => (i.id === itemId ? updatedItem : i));
-        const localKey = `secondThought_user_${user.id}_items`;
-        localStorage.setItem(localKey, JSON.stringify(next));
-        return next;
-      });
+      alert(`Failed to remove item.\n\nError: ${errorMsg}`);
     }
   };
-
-  const selectedItem = items.find(item => item.id === selectedItemId)
-    ?? unlockedItems.find(item => item.id === selectedItemId);
 
   const handleBackFromItem = () => {
-    if (selectedItem && (unlockedItems.some(u => u.id === selectedItem.id) || isTimeUnlocked(selectedItem))) {
-      setHomeSubtab('unlocked');
-    } else {
-      setHomeSubtab('locked');
-    }
+    setHomeSubtab(selectedItem?.isUnlocked ? 'unlocked' : 'locked');
     setCurrentView('home');
     setSelectedItemId(null);
   };
@@ -489,7 +516,6 @@ function AppContent() {
           user ? (
             <Home 
               items={items}
-              unlockedItems={unlockedItems}
               activeSubtab={homeSubtab}
               onSubtabChange={setHomeSubtab}
               onItemClick={handleItemClick}
@@ -511,6 +537,8 @@ function AppContent() {
               onBack={handleBackFromItem}
               onDelete={handleDeleteItem}
               onUnlock={handleUnlockItem}
+              isUnlockedItem={isSelectedUnlockedItem}
+              onRemoveUnlocked={handleRemoveUnlockedItem}
             />
           ) : (
             <SignInRequired />

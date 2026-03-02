@@ -18,8 +18,7 @@ CREATE TABLE IF NOT EXISTS public.unlocked_items (
   unlocked_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
   friend_name TEXT,
   friend_email TEXT,
-  unlock_password TEXT,
-  goal TEXT
+  unlock_password TEXT
 );
 
 CREATE INDEX IF NOT EXISTS unlocked_items_user_id_idx ON public.unlocked_items(user_id);
@@ -29,12 +28,16 @@ ALTER TABLE public.unlocked_items ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Users can insert their own unlocked items" ON public.unlocked_items;
 DROP POLICY IF EXISTS "Users can view their own unlocked items" ON public.unlocked_items;
+DROP POLICY IF EXISTS "Users can delete their own unlocked items" ON public.unlocked_items;
 
 CREATE POLICY "Users can insert their own unlocked items" ON public.unlocked_items
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 CREATE POLICY "Users can view their own unlocked items" ON public.unlocked_items
   FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own unlocked items" ON public.unlocked_items
+  FOR DELETE USING (auth.uid() = user_id);
 
 SELECT 'unlocked_items table created successfully.' AS status;
 
