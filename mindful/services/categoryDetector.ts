@@ -6,18 +6,41 @@ import type { ItemCategory } from '../types/item';
 
 const CATEGORIES: ItemCategory[] = ['Beauty', 'Clothes', 'Accessories', 'Sports', 'Electronics', 'Home', 'Other'];
 
-const CATEGORY_SYSTEM_PROMPT = `You are a product categorization assistant. Your task is to classify product names into one of these categories: Beauty, Clothes, Accessories, Sports, Electronics, Home, or Other.
+const CATEGORY_SYSTEM_PROMPT = `You are a product categorization assistant. Classify the given product name into exactly one category.
 
-Categories:
-- Beauty: Skincare products, makeup, cosmetics, perfumes, hair care, beauty tools, nail polish, serums, creams, lotions. Not jewelry or bags.
-- Clothes: Clothing and apparel only—shirts, pants, dresses, shoes, sneakers, jackets, sweaters, jeans, skirts, tops, suits, coats, socks, underwear. Not jewelry, purses, or bags.
-- Accessories: Jewelry (rings, necklaces, bracelets, earrings), purses, handbags, wallets, belts, watches (fashion watches), sunglasses, scarves, hats, backpacks (non-sport), totes, clutches—items that accessorize rather than being clothing or beauty products.
-- Sports: Sports equipment, fitness gear, athletic wear, workout equipment, outdoor gear
-- Electronics: Phones, computers, cameras, TVs, headphones, gadgets, tech devices
-- Home: Furniture, home decor, appliances, kitchen items, bedding, lighting, storage
-- Other: Anything that doesn't fit the above categories
+VALID CATEGORIES (use one of these exact words only):
+- Beauty
+- Clothes  
+- Accessories
+- Sports
+- Electronics
+- Home
+- Other
 
-Return ONLY the category name (one word: Beauty, Clothes, Accessories, Sports, Electronics, Home, or Other). Do not include any explanation or additional text.`;
+DEFINITIONS AND EXAMPLES:
+
+Beauty: Skincare, makeup, cosmetics, perfume/fragrance, hair care, nail products, serums, moisturizers, cleansers, face masks, beauty tools (e.g. makeup brushes), self-care grooming. NOT: jewelry, handbags, fashion items.
+Examples: "La Mer moisturizer" → Beauty, "Dior lipstick" → Beauty, "Olaplex shampoo" → Beauty.
+
+Clothes: Apparel and footwear only—shirts, pants, dresses, jackets, coats, sweaters, jeans, skirts, tops, blouses, suits, socks, underwear, shoes, sneakers, boots, sandals. NOT: jewelry, bags, watches, sports equipment.
+Examples: "Nike running shoes" can be Clothes (everyday wear) or Sports (athletic); prefer Sports if the name suggests athletic use. "Levi's jeans" → Clothes.
+
+Accessories: Jewelry (rings, necklaces, bracelets, earrings), handbags, purses, wallets, belts, fashion watches, sunglasses, scarves, hats, backpacks (non-sport), totes, clutches, hair accessories. Items that accessorize an outfit rather than being primary clothing or beauty.
+Examples: "Louis Vuitton handbag" → Accessories, "Cartier watch" → Accessories, "Ray-Ban sunglasses" → Accessories.
+
+Sports: Sports equipment, fitness gear, athletic apparel meant for sport (jerseys, cleats, gym wear), workout equipment, outdoor/activity gear, camping gear, bicycles, yoga mats.
+Examples: "Peloton bike" → Sports, "Wilson basketball" → Sports, "Yoga mat" → Sports, "Running shoes" (when clearly athletic) → Sports.
+
+Electronics: Phones, computers, tablets, cameras, TVs, headphones, earbuds, speakers, smartwatches (fitness/tech watches), gaming consoles, drones, chargers, cables, tech gadgets.
+Examples: "iPhone 15" → Electronics, "Sony headphones" → Electronics, "Apple Watch" → Electronics, "Nintendo Switch" → Electronics.
+
+Home: Furniture, home decor, bedding, kitchen items, appliances, lighting, rugs, storage, plants, candles, home organization.
+Examples: "West Elm sofa" → Home, "KitchenAid mixer" → Home, "Throw pillow" → Home.
+
+Other: Anything that does not clearly fit the above. When in doubt between two categories, choose the more specific one; use Other only when the product is ambiguous or fits none of the others.
+
+OUTPUT: Reply with exactly one word from the list above. No period, no explanation, no other text.`;
+
 
 function getApiKey(): string {
   return getExpoPublic('EXPO_PUBLIC_ANTHROPIC_API_KEY');
@@ -170,7 +193,7 @@ export async function detectCategory(itemName: string): Promise<ItemCategory> {
         messages: [
           {
             role: 'user',
-            content: `What category does this product belong to: "${itemName}"?`,
+            content: `Product name: "${itemName.trim()}"\n\nReply with exactly one word: Beauty, Clothes, Accessories, Sports, Electronics, Home, or Other.`,
           },
         ],
       }),
@@ -190,17 +213,30 @@ export async function detectCategory(itemName: string): Promise<ItemCategory> {
       return detectCategoryFallback(itemName);
     }
 
-    // Extract category from response (should be just the category name)
-    const detectedCategory = content.split(/\s+/)[0].trim();
-    
-    // Validate it's a valid category
-    if (CATEGORIES.includes(detectedCategory as ItemCategory)) {
+    // Parse category: find any valid category name in the response (whole-word match to avoid "Other" in "another")
+    const contentLower = content.trim().toLowerCase();
+    let detectedCategory: string | null = null;
+    let earliestIndex = Infinity;
+    for (const cat of CATEGORIES) {
+      const regex = new RegExp(`\\b${cat.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`);
+      const match = contentLower.match(regex);
+      if (match && match.index !== undefined && match.index < earliestIndex) {
+        earliestIndex = match.index;
+        detectedCategory = cat;
+      }
+    }
+    if (detectedCategory) {
       console.log('AI detected category:', detectedCategory);
       return detectedCategory as ItemCategory;
-    } else {
-      console.warn('AI returned invalid category:', detectedCategory, '- using fallback');
-      return detectCategoryFallback(itemName);
     }
+    // Fallback: first word with trailing punctuation stripped
+    const firstWord = content.split(/\s+/)[0].replace(/[.,;:!?]+$/, '').trim();
+    if (CATEGORIES.includes(firstWord as ItemCategory)) {
+      console.log('AI detected category (first word):', firstWord);
+      return firstWord as ItemCategory;
+    }
+    console.warn('AI returned invalid category:', content.slice(0, 80), '- using fallback');
+    return detectCategoryFallback(itemName);
   } catch (error) {
     console.error('Error detecting category with AI:', error);
     console.log('Falling back to keyword-based detection');
