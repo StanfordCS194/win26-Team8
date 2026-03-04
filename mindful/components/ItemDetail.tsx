@@ -1,6 +1,7 @@
 import type { Item, QuestionAnswer } from '../types/item';
 import { ArrowLeft, Calendar, Target, Trash2, ShoppingBag, Lock } from 'lucide-react';
 import { useState } from 'react';
+import { supabase } from '../env';
 import { DeleteReasonDialog } from './DeleteReasonDialog';
 import { UnlockedItemRemoveDialog } from './UnlockedItemRemoveDialog';
 import type { DidntBuySubReason } from './UnlockedItemRemoveDialog';
@@ -161,37 +162,34 @@ export function ItemDetail({ item, onBack, onDelete, onRefresh, onUnlock, isUnlo
     setUnlockError('');
     setUnlockSuccess(false);
     setShowCelebration(false);
-    
-    // Real-time validation if password is set
-    if (item.unlockPassword && value.trim()) {
-      if (value.trim() === item.unlockPassword) {
-        setUnlockSuccess(true);
-        setUnlockError('');
-      } else if (value.trim().length >= item.unlockPassword.length) {
-        setUnlockError('Incorrect password');
-        setUnlockSuccess(false);
-      }
-    }
   };
 
-  const handleUnlock = (e: React.FormEvent) => {
+  const handleUnlock = async (e: React.FormEvent) => {
     e.preventDefault();
     setUnlockError('');
     setUnlockSuccess(false);
-    
+
     if (!unlockPassword.trim()) {
       setUnlockError('Please enter the unlock password');
       return;
     }
 
-    if (!item.unlockPassword) {
-      setUnlockError('This item does not have an unlock password set');
+    setIsUnlocking(true);
+
+    // Verify password server-side via RPC
+    const { data, error } = await supabase.rpc('verify_unlock_password', {
+      p_item_id: item.id,
+      p_password: unlockPassword.trim(),
+    });
+
+    if (error) {
+      setUnlockError('Something went wrong. Please try again.');
+      setIsUnlocking(false);
       return;
     }
 
-    if (unlockPassword.trim() === item.unlockPassword) {
+    if (data?.success) {
       setUnlockSuccess(true);
-      setIsUnlocking(true);
       setShowCelebration(true);
       if (onUnlock) {
         setTimeout(() => onUnlock(item.id), 1500);
@@ -199,8 +197,9 @@ export function ItemDetail({ item, onBack, onDelete, onRefresh, onUnlock, isUnlo
         setTimeout(() => onDelete(item.id), 1500);
       }
     } else {
-      setUnlockError('Incorrect password. Please check with your friend.');
+      setUnlockError(data?.error || 'Incorrect password. Please check with your friend.');
       setUnlockSuccess(false);
+      setIsUnlocking(false);
     }
   };
 
@@ -298,7 +297,7 @@ export function ItemDetail({ item, onBack, onDelete, onRefresh, onUnlock, isUnlo
 
                       {/* Unlock section - hide when viewing from Unlocked tab */}
                       {!isUnlockedItem && (
-                        !item.unlockPassword ? (
+                        !item.hasUnlockPassword ? (
                           <div className="p-5 bg-amber-50 rounded-xl border border-amber-200">
                             <div className="flex items-start gap-3">
                               <Lock className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
@@ -354,19 +353,15 @@ export function ItemDetail({ item, onBack, onDelete, onRefresh, onUnlock, isUnlo
                                       }`}
                                       disabled={isUnlocking}
                                     />
-                                    {unlockPassword.trim() && item.unlockPassword && (
+                                    {unlockSuccess && (
                                       <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                                        {unlockSuccess ? (
-                                          <span className="text-green-600 text-sm font-medium">&#10003; Correct</span>
-                                        ) : unlockError && unlockPassword.trim().length >= item.unlockPassword.length ? (
-                                          <span className="text-destructive text-sm font-medium">&#10007; Incorrect</span>
-                                        ) : null}
+                                        <span className="text-green-600 text-sm font-medium">&#10003; Correct</span>
                                       </div>
                                     )}
                                   </div>
                                   <button
                                     type="submit"
-                                    disabled={isUnlocking || !unlockPassword.trim() || !item.unlockPassword}
+                                    disabled={isUnlocking || !unlockPassword.trim()}
                                     className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                                   >
                                     {isUnlocking ? 'Unlocking...' : 'Unlock'}

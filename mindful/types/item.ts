@@ -23,4 +23,6 @@ export interface Item {
   friendName?: string;
   friendEmail?: string;
   unlockPassword?: string;
+  /** Whether the friend has set a password (without exposing the actual hash) */
+  hasUnlockPassword?: boolean;
 }

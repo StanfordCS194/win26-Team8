@@ -95,7 +95,7 @@ function dbToItem(dbItem: DbItem): Item {
     // Friend unlock fields
     friendName: dbItem.friend_name || undefined,
     friendEmail: dbItem.friend_email || undefined,
-    unlockPassword: dbItem.unlock_password || undefined,
+    hasUnlockPassword: !!dbItem.unlock_password,
   };
 }
 
@@ -116,7 +116,7 @@ function dbUnlockedToItem(row: DbUnlockedItem): Item {
     questionnaire: row.questionnaire,
     friendName: row.friend_name || undefined,
     friendEmail: row.friend_email || undefined,
-    unlockPassword: row.unlock_password || undefined,
+    hasUnlockPassword: !!row.unlock_password,
   };
 }
 
