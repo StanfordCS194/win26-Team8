@@ -25864,8 +25864,10 @@ ${suffix}`;
       ] }) }) });
     }
     if (showSavedScreen) {
-      return /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { id: OVERLAY_ID, className: "st-overlay-root", onClick: (e) => e.stopPropagation(), children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "st-overlay-backdrop", onClick: handleBackdropClick, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "st-overlay-card", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("h1", { className: "st-overlay-title", children: "Item saved!" }),
+      return /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { id: OVERLAY_ID, className: "st-overlay-root", onClick: (e) => e.stopPropagation(), children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "st-overlay-backdrop", onClick: handleBackdropClick, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "st-overlay-card", style: { textAlign: "center", padding: "48px 32px" }, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { style: { width: 64, height: 64, borderRadius: "50%", background: "rgba(37,87,54,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("svg", { width: "32", height: "32", viewBox: "0 0 24 24", fill: "none", stroke: "#255736", strokeWidth: "2.5", strokeLinecap: "round", strokeLinejoin: "round", children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "M5 13l4 4L19 7" }) }) }),
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("h1", { className: "st-overlay-title", style: { marginBottom: 8 }, children: "Item Added!" }),
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { style: { fontSize: 14, color: "#6b7280", marginBottom: 24 }, children: "Added to your Second Thought reflection list." }),
         /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
           "button",
           {
@@ -25876,7 +25878,7 @@ ${suffix}`;
               e.stopPropagation();
               onClose();
             },
-            children: "Close"
+            children: "Done"
           }
         )
       ] }) }) });

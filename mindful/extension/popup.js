@@ -25502,6 +25502,8 @@ ${suffix}`;
     const [activeUrl, setActiveUrl] = (0, import_react5.useState)("");
     const [urlStatus, setUrlStatus] = (0, import_react5.useState)("");
     const [submitMessage, setSubmitMessage] = (0, import_react5.useState)("");
+    const [itemAdded, setItemAdded] = (0, import_react5.useState)(false);
+    const [addedItemName, setAddedItemName] = (0, import_react5.useState)("");
     (0, import_react5.useEffect)(() => {
       supabase.auth.getSession().then(({ data: { session: session2 } }) => {
         setSession(session2);
@@ -25556,7 +25558,8 @@ ${suffix}`;
           return;
         }
         console.log("Item saved successfully!");
-        setSubmitMessage("Item saved! Open the web app to view it.");
+        setAddedItemName(item.name);
+        setItemAdded(true);
       } catch (err) {
         console.error("EXCEPTION saving item:", err);
         setSubmitMessage(`Error: ${err.message}`);
@@ -25595,17 +25598,48 @@ ${suffix}`;
         )
       ] }),
       /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { className: "text-xs text-muted-foreground mb-4", children: session.user.email }),
-      urlStatus && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { className: "text-sm text-muted-foreground mb-2", children: urlStatus }),
-      submitMessage && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "bg-primary/10 border border-primary/20 text-foreground rounded-xl p-3 text-sm mb-4", children: submitMessage }),
-      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
-        AddItemForm,
-        {
-          onSubmit: handleSubmit,
-          onCancel: () => window.close(),
-          initialUrl: activeUrl,
-          checkUrlInInventory
-        }
-      )
+      itemAdded ? /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "flex flex-col items-center justify-center py-10 text-center", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4", children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("svg", { className: "w-8 h-8 text-primary", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24", children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2.5, d: "M5 13l4 4L19 7" }) }) }),
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("h2", { className: "text-xl font-bold text-foreground mb-2", children: "Item Added!" }),
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("p", { className: "text-sm text-muted-foreground mb-1", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("strong", { children: addedItemName }),
+          " has been added to your reflection list."
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { className: "text-xs text-muted-foreground mb-6", children: "Open the Second Thought app to view it." }),
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "flex gap-3", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
+            "button",
+            {
+              onClick: () => {
+                setItemAdded(false);
+                setSubmitMessage("");
+              },
+              className: "px-4 py-2 text-sm border border-border rounded-full hover:bg-muted/30 transition-colors",
+              children: "Add Another"
+            }
+          ),
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
+            "button",
+            {
+              onClick: () => window.close(),
+              className: "px-4 py-2 text-sm bg-primary text-primary-foreground rounded-full hover:bg-primary/90 transition-colors",
+              children: "Done"
+            }
+          )
+        ] })
+      ] }) : /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+        urlStatus && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { className: "text-sm text-muted-foreground mb-2", children: urlStatus }),
+        submitMessage && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "bg-destructive/10 border border-destructive/20 text-destructive rounded-xl p-3 text-sm mb-4", children: submitMessage }),
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
+          AddItemForm,
+          {
+            onSubmit: handleSubmit,
+            onCancel: () => window.close(),
+            initialUrl: activeUrl,
+            checkUrlInInventory
+          }
+        )
+      ] })
     ] });
   };
   var container = document.getElementById("root");
