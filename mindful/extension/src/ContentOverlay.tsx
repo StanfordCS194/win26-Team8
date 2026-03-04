@@ -141,8 +141,16 @@ export function ContentOverlay({ onClose, pageUrl }: ContentOverlayProps) {
     return (
       <div id={OVERLAY_ID} className="st-overlay-root" onClick={(e) => e.stopPropagation()}>
         <div className="st-overlay-backdrop" onClick={handleBackdropClick}>
-          <div className="st-overlay-card">
-            <h1 className="st-overlay-title">Item saved!</h1>
+          <div className="st-overlay-card" style={{ textAlign: 'center', padding: '48px 32px' }}>
+            <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(37,87,54,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#255736" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h1 className="st-overlay-title" style={{ marginBottom: 8 }}>Item Added!</h1>
+            <p style={{ fontSize: 14, color: '#6b7280', marginBottom: 24 }}>
+              Added to your Second Thought reflection list.
+            </p>
             <button
               type="button"
               className="st-overlay-btn-primary"
@@ -152,7 +160,7 @@ export function ContentOverlay({ onClose, pageUrl }: ContentOverlayProps) {
                 onClose();
               }}
             >
-              Close
+              Done
             </button>
           </div>
         </div>

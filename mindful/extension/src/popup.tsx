@@ -18,6 +18,8 @@ const App = () => {
   const [activeUrl, setActiveUrl] = useState('');
   const [urlStatus, setUrlStatus] = useState('');
   const [submitMessage, setSubmitMessage] = useState('');
+  const [itemAdded, setItemAdded] = useState(false);
+  const [addedItemName, setAddedItemName] = useState('');
 
   // Check existing session & listen for auth changes
   useEffect(() => {
@@ -90,7 +92,8 @@ const App = () => {
       }
 
       console.log('Item saved successfully!');
-      setSubmitMessage('Item saved! Open the web app to view it.');
+      setAddedItemName(item.name);
+      setItemAdded(true);
     } catch (err: any) {
       console.error('EXCEPTION saving item:', err);
       setSubmitMessage(`Error: ${err.message}`);
@@ -141,19 +144,51 @@ const App = () => {
       </div>
       <p className="text-xs text-muted-foreground mb-4">{session.user.email}</p>
 
-      {urlStatus && <p className="text-sm text-muted-foreground mb-2">{urlStatus}</p>}
-      {submitMessage && (
-        <div className="bg-primary/10 border border-primary/20 text-foreground rounded-xl p-3 text-sm mb-4">
-          {submitMessage}
+      {itemAdded ? (
+        <div className="flex flex-col items-center justify-center py-10 text-center">
+          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+            <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-bold text-foreground mb-2">Item Added!</h2>
+          <p className="text-sm text-muted-foreground mb-1">
+            <strong>{addedItemName}</strong> has been added to your reflection list.
+          </p>
+          <p className="text-xs text-muted-foreground mb-6">
+            Open the Second Thought app to view it.
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => { setItemAdded(false); setSubmitMessage(''); }}
+              className="px-4 py-2 text-sm border border-border rounded-full hover:bg-muted/30 transition-colors"
+            >
+              Add Another
+            </button>
+            <button
+              onClick={() => window.close()}
+              className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-full hover:bg-primary/90 transition-colors"
+            >
+              Done
+            </button>
+          </div>
         </div>
+      ) : (
+        <>
+          {urlStatus && <p className="text-sm text-muted-foreground mb-2">{urlStatus}</p>}
+          {submitMessage && (
+            <div className="bg-destructive/10 border border-destructive/20 text-destructive rounded-xl p-3 text-sm mb-4">
+              {submitMessage}
+            </div>
+          )}
+          <AddItemForm
+            onSubmit={handleSubmit}
+            onCancel={() => window.close()}
+            initialUrl={activeUrl}
+            checkUrlInInventory={checkUrlInInventory}
+          />
+        </>
       )}
-
-      <AddItemForm
-        onSubmit={handleSubmit}
-        onCancel={() => window.close()}
-        initialUrl={activeUrl}
-        checkUrlInInventory={checkUrlInInventory}
-      />
     </div>
   );
 };
