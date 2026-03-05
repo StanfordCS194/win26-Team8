@@ -483,7 +483,7 @@ function AppContent() {
     <div className="w-full min-h-screen bg-background overflow-y-auto relative">
       {/* Header */}
       <header className="bg-card/80 backdrop-blur-sm border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
             <img
               src={typeof logoImage === 'string' ? logoImage : (logoImage as any).default || (logoImage as any).uri || logoImage}
@@ -496,7 +496,7 @@ function AppContent() {
               <nav className="flex gap-1">
                 <button
                   onClick={() => setCurrentView('mission')}
-                  className={`px-4 py-2 font-medium text-sm transition-colors rounded-lg ${
+                  className={`px-4 py-1.5 font-medium text-sm transition-colors rounded-lg ${
                     currentView === 'mission'
                       ? 'bg-primary text-primary-foreground'
                       : 'text-[#255736] hover:bg-muted/30'
@@ -506,7 +506,7 @@ function AppContent() {
                 </button>
                 <button
                   onClick={() => setCurrentView('home')}
-                  className={`px-4 py-2 font-medium text-sm transition-colors rounded-lg ${
+                  className={`px-4 py-1.5 font-medium text-sm transition-colors rounded-lg ${
                     currentView === 'home'
                       ? 'bg-primary text-primary-foreground'
                       : 'text-[#255736] hover:bg-muted/30'
@@ -516,7 +516,7 @@ function AppContent() {
                 </button>
                 <button
                   onClick={() => setCurrentView('time')}
-                  className={`px-4 py-2 font-medium text-sm transition-colors rounded-lg ${
+                  className={`px-4 py-1.5 font-medium text-sm transition-colors rounded-lg ${
                     currentView === 'time'
                       ? 'bg-primary text-primary-foreground'
                       : 'text-[#255736] hover:bg-muted/30'
@@ -526,7 +526,7 @@ function AppContent() {
                 </button>
                 <button
                   onClick={() => setCurrentView('goals')}
-                  className={`px-4 py-2 font-medium text-sm transition-colors rounded-lg ${
+                  className={`px-4 py-1.5 font-medium text-sm transition-colors rounded-lg ${
                     currentView === 'goals'
                       ? 'bg-primary text-primary-foreground'
                       : 'text-[#255736] hover:bg-muted/30'
@@ -555,7 +555,7 @@ function AppContent() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-16">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-16">
         {currentView === 'mission' && (
           <OurMission onGetStarted={() => setCurrentView('home')} userEmail={user?.email} />
         )}
