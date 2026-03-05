@@ -15,6 +15,9 @@ import './styles/globals.css';
 import logoImage from './assets/logo.png';
 import type { Item } from './types/item';
 import type { DeletionReasonData } from './components/ItemDetail';
+import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
+
 
 const FETCH_ITEMS_TIMEOUT_MS = 20000;
 
@@ -652,6 +655,8 @@ export default function App() {
   return (
     <AuthProvider>
       <AppContent />
+      <Analytics />
+      <SpeedInsights />
     </AuthProvider>
   );
 }
