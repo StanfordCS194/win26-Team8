@@ -13,6 +13,7 @@ export interface DeletionReasonData {
 interface ItemDetailProps {
   item: Item;
   onBack: () => void;
+  backLabel?: string;
   onDelete: (itemId: string, deletionReason?: DeletionReasonData) => void;
   /** Called when time has passed or goal password is correct; updates is_unlocked to true (does not delete). */
   onUnlock?: (itemId: string) => void;
@@ -120,7 +121,7 @@ function generateMindfulnessExplanation(questionnaire: QuestionAnswer[], finalSc
 
 const CATEGORY_OPTIONS: ItemCategory[] = ['Beauty', 'Clothes', 'Accessories', 'Sports', 'Electronics', 'Home', 'Other'];
 
-export function ItemDetail({ item, onBack, onDelete, onUnlock, isUnlockedItem, onRemoveUnlocked, onUpdateCategory }: ItemDetailProps) {
+export function ItemDetail({ item, onBack, backLabel = 'Back to list', onDelete, onUnlock, isUnlockedItem, onRemoveUnlocked, onUpdateCategory }: ItemDetailProps) {
   const [unlockPassword, setUnlockPassword] = useState('');
   const [unlockError, setUnlockError] = useState('');
   const [unlockSuccess, setUnlockSuccess] = useState(false);
@@ -247,7 +248,7 @@ export function ItemDetail({ item, onBack, onDelete, onUnlock, isUnlockedItem, o
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
-          Back to list
+          {backLabel}
         </button>
 
         <div className="flex items-center gap-3" ref={categoryRef}>

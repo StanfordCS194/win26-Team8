@@ -33,58 +33,64 @@ export function GoalsBasedView({ items, onItemClick, onAddItem }: GoalsBasedView
         </div>
 
         <div className="space-y-3">
-          {items.map((item) => (
-            <div
-              key={item.id}
-              onClick={() => onItemClick(item.id)}
-              className={`bg-card rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer border-l-4 ${borderColor} p-5`}
-            >
-              <div className="flex gap-4">
-                <div className="w-20 h-20 flex-shrink-0 bg-muted/30 rounded-xl overflow-hidden">
-                  {item.imageUrl ? (
-                    <img
-                      src={item.imageUrl}
-                      alt={item.name}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.currentTarget.src = 'https://via.placeholder.com/100/e5e7eb/9ca3af?text=No+Image';
-                      }}
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-muted/50">
-                      <Target className="w-6 h-6 text-muted-foreground/30" />
-                    </div>
-                  )}
-                </div>
+          {items.map((item) => {
+            const goalText = item.questionnaire?.find((qa) => qa.id === 'goal')?.answer?.trim();
+            return (
+              <div
+                key={item.id}
+                onClick={() => onItemClick(item.id)}
+                className={`bg-card rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer border-l-4 ${borderColor} p-5`}
+              >
+                <div className="flex gap-4">
+                  <div className="w-20 h-20 flex-shrink-0 bg-muted/30 rounded-xl overflow-hidden">
+                    {item.imageUrl ? (
+                      <img
+                        src={item.imageUrl}
+                        alt={item.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.src = 'https://via.placeholder.com/100/e5e7eb/9ca3af?text=No+Image';
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-muted/50">
+                        <Target className="w-6 h-6 text-muted-foreground/30" />
+                      </div>
+                    )}
+                  </div>
 
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-medium text-foreground mb-2 font-serif">
-                    {item.name}
-                  </h4>
-                  
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-muted-foreground">Score:</span>
-                      <span className={`font-semibold ${
-                        item.consumptionScore >= 7 ? 'text-destructive' : 
-                        item.consumptionScore >= 4 ? 'text-accent' : 
-                        'text-primary'
-                      }`}>
-                        {item.consumptionScore}/10
-                      </span>
-                    </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-medium text-foreground mb-2 font-serif line-clamp-2">
+                      {goalText || 'Goal not set'}
+                    </h4>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      <span className="text-foreground/90">{item.name}</span>
+                    </p>
+                    
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">Score:</span>
+                        <span className={`font-semibold ${
+                          item.consumptionScore >= 7 ? 'text-destructive' : 
+                          item.consumptionScore >= 4 ? 'text-accent' : 
+                          'text-primary'
+                        }`}>
+                          {item.consumptionScore}/10
+                        </span>
+                      </div>
 
-                    <div className="text-sm text-muted-foreground">
-                      Added {new Date(item.addedDate).toLocaleDateString('en-US', { 
-                        month: 'short', 
-                        day: 'numeric' 
-                      })}
+                      <div className="text-sm text-muted-foreground">
+                        Added {new Date(item.addedDate).toLocaleDateString('en-US', { 
+                          month: 'short', 
+                          day: 'numeric' 
+                        })}
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     );
@@ -94,7 +100,7 @@ export function GoalsBasedView({ items, onItemClick, onAddItem }: GoalsBasedView
     <div>
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h2 className="text-2xl text-foreground font-serif">Goals-Based Items</h2>
+          <h2 className="text-2xl text-foreground font-serif">Goal-Based Items</h2>
           <p className="text-muted-foreground mt-2">
             Organized by difficulty level
           </p>

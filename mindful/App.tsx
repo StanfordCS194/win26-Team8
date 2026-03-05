@@ -26,6 +26,7 @@ function AppContent() {
   const [items, setItems] = useState<Item[]>([]);
   const [currentView, setCurrentView] = useState<View>('mission');
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [itemOriginView, setItemOriginView] = useState<'home' | 'time' | 'goals'>('home');
   const [homeSubtab, setHomeSubtab] = useState<'locked' | 'unlocked'>('locked');
   const [refreshingItems, setRefreshingItems] = useState(false);
   const [itemsLoading, setItemsLoading] = useState(false);
@@ -240,15 +241,20 @@ function AppContent() {
     }
   };
 
-  const handleItemClick = (itemId: string) => {
+  const handleItemClick = (itemId: string, originView: 'home' | 'time' | 'goals' = 'home') => {
+    setItemOriginView(originView);
     setSelectedItemId(itemId);
     setCurrentView('item');
-    // Ensure detail page always opens from top after view switch.
+  };
+
+  useEffect(() => {
+    if (currentView !== 'item' || !selectedItemId) return;
+    // Scroll both container and window after item view mounts.
     requestAnimationFrame(() => {
       appScrollRef.current?.scrollTo({ top: 0, behavior: 'auto' });
       window.scrollTo({ top: 0, behavior: 'auto' });
     });
-  };
+  }, [currentView, selectedItemId]);
 
   const handleUnlockItem = async (itemId: string) => {
     if (!user) return;
@@ -382,8 +388,10 @@ function AppContent() {
   };
 
   const handleBackFromItem = () => {
-    setHomeSubtab(selectedItem?.isUnlocked ? 'unlocked' : 'locked');
-    setCurrentView('home');
+    if (itemOriginView === 'home') {
+      setHomeSubtab(selectedItem?.isUnlocked ? 'unlocked' : 'locked');
+    }
+    setCurrentView(itemOriginView);
     setSelectedItemId(null);
   };
 
@@ -571,7 +579,7 @@ function AppContent() {
               items={items}
               activeSubtab={homeSubtab}
               onSubtabChange={setHomeSubtab}
-              onItemClick={handleItemClick}
+              onItemClick={(itemId) => handleItemClick(itemId, 'home')}
               onAddItem={() => setCurrentView('add')}
               onRefresh={handleRefreshItems}
               onRetry={loadItems}
@@ -588,6 +596,13 @@ function AppContent() {
             <ItemDetail
               item={selectedItem}
               onBack={handleBackFromItem}
+              backLabel={
+                itemOriginView === 'time'
+                  ? 'Back to Timeline'
+                  : itemOriginView === 'goals'
+                  ? 'Back to Goals'
+                  : 'Back to All Items'
+              }
               onDelete={handleDeleteItem}
               onUnlock={handleUnlockItem}
               isUnlockedItem={isSelectedUnlockedItem}
@@ -616,7 +631,7 @@ function AppContent() {
           user ? (
             <TimeBasedView
               items={items}
-              onItemClick={handleItemClick}
+              onItemClick={(itemId) => handleItemClick(itemId, 'time')}
               onAddItem={() => setCurrentView('add')}
             />
           ) : (
@@ -627,7 +642,7 @@ function AppContent() {
           user ? (
             <GoalsBasedView
               items={items}
-              onItemClick={handleItemClick}
+              onItemClick={(itemId) => handleItemClick(itemId, 'goals')}
               onAddItem={() => setCurrentView('add')}
             />
           ) : (
