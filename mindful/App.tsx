@@ -28,6 +28,7 @@ function AppContent() {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [itemOriginView, setItemOriginView] = useState<'home' | 'time' | 'goals'>('home');
   const [homeSubtab, setHomeSubtab] = useState<'locked' | 'unlocked'>('locked');
+  const [goalsSubtab, setGoalsSubtab] = useState<'locked' | 'unlocked'>('locked');
   const [refreshingItems, setRefreshingItems] = useState(false);
   const [itemsLoading, setItemsLoading] = useState(false);
   const [itemsLoadError, setItemsLoadError] = useState<string | null>(null);
@@ -323,6 +324,7 @@ function AppContent() {
 
   const selectedItem = items.find((i) => i.id === selectedItemId);
   const isSelectedUnlockedItem = selectedItem?.isUnlocked === true;
+  const highlightedTopNavView: View = currentView === 'item' ? itemOriginView : currentView;
 
   const handleUpdateItemCategory = async (itemId: string, category: ItemCategory) => {
     if (!user) return;
@@ -511,7 +513,7 @@ function AppContent() {
                 <button
                   onClick={() => setCurrentView('mission')}
                   className={`px-4 py-1.5 font-medium text-sm transition-colors rounded-lg ${
-                    currentView === 'mission'
+                    highlightedTopNavView === 'mission'
                       ? 'bg-primary text-primary-foreground'
                       : 'text-[#255736] hover:bg-muted/30'
                   }`}
@@ -521,7 +523,7 @@ function AppContent() {
                 <button
                   onClick={() => setCurrentView('home')}
                   className={`px-4 py-1.5 font-medium text-sm transition-colors rounded-lg ${
-                    currentView === 'home'
+                    highlightedTopNavView === 'home'
                       ? 'bg-primary text-primary-foreground'
                       : 'text-[#255736] hover:bg-muted/30'
                   }`}
@@ -531,7 +533,7 @@ function AppContent() {
                 <button
                   onClick={() => setCurrentView('time')}
                   className={`px-4 py-1.5 font-medium text-sm transition-colors rounded-lg ${
-                    currentView === 'time'
+                    highlightedTopNavView === 'time'
                       ? 'bg-primary text-primary-foreground'
                       : 'text-[#255736] hover:bg-muted/30'
                   }`}
@@ -541,7 +543,7 @@ function AppContent() {
                 <button
                   onClick={() => setCurrentView('goals')}
                   className={`px-4 py-1.5 font-medium text-sm transition-colors rounded-lg ${
-                    currentView === 'goals'
+                    highlightedTopNavView === 'goals'
                       ? 'bg-primary text-primary-foreground'
                       : 'text-[#255736] hover:bg-muted/30'
                   }`}
@@ -642,6 +644,8 @@ function AppContent() {
           user ? (
             <GoalsBasedView
               items={items}
+              activeSubtab={goalsSubtab}
+              onSubtabChange={setGoalsSubtab}
               onItemClick={(itemId) => handleItemClick(itemId, 'goals')}
               onAddItem={() => setCurrentView('add')}
             />

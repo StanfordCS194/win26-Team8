@@ -1,18 +1,32 @@
+import { useState } from 'react';
 import type { Item } from '../types/item';
 import { Target, Plus } from 'lucide-react';
 
 interface GoalsBasedViewProps {
   items: Item[];
+  activeSubtab?: 'locked' | 'unlocked';
+  onSubtabChange?: (tab: 'locked' | 'unlocked') => void;
   onItemClick: (itemId: string) => void;
   onAddItem: () => void;
 }
 
-export function GoalsBasedView({ items, onItemClick, onAddItem }: GoalsBasedViewProps) {
+export function GoalsBasedView({ items, activeSubtab, onSubtabChange, onItemClick, onAddItem }: GoalsBasedViewProps) {
   const goalsBasedItems = items.filter(item => item.constraintType === 'goals');
+  const [internalTab, setInternalTab] = useState<'locked' | 'unlocked'>('locked');
+  const isControlled = activeSubtab !== undefined && onSubtabChange !== undefined;
+  const activeTab = isControlled ? activeSubtab : internalTab;
+  const setActiveTab = (tab: 'locked' | 'unlocked') => {
+    if (isControlled) onSubtabChange?.(tab);
+    else setInternalTab(tab);
+  };
 
-  const easyItems = goalsBasedItems.filter(item => item.difficulty === 'easy');
-  const mediumItems = goalsBasedItems.filter(item => item.difficulty === 'medium');
-  const hardItems = goalsBasedItems.filter(item => item.difficulty === 'hard');
+  const lockedItems = goalsBasedItems.filter((item) => !item.isUnlocked);
+  const unlockedItems = goalsBasedItems.filter((item) => item.isUnlocked);
+  const visibleItems = activeTab === 'locked' ? lockedItems : unlockedItems;
+
+  const easyItems = visibleItems.filter(item => item.difficulty === 'easy');
+  const mediumItems = visibleItems.filter(item => item.difficulty === 'medium');
+  const hardItems = visibleItems.filter(item => item.difficulty === 'hard');
 
   const renderSection = (
     title: string, 
@@ -102,7 +116,7 @@ export function GoalsBasedView({ items, onItemClick, onAddItem }: GoalsBasedView
         <div>
           <h2 className="text-2xl text-foreground font-serif">Goal-Based Items</h2>
           <p className="text-muted-foreground mt-2">
-            Organized by difficulty level
+            Complete your goals and unlock items as rewards
           </p>
         </div>
         <button
@@ -114,14 +128,52 @@ export function GoalsBasedView({ items, onItemClick, onAddItem }: GoalsBasedView
         </button>
       </div>
 
-      {goalsBasedItems.length === 0 ? (
+      {/* Locked / Unlocked tabs */}
+      <div className="mb-6 border-b border-border">
+        <div className="flex items-center gap-6 sm:gap-8">
+          <button
+            type="button"
+            onClick={() => setActiveTab('locked')}
+            className={`relative pb-3 pt-0.5 text-sm sm:text-base transition-colors ${
+              activeTab === 'locked'
+                ? 'text-foreground font-semibold'
+                : 'text-muted-foreground font-medium hover:text-foreground'
+            }`}
+          >
+            Locked
+            {activeTab === 'locked' && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-foreground rounded-full" />
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('unlocked')}
+            className={`relative pb-3 pt-0.5 text-sm sm:text-base transition-colors ${
+              activeTab === 'unlocked'
+                ? 'text-foreground font-semibold'
+                : 'text-muted-foreground font-medium hover:text-foreground'
+            }`}
+          >
+            Unlocked
+            {activeTab === 'unlocked' && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-foreground rounded-full" />
+            )}
+          </button>
+        </div>
+      </div>
+
+      {visibleItems.length === 0 ? (
         <div className="text-center py-16">
           <div className="text-muted-foreground/40 mb-4">
             <Target className="w-16 h-16 mx-auto" />
           </div>
-          <h3 className="text-xl text-foreground/80 mb-2">No goals-based items</h3>
+          <h3 className="text-xl text-foreground/80 mb-2">
+            {activeTab === 'locked' ? 'No locked goals-based items' : 'No unlocked goals-based items'}
+          </h3>
           <p className="text-muted-foreground">
-            Items with goal constraints will appear here organized by difficulty.
+            {activeTab === 'locked'
+              ? 'Items with goal constraints will appear here organized by difficulty.'
+              : 'Once your goals are completed, your unlocked goals-based items will appear here.'}
           </p>
         </div>
       ) : (
