@@ -114,7 +114,7 @@ export function GoalsBasedView({ items, activeSubtab, onSubtabChange, onItemClic
     <div>
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h2 className="text-2xl text-foreground font-serif">Goal-Based Items</h2>
+          <h2 className="text-2xl text-foreground font-serif">Your Goal-Based Items</h2>
           <p className="text-muted-foreground mt-2">
             Complete your goals and unlock items as rewards
           </p>
@@ -140,7 +140,7 @@ export function GoalsBasedView({ items, activeSubtab, onSubtabChange, onItemClic
                 : 'text-muted-foreground font-medium hover:text-foreground'
             }`}
           >
-            Locked
+            🔒 Locked
             {activeTab === 'locked' && (
               <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-foreground rounded-full" />
             )}
