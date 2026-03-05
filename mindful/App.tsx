@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Home } from './components/Home';
 import { ItemDetail } from './components/ItemDetail';
 import { AddItemForm } from './components/AddItemForm';
@@ -22,6 +22,7 @@ type View = 'home' | 'item' | 'add' | 'time' | 'goals' | 'mission' | 'profile';
 
 function AppContent() {
   const { user, session, loading } = useAuth();
+  const appScrollRef = useRef<HTMLDivElement | null>(null);
   const [items, setItems] = useState<Item[]>([]);
   const [currentView, setCurrentView] = useState<View>('mission');
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
@@ -242,6 +243,11 @@ function AppContent() {
   const handleItemClick = (itemId: string) => {
     setSelectedItemId(itemId);
     setCurrentView('item');
+    // Ensure detail page always opens from top after view switch.
+    requestAnimationFrame(() => {
+      appScrollRef.current?.scrollTo({ top: 0, behavior: 'auto' });
+      window.scrollTo({ top: 0, behavior: 'auto' });
+    });
   };
 
   const handleUnlockItem = async (itemId: string) => {
@@ -480,7 +486,7 @@ function AppContent() {
   };
 
   return (
-    <div className="w-full min-h-screen bg-background overflow-y-auto relative">
+    <div ref={appScrollRef} className="w-full min-h-screen bg-background overflow-y-auto relative">
       {/* Header */}
       <header className="bg-card/80 backdrop-blur-sm border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

@@ -62,6 +62,7 @@ function itemToDb(item: Item, userId: string): Omit<DbItem, 'created_at' | 'upda
 function dbToItem(dbItem: DbItem): Item {
   return {
     id: dbItem.id,
+    isUnlocked: dbItem.is_unlocked ?? false,
     name: dbItem.name,
     imageUrl: dbItem.image_url || undefined,
     productUrl: dbItem.product_url || undefined,
@@ -277,6 +278,60 @@ export async function saveItem(item: Item, userId: string): Promise<{ success: b
     console.error('❌ Save exception (caught):', error);
     console.error('❌ Exception type:', typeof error);
     console.error('❌ Exception details:', error);
+    return { success: false, error };
+  }
+}
+
+/**
+ * UPDATE ITEM'S is_unlocked FLAG (time expired or goal password entered)
+ * Keeps the item in the items table; does not delete or move to another table.
+ */
+export async function updateItemUnlocked(
+  itemId: string,
+  userId: string,
+  isUnlocked: boolean
+): Promise<{ success: boolean; error: any }> {
+  try {
+    const { error } = await supabase
+      .from('items')
+      .update({ is_unlocked: isUnlocked })
+      .eq('id', itemId)
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('❌ Update is_unlocked error:', error);
+      return { success: false, error };
+    }
+    return { success: true, error: null };
+  } catch (error) {
+    console.error('❌ Update is_unlocked exception:', error);
+    return { success: false, error };
+  }
+}
+
+/**
+ * UPDATE ITEM CATEGORY
+ * Allows changing category from item detail view.
+ */
+export async function updateItemCategory(
+  itemId: string,
+  userId: string,
+  category: ItemCategory | undefined
+): Promise<{ success: boolean; error: any }> {
+  try {
+    const { error } = await supabase
+      .from('items')
+      .update({ category: category ?? null })
+      .eq('id', itemId)
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('❌ Update category error:', error);
+      return { success: false, error };
+    }
+    return { success: true, error: null };
+  } catch (error) {
+    console.error('❌ Update category exception:', error);
     return { success: false, error };
   }
 }
