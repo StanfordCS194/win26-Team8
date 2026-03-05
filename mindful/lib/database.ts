@@ -452,6 +452,33 @@ export async function updateItemUnlocked(
 }
 
 /**
+ * UPDATE ITEM CATEGORY
+ * Allows changing the item's category from the item detail page.
+ */
+export async function updateItemCategory(
+  itemId: string,
+  userId: string,
+  category: ItemCategory | undefined
+): Promise<{ success: boolean; error: any }> {
+  try {
+    const { error } = await supabase
+      .from('items')
+      .update({ category: category ?? null })
+      .eq('id', itemId)
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('❌ Update category error:', error);
+      return { success: false, error };
+    }
+    return { success: true, error: null };
+  } catch (error) {
+    console.error('❌ Update category exception:', error);
+    return { success: false, error };
+  }
+}
+
+/**
  * DELETE AN ITEM FROM DATABASE
  * 
  * @param itemId - Item's UUID

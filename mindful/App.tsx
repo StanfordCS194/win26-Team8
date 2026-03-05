@@ -7,13 +7,13 @@ import { GoalsBasedView } from './components/GoalsBasedView';
 import { OurMission } from './components/OurMission';
 import { Profile } from './components/Profile';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { fetchItems, deleteItem as deleteItemDb, updateItemUnlocked } from './lib/database';
+import { fetchItems, deleteItem as deleteItemDb, updateItemUnlocked, updateItemCategory } from './lib/database';
 import { saveItemDirect, saveDeletionReasonDirect } from './lib/database-alt';
 import { normalizeProductUrl } from './lib/urlUtils';
 import { Plus, User } from 'lucide-react';
 import './styles/globals.css';
 import logoImage from './assets/logo.png';
-import type { Item } from './types/item';
+import type { Item, ItemCategory } from './types/item';
 import type { DeletionReasonData } from './components/ItemDetail';
 
 const FETCH_ITEMS_TIMEOUT_MS = 20000;
@@ -312,6 +312,31 @@ function AppContent() {
   const selectedItem = items.find((i) => i.id === selectedItemId);
   const isSelectedUnlockedItem = selectedItem?.isUnlocked === true;
 
+  const handleUpdateItemCategory = async (itemId: string, category: ItemCategory) => {
+    if (!user) return;
+
+    const localKey = `secondThought_user_${user.id}_items`;
+    const previousItems = items;
+
+    // Optimistic update
+    const updatedItems = items.map((i) =>
+      i.id === itemId ? { ...i, category } : i
+    );
+    setItems(updatedItems);
+    localStorage.setItem(localKey, JSON.stringify(updatedItems));
+
+    const { success, error } = await updateItemCategory(itemId, user.id, category);
+    if (!success) {
+      console.error('Failed to update category:', error);
+      const errorMsg = error?.message || error?.toString() || 'Unknown error';
+      alert(`Failed to update category.\n\nError: ${errorMsg}`);
+
+      // Roll back on failure
+      setItems(previousItems);
+      localStorage.setItem(localKey, JSON.stringify(previousItems));
+    }
+  };
+
   const handleRemoveUnlockedItem = async (itemId: string, subReason?: string) => {
     if (!user) return;
 
@@ -561,6 +586,7 @@ function AppContent() {
               onUnlock={handleUnlockItem}
               isUnlockedItem={isSelectedUnlockedItem}
               onRemoveUnlocked={handleRemoveUnlockedItem}
+              onUpdateCategory={handleUpdateItemCategory}
             />
           ) : (
             <SignInRequired />
