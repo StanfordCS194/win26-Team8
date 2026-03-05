@@ -33,6 +33,13 @@ function getCategoryEmoji(category?: Item['category']): string {
   }
 }
 
+function toLocalDateKey(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export function TimeBasedView({ items, onItemClick, onAddItem }: TimeBasedViewProps) {
   const timeBasedItems = items
     .filter(item => item.constraintType === 'time')
@@ -105,7 +112,7 @@ export function TimeBasedView({ items, onItemClick, onAddItem }: TimeBasedViewPr
     const map = new Map<string, Item[]>();
     timeBasedItems.forEach((item) => {
       if (!item.waitUntilDate) return;
-      const key = new Date(item.waitUntilDate).toISOString().split('T')[0];
+      const key = toLocalDateKey(new Date(item.waitUntilDate));
       if (!map.has(key)) {
         map.set(key, []);
       }
@@ -173,7 +180,7 @@ export function TimeBasedView({ items, onItemClick, onAddItem }: TimeBasedViewPr
             {currentCalendar.weeks.map((week, weekIndex) => (
               <div key={weekIndex} className="grid grid-cols-7 gap-1">
                 {week.map(({ date, isCurrentMonth }) => {
-                  const key = date.toISOString().split('T')[0];
+                  const key = toLocalDateKey(date);
                   const itemsForDay = itemsByDate.get(key) || [];
                   const hasItems = itemsForDay.length > 0;
                   const unlockedCount = itemsForDay.length;
@@ -191,17 +198,37 @@ export function TimeBasedView({ items, onItemClick, onAddItem }: TimeBasedViewPr
                     ? Math.ceil((dayStart.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
                     : 0;
                   const showDayPreview = hasItems;
+                  const dayInlineStyle = isCurrentMonth && isToday
+                    ? {
+                        backgroundColor: '#e1f0e2',
+                        borderColor: '#A3B9A4',
+                        color: '#064e3b',
+                        boxShadow: '0 0 0 2px rgba(163, 185, 164, 0.7)',
+                      }
+                    : isCurrentMonth && isPastDay
+                      ? {
+                          backgroundColor: '#e6f2e7',
+                          borderColor: '#c8e3ca',
+                          color: '#064e3b',
+                        }
+                      : isCurrentMonth && hasItems && isFutureDay
+                        ? {
+                            backgroundColor: '#fcf0e1',
+                            borderColor: '#fcd34d',
+                          }
+                        : undefined;
 
                   const dayButton = (
                     <button
                       key={key}
                       type="button"
+                      style={dayInlineStyle}
                       className={[
                         'relative aspect-square rounded-lg border text-xs flex flex-col items-center justify-center',
-                        isCurrentMonth ? 'border-border bg-background' : 'border-transparent text-muted-foreground/60',
-                        isCurrentMonth && isPastDay ? 'bg-[#e6f2e7] text-[#064e3b] border-[#c8e3ca]' : '',
-                        hasItems ? (isFutureDay ? 'border-amber-300 bg-[#fcf0e1]' : 'border-primary/60 bg-primary/5') : '',
-                        isToday ? 'border-[#A3B9A4] ring-2 ring-[#A3B9A4]/70 bg-[#e1f0e2] text-[#064e3b]' : '',
+                        !isCurrentMonth ? 'border-transparent text-muted-foreground/60' : '',
+                        isCurrentMonth && !isToday && !isPastDay && !(hasItems && isFutureDay)
+                          ? 'border-border bg-background'
+                          : '',
                       ]
                         .filter(Boolean)
                         .join(' ')}
