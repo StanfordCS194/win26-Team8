@@ -311,7 +311,7 @@ export function ItemDetail({ item, onBack, onDelete, onUnlock, isUnlockedItem, o
                 className="font-semibold underline underline-offset-2 decoration-2"
                 style={{ color: '#064e3b' }}
               >
-                Go to URL
+              Go to Item Page
               </a>
             </p>
           </div>
@@ -400,7 +400,7 @@ export function ItemDetail({ item, onBack, onDelete, onUnlock, isUnlockedItem, o
                 {item.name}
               </h1>
 
-              <div className="space-y-4 mb-6">
+              <div className="space-y-5">
                 <div className="p-5 rounded-xl space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-foreground/80">Mindfulness Score</span>
@@ -489,14 +489,14 @@ export function ItemDetail({ item, onBack, onDelete, onUnlock, isUnlockedItem, o
                       )}
                     </div>
                 )}
+              </div>
 
-                <div className="text-sm text-muted-foreground">
-                  Added on {new Date(item.addedDate).toLocaleDateString('en-US', { 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
-                  })}
-                </div>
+              <div className="text-sm text-muted-foreground px-5 mt-1 mb-3">
+                Added on {new Date(item.addedDate).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}
               </div>
             </div>
 

@@ -241,7 +241,14 @@ export function TimeBasedView({ items, onItemClick, onAddItem }: TimeBasedViewPr
                             <ul className="space-y-1.5 text-sm text-green-900/90">
                               {itemsForDay.map((item) => (
                                 <li key={item.id} className="leading-tight">
-                                  {item.name}
+                                  <button
+                                    type="button"
+                                    onClick={() => onItemClick(item.id)}
+                                    className="w-full text-left hover:underline underline-offset-2"
+                                    title="Open item"
+                                  >
+                                    {item.name}
+                                  </button>
                                 </li>
                               ))}
                             </ul>
