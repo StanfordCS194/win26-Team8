@@ -227,6 +227,25 @@ export function ItemDetail({ item, onBack, onDelete, onUnlock, isUnlockedItem, o
       </button>
 
       <div className="bg-card rounded-2xl shadow-sm border border-border/50 overflow-hidden">
+        {/* Unlocked banner: above photo and title */}
+        {(isUnlockedItem || isAlreadyUnlocked) && item.productUrl && (
+          <div className="border-b px-6 py-4 flex items-center justify-center gap-2" style={{ background: '#d7e4d8', borderColor: '#A3B9A4', color: '#064e3b' }}>
+            <span className="text-2xl" aria-hidden>🔓</span>
+            <p className="text-sm font-medium">
+              You have unlocked this item!{' '}
+              <a
+                href={item.productUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold underline underline-offset-2 decoration-2"
+                style={{ color: '#064e3b' }}
+              >
+                Go to URL
+              </a>
+            </p>
+          </div>
+        )}
+
         <div className="grid md:grid-cols-2 gap-6 p-8">
           {/* Image */}
           <div className="aspect-square bg-muted/30 rounded-xl overflow-hidden flex items-center justify-center">
