@@ -42,6 +42,16 @@ function AppContent() {
     return waitDayStart.getTime() <= today.getTime();
   };
 
+  /** True only when wait date is strictly in the past (not today). Used so we don't auto-unlock "today" items on load; they stay locked until the user sees the "unlocking today" popup. */
+  const isTimeUnlockedPastOnly = (item: Item): boolean => {
+    if (item.constraintType !== 'time' || !item.waitUntilDate) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const waitDate = new Date(item.waitUntilDate);
+    const waitDayStart = new Date(waitDate.getFullYear(), waitDate.getMonth(), waitDate.getDate());
+    return waitDayStart.getTime() < today.getTime();
+  };
+
   const [unlockingTodayItemIds, setUnlockingTodayItemIds] = useState<string[]>([]);
   const [showUnlockingTodayPopup, setShowUnlockingTodayPopup] = useState(false);
 
@@ -95,13 +105,23 @@ function AppContent() {
     setItemsLoading(false);
 
     if (!result.error && result.items) {
-      const toUnlock = result.items.filter(
+      const now = new Date();
+      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const toUnlockPast = result.items.filter(
         (item) =>
           item.constraintType === 'time' &&
           item.waitUntilDate &&
           !item.isUnlocked &&
-          isTimeUnlocked(item)
+          isTimeUnlockedPastOnly(item)
       );
+      const toUnlockToday = result.items.filter(
+        (item) =>
+          item.constraintType === 'time' &&
+          item.waitUntilDate &&
+          !item.isUnlocked &&
+          String(item.waitUntilDate).slice(0, 10) === todayStr
+      );
+      const toUnlock = [...toUnlockPast, ...toUnlockToday];
       if (toUnlock.length > 0 && user) {
         await Promise.all(toUnlock.map((item) => updateItemUnlocked(item.id, user!.id, true)));
         const updated = result.items.map((i) =>
@@ -109,6 +129,19 @@ function AppContent() {
         );
         setItems(updated);
         localStorage.setItem(localStorageKey, JSON.stringify(updated));
+        if (toUnlockToday.length > 0) {
+          const todayKey = `secondThought_user_${user.id}_unlocking_today_${todayStr}`;
+          let dismissed: string[] = [];
+          try {
+            const stored = localStorage.getItem(todayKey);
+            if (stored) dismissed = JSON.parse(stored);
+          } catch { /* ignore */ }
+          const toShow = toUnlockToday.filter((item) => !dismissed.includes(item.id)).map((i) => i.id);
+          if (toShow.length > 0) {
+            setUnlockingTodayItemIds(toShow);
+            setShowUnlockingTodayPopup(true);
+          }
+        }
       } else {
         setItems(result.items);
         localStorage.setItem(localStorageKey, JSON.stringify(result.items));
@@ -131,13 +164,23 @@ function AppContent() {
         result = await fetchItemsWithTimeout();
       }
       if (!result.error && result.items) {
-        const toUnlock = result.items.filter(
+        const now = new Date();
+        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        const toUnlockPast = result.items.filter(
           (item) =>
             item.constraintType === 'time' &&
             item.waitUntilDate &&
             !item.isUnlocked &&
-            isTimeUnlocked(item)
+            isTimeUnlockedPastOnly(item)
         );
+        const toUnlockToday = result.items.filter(
+          (item) =>
+            item.constraintType === 'time' &&
+            item.waitUntilDate &&
+            !item.isUnlocked &&
+            String(item.waitUntilDate).slice(0, 10) === todayStr
+        );
+        const toUnlock = [...toUnlockPast, ...toUnlockToday];
         if (toUnlock.length > 0 && user) {
           await Promise.all(toUnlock.map((item) => updateItemUnlocked(item.id, user.id, true)));
           const updated = result.items.map((i) =>
@@ -145,6 +188,19 @@ function AppContent() {
           );
           setItems(updated);
           localStorage.setItem(`secondThought_user_${user.id}_items`, JSON.stringify(updated));
+          if (toUnlockToday.length > 0) {
+            const todayKey = `secondThought_user_${user.id}_unlocking_today_${todayStr}`;
+            let dismissed: string[] = [];
+            try {
+              const stored = localStorage.getItem(todayKey);
+              if (stored) dismissed = JSON.parse(stored);
+            } catch { /* ignore */ }
+            const toShow = toUnlockToday.filter((item) => !dismissed.includes(item.id)).map((i) => i.id);
+            if (toShow.length > 0) {
+              setUnlockingTodayItemIds(toShow);
+              setShowUnlockingTodayPopup(true);
+            }
+          }
         } else {
           setItems(result.items);
           localStorage.setItem(`secondThought_user_${user.id}_items`, JSON.stringify(result.items));
@@ -364,7 +420,8 @@ function AppContent() {
       return;
     }
 
-    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     const localKey = `secondThought_user_${user.id}_unlocking_today_${today}`;
 
     let dismissedIds: string[] = [];
@@ -380,7 +437,9 @@ function AppContent() {
     const unlockingToday = items.filter(
       (item) =>
         item.constraintType === 'time' &&
-        item.waitUntilDate === today &&
+        item.waitUntilDate &&
+        String(item.waitUntilDate).slice(0, 10) === today &&
+        !item.isUnlocked &&
         !dismissedIds.includes(item.id)
     );
 
@@ -388,8 +447,8 @@ function AppContent() {
       setUnlockingTodayItemIds(unlockingToday.map((i) => i.id));
       setShowUnlockingTodayPopup(true);
     } else {
-      setUnlockingTodayItemIds([]);
-      setShowUnlockingTodayPopup(false);
+      setUnlockingTodayItemIds((prev) => (prev.length > 0 ? prev : []));
+      // Do not set showUnlockingTodayPopup to false here – popup stays until user closes it (X or Got it)
     }
   }, [items, user]);
 
@@ -398,10 +457,19 @@ function AppContent() {
       setShowUnlockingTodayPopup(false);
       return;
     }
-    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     const localKey = `secondThought_user_${user.id}_unlocking_today_${today}`;
     try {
-      localStorage.setItem(localKey, JSON.stringify(unlockingTodayItemIds));
+      const existing: string[] = [];
+      const stored = localStorage.getItem(localKey);
+      if (stored) {
+        try {
+          existing.push(...JSON.parse(stored));
+        } catch { /* ignore */ }
+      }
+      const merged = [...new Set([...existing, ...unlockingTodayItemIds])];
+      localStorage.setItem(localKey, JSON.stringify(merged));
     } catch {
       // ignore storage errors
     }
@@ -612,35 +680,72 @@ function AppContent() {
       </main>
 
       {showUnlockingTodayPopup && unlockingTodayItemIds.length > 0 && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-card rounded-3xl shadow-xl border border-primary/40 max-w-md w-full mx-4 p-8 relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+          <div className="relative max-w-md w-full mx-4 bg-card rounded-3xl shadow-xl border border-primary/30 px-8 py-10 text-center overflow-hidden">
             <button
               type="button"
               onClick={handleDismissUnlockingTodayPopup}
-              className="absolute right-4 top-4 text-muted-foreground hover:text-foreground text-sm"
+              className="absolute right-4 top-4 z-10 rounded-full p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              aria-label="Close"
             >
-              Dismiss
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 6 6 18" />
+                <path d="m6 6 12 12" />
+              </svg>
             </button>
-            <p className="text-xs uppercase tracking-[0.2em] text-accent mb-2">
-              Exciting News
-            </p>
-            <h2 className="text-2xl font-serif text-foreground mb-3">
-              Your item is unlocking today!
-            </h2>
-            <div className="space-y-1 mb-4">
-              {unlockingTodayItemIds.map((id) => {
-                const item = items.find((i) => i.id === id);
-                if (!item) return null;
-                return (
-                  <p key={id} className="text-sm text-foreground/85">
-                    Exciting news: your <span className="font-semibold text-primary">{item.name}</span> is unlocking today!
-                  </p>
-                );
-              })}
+            <div className="absolute inset-0 pointer-events-none">
+              <div className="confetti-container">
+                {Array.from({ length: 80 }).map((_, index) => (
+                  <span
+                    key={index}
+                    className="confetti-piece"
+                    style={{
+                      left: `${(index / 80) * 100}%`,
+                      animationDelay: `${(index % 10) * -0.25}s`,
+                    }}
+                  />
+                ))}
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              You can now revisit this item in your timeline and decide how you&apos;d like to move forward.
-            </p>
+            <div className="relative">
+              <p className="text-sm uppercase tracking-[0.2em] text-accent mb-2">
+                Item unlocked
+              </p>
+              <h2 className="text-2xl font-serif text-foreground mb-3">
+                Congratulations!
+              </h2>
+              {unlockingTodayItemIds.length === 1 ? (
+                <p className="text-sm text-foreground/80 leading-relaxed">
+                  Your wait period is over. You have unlocked{' '}
+                  <span className="font-semibold text-primary">
+                    {items.find((i) => i.id === unlockingTodayItemIds[0])?.name ?? 'this item'}
+                  </span>
+                  .
+                </p>
+              ) : (
+                <div className="space-y-1">
+                  <p className="text-sm text-foreground/80 leading-relaxed">
+                    Your wait period is over. You have unlocked:
+                  </p>
+                  {unlockingTodayItemIds.map((id) => {
+                    const item = items.find((i) => i.id === id);
+                    if (!item) return null;
+                    return (
+                      <p key={id} className="text-sm text-foreground/80 leading-relaxed">
+                        <span className="font-semibold text-primary">{item.name}</span>
+                      </p>
+                    );
+                  })}
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={handleDismissUnlockingTodayPopup}
+                className="mt-6 inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground px-6 py-2.5 text-sm font-medium hover:bg-primary/90"
+              >
+                Got it
+              </button>
+            </div>
           </div>
         </div>
       )}
