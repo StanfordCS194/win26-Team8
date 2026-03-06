@@ -2,7 +2,7 @@
 
 Welcome to the Team 8 project repository for Stanford CS194 (Winter 2026).
 
-## 🌐 Second Thought Application
+## 🖥️ Second Thought Application
 You can view the deployed application here:  
 https://second-thought-lilac.vercel.app/
 
