@@ -27,7 +27,12 @@ export interface FriendUnlockEmail {
 export async function createFriendUnlockEmail(
   itemId: string,
   friendEmail: string,
-  unlockPassword?: string
+  options?: {
+    friendName?: string;
+    userName?: string;
+    itemName?: string;
+    setPasswordUrl?: string;
+  }
 ): Promise<{ success: boolean; data?: FriendUnlockEmail; error?: any }> {
   try {
     console.log('📧 Creating friend unlock email record:', { itemId, friendEmail });
@@ -37,7 +42,10 @@ export async function createFriendUnlockEmail(
       .insert({
         item_id: itemId,
         friend_email: friendEmail,
-        ...(unlockPassword ? { unlock_password: unlockPassword } : {}),
+        friend_name: options?.friendName || null,
+        user_name: options?.userName || null,
+        item_name: options?.itemName || null,
+        set_password_url: options?.setPasswordUrl || null,
       })
       .select()
       .single();

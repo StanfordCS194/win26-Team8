@@ -13,6 +13,33 @@ interface TimeBasedViewProps {
   onAddItem: () => void;
 }
 
+function getCategoryEmoji(category?: Item['category']): string {
+  switch (category) {
+    case 'Beauty':
+      return '💄';
+    case 'Clothes':
+      return '👕';
+    case 'Accessories':
+      return '👜';
+    case 'Sports':
+      return '🏀';
+    case 'Electronics':
+      return '💻';
+    case 'Home':
+      return '🏠';
+    case 'Other':
+    default:
+      return '🛍️';
+  }
+}
+
+function toLocalDateKey(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export function TimeBasedView({ items, onItemClick, onAddItem }: TimeBasedViewProps) {
   const timeBasedItems = items
     .filter(item => item.constraintType === 'time')
@@ -85,7 +112,7 @@ export function TimeBasedView({ items, onItemClick, onAddItem }: TimeBasedViewPr
     const map = new Map<string, Item[]>();
     timeBasedItems.forEach((item) => {
       if (!item.waitUntilDate) return;
-      const key = new Date(item.waitUntilDate).toISOString().split('T')[0];
+      const key = toLocalDateKey(new Date(item.waitUntilDate));
       if (!map.has(key)) {
         map.set(key, []);
       }
@@ -98,9 +125,14 @@ export function TimeBasedView({ items, onItemClick, onAddItem }: TimeBasedViewPr
     <div>
       <div className="mb-8 space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl text-foreground font-serif">
-            Time-Based Timeline
-          </h2>
+          <div>
+            <h2 className="text-2xl text-foreground font-serif">
+              Your Time-Based Items
+            </h2>
+            <p className="text-muted-foreground mt-2">
+              Reflect as you wait for your items to unlock
+            </p>
+          </div>
           <button
             onClick={onAddItem}
             className="flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-full hover:bg-primary/90 transition-all shadow-sm hover:shadow-md"
@@ -110,23 +142,19 @@ export function TimeBasedView({ items, onItemClick, onAddItem }: TimeBasedViewPr
           </button>
         </div>
 
-        <h3 className="text-lg font-semibold text-foreground">
-          My Calendar
-        </h3>
-
         <div className="bg-card rounded-2xl border border-border/50 p-4 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <button
               type="button"
               onClick={() => setMonthOffset((prev) => Math.max(prev - 1, 0))}
               disabled={monthOffset === 0}
-              className="inline-flex items-center justify-center rounded-full p-1.5 border border-border text-muted-foreground hover:bg-muted/40 disabled:opacity-40 disabled:hover:bg-transparent"
+              className="inline-flex items-center justify-center rounded-full p-2 border border-border text-muted-foreground hover:bg-muted/40 disabled:opacity-40 disabled:hover:bg-transparent"
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="w-5 h-5" />
             </button>
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4 text-primary" />
-              <span className="font-medium text-foreground">
+              <span className="text-lg font-medium text-foreground">
                 {currentCalendar.monthLabel}
               </span>
             </div>
@@ -134,9 +162,9 @@ export function TimeBasedView({ items, onItemClick, onAddItem }: TimeBasedViewPr
               type="button"
               onClick={() => setMonthOffset((prev) => Math.min(prev + 1, 11))}
               disabled={monthOffset === 11}
-              className="inline-flex items-center justify-center rounded-full p-1.5 border border-border text-muted-foreground hover:bg-muted/40 disabled:opacity-40 disabled:hover:bg-transparent"
+              className="inline-flex items-center justify-center rounded-full p-2 border border-border text-muted-foreground hover:bg-muted/40 disabled:opacity-40 disabled:hover:bg-transparent"
             >
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-5 h-5" />
             </button>
           </div>
 
@@ -152,7 +180,7 @@ export function TimeBasedView({ items, onItemClick, onAddItem }: TimeBasedViewPr
             {currentCalendar.weeks.map((week, weekIndex) => (
               <div key={weekIndex} className="grid grid-cols-7 gap-1">
                 {week.map(({ date, isCurrentMonth }) => {
-                  const key = date.toISOString().split('T')[0];
+                  const key = toLocalDateKey(date);
                   const itemsForDay = itemsByDate.get(key) || [];
                   const hasItems = itemsForDay.length > 0;
                   const unlockedCount = itemsForDay.length;
@@ -165,25 +193,47 @@ export function TimeBasedView({ items, onItemClick, onAddItem }: TimeBasedViewPr
                     date.getMonth() === today.getMonth() &&
                     date.getDate() === today.getDate()
                   );
+                  const isPastDay = dayStart.getTime() < today.getTime();
                   const daysUntilUnlock = isFutureDay
                     ? Math.ceil((dayStart.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
                     : 0;
-                  const showUnlockPreview = hasItems && isFutureDay;
+                  const showDayPreview = hasItems;
+                  const dayInlineStyle = isCurrentMonth && isToday
+                    ? {
+                        backgroundColor: '#e1f0e2',
+                        borderColor: '#A3B9A4',
+                        color: '#064e3b',
+                        boxShadow: '0 0 0 2px rgba(163, 185, 164, 0.7)',
+                      }
+                    : isCurrentMonth && isPastDay
+                      ? {
+                          backgroundColor: '#e6f2e7',
+                          borderColor: '#c8e3ca',
+                          color: '#064e3b',
+                        }
+                      : isCurrentMonth && hasItems && isFutureDay
+                        ? {
+                            backgroundColor: '#fcf0e1',
+                            borderColor: '#fcd34d',
+                          }
+                        : undefined;
 
                   const dayButton = (
                     <button
                       key={key}
                       type="button"
+                      style={dayInlineStyle}
                       className={[
                         'relative aspect-square rounded-lg border text-xs flex flex-col items-center justify-center',
-                        isCurrentMonth ? 'border-border bg-background' : 'border-transparent text-muted-foreground/60',
-                        hasItems ? 'border-primary/60 bg-primary/5' : '',
-                        isToday ? 'ring-2 ring-primary/60' : '',
+                        !isCurrentMonth ? 'border-transparent text-muted-foreground/60' : '',
+                        isCurrentMonth && !isToday && !isPastDay && !(hasItems && isFutureDay)
+                          ? 'border-border bg-background'
+                          : '',
                       ]
                         .filter(Boolean)
                         .join(' ')}
                       onClick={() => {
-                        if (showUnlockPreview) {
+                        if (showDayPreview) {
                           // Popover handles the click; don't navigate
                           return;
                         }
@@ -201,20 +251,21 @@ export function TimeBasedView({ items, onItemClick, onAddItem }: TimeBasedViewPr
                             {itemsForDay.slice(0, 3).map((item) => (
                               <span
                                 key={item.id}
-                                className="inline-block w-2.5 h-2.5 rounded-full bg-primary"
-                              />
+                                className="inline-flex items-center justify-center text-2xl leading-none"
+                                title={item.category || 'Other'}
+                                aria-label={item.category || 'Other'}
+                              >
+                                {getCategoryEmoji(item.category)}
+                              </span>
                             ))}
                             {itemsForDay.length > 3 && (
                               <span className="text-[10px] text-muted-foreground">
                                 +{itemsForDay.length - 3}
                               </span>
                             )}
-                            {showUnlockPreview && (
-                              <Clock className="w-3 h-3 text-amber-600 flex-shrink-0" aria-hidden />
-                            )}
                           </div>
                           {hasItems && !isFutureDay && (
-                            <span className="text-[11px] font-semibold text-emerald-700 text-center px-1 truncate max-w-full">
+                            <span className="text-[11px] font-semibold text-[#064e3b] text-center px-1 truncate max-w-full">
                               {unlockedCount} item{unlockedCount !== 1 ? 's' : ''} unlocked!
                             </span>
                           )}
@@ -223,7 +274,7 @@ export function TimeBasedView({ items, onItemClick, onAddItem }: TimeBasedViewPr
                     </button>
                   );
 
-                  if (showUnlockPreview) {
+                  if (showDayPreview) {
                     return (
                       <Popover key={key}>
                         <PopoverTrigger asChild>
@@ -232,21 +283,53 @@ export function TimeBasedView({ items, onItemClick, onAddItem }: TimeBasedViewPr
                         <PopoverContent
                           side="top"
                           align="center"
-                          className="max-w-[min(280px,90vw)] bg-green-50 border-green-200 text-foreground shadow-md"
+                          className={`max-w-[min(280px,90vw)] text-foreground shadow-md ${
+                            isFutureDay
+                              ? 'bg-[#fcf0e1] border-amber-300'
+                              : 'bg-[#e1f0e2] border-[#A3B9A4]'
+                          }`}
                         >
                           <div className="space-y-2">
-                            <p className="text-sm font-semibold text-green-800 border-b border-green-200 pb-2">
-                              {daysUntilUnlock} day{daysUntilUnlock !== 1 ? 's' : ''} until unlocked
+                            <p className={`text-sm font-semibold border-b pb-2 ${
+                              isFutureDay
+                                ? 'text-amber-800 border-amber-200'
+                                : 'text-[#064e3b] border-[#A3B9A4]'
+                            }`}>
+                              {isFutureDay
+                                ? `${daysUntilUnlock} day${daysUntilUnlock !== 1 ? 's' : ''} until unlocked 🔒`
+                                : `Unlocked on ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} 🎉`}
                             </p>
-                            <ul className="space-y-1.5 text-sm text-green-900/90">
+                            <ul className={`space-y-1.5 text-sm ${
+                              isFutureDay ? 'text-amber-900/90' : 'text-[#064e3b]'
+                            }`}>
                               {itemsForDay.map((item) => (
                                 <li key={item.id} className="leading-tight">
-                                  {item.name}
+                                  <button
+                                    type="button"
+                                    onClick={() => onItemClick(item.id)}
+                                    className={`w-full flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-left font-medium cursor-pointer shadow-sm transition-colors ${
+                                      isFutureDay
+                                        ? 'bg-amber-50/70 border-amber-300 text-amber-900 hover:bg-amber-100'
+                                        : 'bg-white/70 border-[#A3B9A4] text-[#064e3b] hover:bg-white/90'
+                                    }`}
+                                    title="Open item"
+                                  >
+                                    <span
+                                      className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/80 text-base leading-none"
+                                      aria-hidden="true"
+                                    >
+                                      {getCategoryEmoji(item.category)}
+                                    </span>
+                                    <span className="flex-1 whitespace-normal break-words leading-snug">{item.name}</span>
+                                    <span aria-hidden="true" className="text-xs opacity-80">Open</span>
+                                  </button>
                                 </li>
                               ))}
                             </ul>
-                            <p className="text-xs text-green-700 pt-0.5">
-                              {itemsForDay.length === 1 ? 'This item' : 'These items'} will be unlocked on this day.
+                            <p className={`text-xs pt-0.5 ${
+                              isFutureDay ? 'text-amber-700' : 'text-[#064e3b]'
+                            }`}>
+                             
                             </p>
                           </div>
                         </PopoverContent>

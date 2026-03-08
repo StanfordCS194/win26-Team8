@@ -71,7 +71,7 @@ BEGIN
       'Authorization', 'Bearer ' || current_setting('app.resend_api_key', true)
     ),
     body := jsonb_build_object(
-      'from', 'Second Thought <onboarding@resend.dev>',
+      'from', 'Second Thought <noreply@secondthoughtcart.com>',
       'to', jsonb_build_array(NEW.friend_email),
       'subject', v_subject,
       'html', v_html

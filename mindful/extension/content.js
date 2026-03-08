@@ -398,7 +398,7 @@
           oldElement.props
         );
       }
-      function isValidElement2(object) {
+      function isValidElement(object) {
         return "object" === typeof object && null !== object && object.$$typeof === REACT_ELEMENT_TYPE;
       }
       function escape(key) {
@@ -467,7 +467,7 @@
         if (invokeCallback)
           return callback = callback(children), invokeCallback = "" === nameSoFar ? "." + getElementKey(children, 0) : nameSoFar, isArrayImpl(callback) ? (escapedPrefix = "", null != invokeCallback && (escapedPrefix = invokeCallback.replace(userProvidedKeyEscapeRegex, "$&/") + "/"), mapIntoArray(callback, array, escapedPrefix, "", function(c) {
             return c;
-          })) : null != callback && (isValidElement2(callback) && (callback = cloneAndReplaceKey(
+          })) : null != callback && (isValidElement(callback) && (callback = cloneAndReplaceKey(
             callback,
             escapedPrefix + (null == callback.key || children && children.key === callback.key ? "" : ("" + callback.key).replace(
               userProvidedKeyEscapeRegex,
@@ -578,7 +578,7 @@
           }) || [];
         },
         only: function(children) {
-          if (!isValidElement2(children))
+          if (!isValidElement(children))
             throw Error(
               "React.Children.only expected to receive a single React element child."
             );
@@ -660,7 +660,7 @@
       exports.forwardRef = function(render) {
         return { $$typeof: REACT_FORWARD_REF_TYPE, render };
       };
-      exports.isValidElement = isValidElement2;
+      exports.isValidElement = isValidElement;
       exports.lazy = function(ctor) {
         return {
           $$typeof: REACT_LAZY_TYPE,
@@ -773,7 +773,7 @@
   var require_react_dom_production = __commonJS({
     "node_modules/react-dom/cjs/react-dom.production.js"(exports) {
       "use strict";
-      var React14 = require_react();
+      var React2 = require_react();
       function formatProdErrorMessage(code) {
         var url = "https://react.dev/errors/" + code;
         if (1 < arguments.length) {
@@ -813,7 +813,7 @@
           implementation
         };
       }
-      var ReactSharedInternals = React14.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
+      var ReactSharedInternals = React2.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
       function getCrossOriginStringAs(as, input) {
         if ("font" === as) return "";
         if ("string" === typeof input)
@@ -949,8 +949,8 @@
     "node_modules/react-dom/cjs/react-dom-client.production.js"(exports) {
       "use strict";
       var Scheduler = require_scheduler();
-      var React14 = require_react();
-      var ReactDOM2 = require_react_dom();
+      var React2 = require_react();
+      var ReactDOM = require_react_dom();
       function formatProdErrorMessage(code) {
         var url = "https://react.dev/errors/" + code;
         if (1 < arguments.length) {
@@ -1137,8 +1137,8 @@
         return null;
       }
       var isArrayImpl = Array.isArray;
-      var ReactSharedInternals = React14.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
-      var ReactDOMSharedInternals = ReactDOM2.__DOM_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
+      var ReactSharedInternals = React2.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
+      var ReactDOMSharedInternals = ReactDOM.__DOM_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
       var sharedNotPendingObject = {
         pending: false,
         data: null,
@@ -2133,9 +2133,9 @@
           );
         return stateNode;
       }
-      var canUseDOM2 = !("undefined" === typeof window || "undefined" === typeof window.document || "undefined" === typeof window.document.createElement);
+      var canUseDOM = !("undefined" === typeof window || "undefined" === typeof window.document || "undefined" === typeof window.document.createElement);
       var passiveBrowserEventsSupported = false;
-      if (canUseDOM2)
+      if (canUseDOM)
         try {
           options = {};
           Object.defineProperty(options, "passive", {
@@ -2403,11 +2403,11 @@
       });
       var SyntheticToggleEvent = createSyntheticEvent(ToggleEventInterface);
       var END_KEYCODES = [9, 13, 27, 32];
-      var canUseCompositionEvent = canUseDOM2 && "CompositionEvent" in window;
+      var canUseCompositionEvent = canUseDOM && "CompositionEvent" in window;
       var documentMode = null;
-      canUseDOM2 && "documentMode" in document && (documentMode = document.documentMode);
-      var canUseTextInputEvent = canUseDOM2 && "TextEvent" in window && !documentMode;
-      var useFallbackCompositionData = canUseDOM2 && (!canUseCompositionEvent || documentMode && 8 < documentMode && 11 >= documentMode);
+      canUseDOM && "documentMode" in document && (documentMode = document.documentMode);
+      var canUseTextInputEvent = canUseDOM && "TextEvent" in window && !documentMode;
+      var useFallbackCompositionData = canUseDOM && (!canUseCompositionEvent || documentMode && 8 < documentMode && 11 >= documentMode);
       var SPACEBAR_CHAR = String.fromCharCode(32);
       var hasSpaceKeypress = false;
       function isFallbackCompositionEnd(domEventName, nativeEvent) {
@@ -2507,8 +2507,8 @@
         if ("change" === domEventName) return targetInst;
       }
       var isInputEventSupported = false;
-      if (canUseDOM2) {
-        if (canUseDOM2) {
+      if (canUseDOM) {
+        if (canUseDOM) {
           isSupported$jscomp$inline_417 = "oninput" in document;
           if (!isSupported$jscomp$inline_417) {
             element$jscomp$inline_418 = document.createElement("div");
@@ -2616,7 +2616,7 @@
         var nodeName = elem && elem.nodeName && elem.nodeName.toLowerCase();
         return nodeName && ("input" === nodeName && ("text" === elem.type || "search" === elem.type || "tel" === elem.type || "url" === elem.type || "password" === elem.type) || "textarea" === nodeName || "true" === elem.contentEditable);
       }
-      var skipSelectionChangeEvent = canUseDOM2 && "documentMode" in document && 11 >= document.documentMode;
+      var skipSelectionChangeEvent = canUseDOM && "documentMode" in document && 11 >= document.documentMode;
       var activeElement = null;
       var activeElementInst = null;
       var lastSelection = null;
@@ -2654,7 +2654,7 @@
       };
       var prefixedEventNames = {};
       var style = {};
-      canUseDOM2 && (style = document.createElement("div").style, "AnimationEvent" in window || (delete vendorPrefixes.animationend.animation, delete vendorPrefixes.animationiteration.animation, delete vendorPrefixes.animationstart.animation), "TransitionEvent" in window || delete vendorPrefixes.transitionend.transition);
+      canUseDOM && (style = document.createElement("div").style, "AnimationEvent" in window || (delete vendorPrefixes.animationend.animation, delete vendorPrefixes.animationiteration.animation, delete vendorPrefixes.animationstart.animation), "TransitionEvent" in window || delete vendorPrefixes.transitionend.transition);
       function getVendorPrefixedEventName(eventName) {
         if (prefixedEventNames[eventName]) return prefixedEventNames[eventName];
         if (!vendorPrefixes[eventName]) return eventName;
@@ -12129,7 +12129,7 @@
           0 === i && attemptExplicitHydrationTarget(target);
         }
       };
-      var isomorphicReactPackageVersion$jscomp$inline_1785 = React14.version;
+      var isomorphicReactPackageVersion$jscomp$inline_1785 = React2.version;
       if ("19.1.0" !== isomorphicReactPackageVersion$jscomp$inline_1785)
         throw Error(
           formatProdErrorMessage(
@@ -12576,10 +12576,10 @@
   }
 
   // extension/src/ContentOverlay.tsx
-  var import_react7 = __toESM(require_react());
+  var import_react5 = __toESM(require_react());
 
   // components/AddItemForm.tsx
-  var import_react5 = __toESM(require_react());
+  var import_react3 = __toESM(require_react());
 
   // services/env.ts
   function getExpoPublic(key) {
@@ -12596,11 +12596,6 @@
   // services/questionGenerator.ts
   var DEFAULT_QUESTIONS = [
     {
-      id: "importance",
-      question: "How important is this item to you?",
-      placeholder: "Not important/Very important"
-    },
-    {
       id: "urgency",
       question: "How urgent is your need for this item?",
       placeholder: "Not urgent/Very urgent"
@@ -12611,12 +12606,12 @@
       placeholder: "Not satisfied/Very satisfied"
     },
     {
-      id: "impact",
-      question: "How significant will the positive impact of this purchase be?",
-      placeholder: "No impact/Significant impact"
+      id: "value",
+      question: "How much value will this purchase add to your life compared to its cost?",
+      placeholder: "Low value/High value"
     }
   ];
-  var SYSTEM_PROMPT = `You are a mindful consumption assistant helping people reflect before making purchases. Generate 4 thoughtful, contextual reflection questions for someone considering buying a specific product.
+  var SYSTEM_PROMPT = `You are a mindful consumption assistant helping people reflect before making purchases. Generate 3 thoughtful, contextual reflection questions for someone considering buying a specific product.
 
 IMPORTANT: Each question must be answerable on a 5-point scale where:
 - 1 = Strongly Disagree / Not at all / Very Low
@@ -12642,25 +12637,25 @@ The questions should:
 6. Be non-judgmental but thought-provoking
 7. Be phrased as statements or questions that can be rated on a 1-5 scale
 
-Return your response as a JSON array with exactly 4 objects, each having:
-- "id": a short identifier (e.g., "importance", "urgency", "alternatives", "need")
+Return your response as a JSON array with exactly 3 objects, each having:
+- "id": a short identifier (e.g., "urgency", "alternatives", "value")
 - "question": the reflection question (must be answerable on a 1-5 scale AND must include the product name)
 - "placeholder": labels for the scale endpoints (format: "Low/High" or "Not at all/Very much")
 
+Each question must cover a DISTINCT dimension of the purchase decision. Good dimensions include: urgency, alternatives/substitutes, financial impact, emotional vs practical need, long-term value. Do NOT repeat similar themes across questions.
+
 Example for "AirPods":
 [
-  {"id": "importance", "question": "How important is owning AirPods to you?", "placeholder": "Not important/Very important"},
-  {"id": "urgency", "question": "How urgent is your need for AirPods?", "placeholder": "Not urgent/Very urgent"},
-  {"id": "alternatives", "question": "How satisfied would you be with other headphones (wired, different wireless brands, or what you currently have)?", "placeholder": "Not satisfied/Very satisfied"},
-  {"id": "improvement", "question": "How much will AirPods improve your audio experience compared to what you have?", "placeholder": "No improvement/Significant improvement"}
+  {"id": "urgency", "question": "How urgent is your need for AirPods right now?", "placeholder": "Not urgent/Very urgent"},
+  {"id": "alternatives", "question": "How satisfied would you be with other headphones (wired, different brands, or what you currently have)?", "placeholder": "Not satisfied/Very satisfied"},
+  {"id": "value", "question": "How much will AirPods improve your daily audio experience compared to their cost?", "placeholder": "Low value/High value"}
 ]
 
 Example for "Tennis Racket":
 [
-  {"id": "importance", "question": "How important is owning a Tennis Racket to you?", "placeholder": "Not important/Very important"},
   {"id": "urgency", "question": "How urgent is your need for a Tennis Racket?", "placeholder": "Not urgent/Very urgent"},
-  {"id": "alternatives", "question": "How satisfied would you be with other tennis rackets (borrowing, renting, or using a different racket)?", "placeholder": "Not satisfied/Very satisfied"},
-  {"id": "improvement", "question": "How much will this Tennis Racket improve your tennis experience?", "placeholder": "No improvement/Significant improvement"}
+  {"id": "alternatives", "question": "How satisfied would you be borrowing, renting, or using a different racket instead?", "placeholder": "Not satisfied/Very satisfied"},
+  {"id": "value", "question": "How much will this Tennis Racket improve your game compared to its cost?", "placeholder": "Low value/High value"}
 ]
 
 Only respond with the JSON array, no other text.`;
@@ -12695,21 +12690,21 @@ Only respond with the JSON array, no other text.`;
           "anthropic-dangerous-direct-browser-access": "true"
         },
         body: JSON.stringify({
-          model: "claude-opus-4-6",
+          model: "claude-haiku-4-5-20251001",
           max_tokens: 1e3,
           system: SYSTEM_PROMPT,
           messages: [
             {
               role: "user",
-              content: `Generate 4 contextual reflection questions for someone considering buying: "${productName}". 
+              content: `Generate 3 contextual reflection questions for someone considering buying: "${productName}".
+
+If the input looks like a URL or website name rather than a product, infer what kind of product it might be from context and generate questions about shopping on that site.
 
 Requirements:
-1. Include the product name "${productName}" in each question - do not use generic terms like "this item" or "this product".
-2. Recognize what type of product "${productName}" is and suggest category-specific alternatives. For example:
-   - If it's AirPods (wireless headphones), ask about "other headphones" or "wired headphones"
-   - If it's an iPhone (smartphone), ask about "other smartphones" or "your current phone"
-   - If it's a specific brand/model of a product type, reference that product category in alternatives
-3. Make questions specific to the product category and context.`
+1. Include the product name or a short reference to it in each question.
+2. Recognize what type of product it is and suggest category-specific alternatives.
+3. Make each question cover a DISTINCT dimension (e.g. urgency, alternatives, value).
+4. ONLY respond with the JSON array. No explanations, no caveats, no other text.`
             }
           ]
         })
@@ -12736,8 +12731,8 @@ Requirements:
         throw new Error("Could not parse JSON from response");
       }
       const questions = JSON.parse(jsonMatch[0]);
-      if (!Array.isArray(questions) || questions.length !== 4) {
-        console.error("Invalid response structure - expected 4 questions, got:", questions.length);
+      if (!Array.isArray(questions) || questions.length !== 3) {
+        console.error("Invalid response structure - expected 3 questions, got:", questions.length);
         throw new Error("Invalid response structure");
       }
       for (const q of questions) {
@@ -12760,18 +12755,40 @@ Requirements:
 
   // services/categoryDetector.ts
   var CATEGORIES = ["Beauty", "Clothes", "Accessories", "Sports", "Electronics", "Home", "Other"];
-  var CATEGORY_SYSTEM_PROMPT = `You are a product categorization assistant. Your task is to classify product names into one of these categories: Beauty, Clothes, Accessories, Sports, Electronics, Home, or Other.
+  var CATEGORY_SYSTEM_PROMPT = `You are a product categorization assistant. Classify the given product name into exactly one category.
 
-Categories:
-- Beauty: Skincare products, makeup, cosmetics, perfumes, hair care, beauty tools, nail polish, serums, creams, lotions. Not jewelry or bags.
-- Clothes: Clothing and apparel only\u2014shirts, pants, dresses, shoes, sneakers, jackets, sweaters, jeans, skirts, tops, suits, coats, socks, underwear. Not jewelry, purses, or bags.
-- Accessories: Jewelry (rings, necklaces, bracelets, earrings), purses, handbags, wallets, belts, watches (fashion watches), sunglasses, scarves, hats, backpacks (non-sport), totes, clutches\u2014items that accessorize rather than being clothing or beauty products.
-- Sports: Sports equipment, fitness gear, athletic wear, workout equipment, outdoor gear
-- Electronics: Phones, computers, cameras, TVs, headphones, gadgets, tech devices
-- Home: Furniture, home decor, appliances, kitchen items, bedding, lighting, storage
-- Other: Anything that doesn't fit the above categories
+VALID CATEGORIES (use one of these exact words only):
+- Beauty
+- Clothes  
+- Accessories
+- Sports
+- Electronics
+- Home
+- Other
 
-Return ONLY the category name (one word: Beauty, Clothes, Accessories, Sports, Electronics, Home, or Other). Do not include any explanation or additional text.`;
+DEFINITIONS AND EXAMPLES:
+
+Beauty: Skincare, makeup, cosmetics, perfume/fragrance, hair care, nail products, serums, moisturizers, cleansers, face masks, beauty tools (e.g. makeup brushes), self-care grooming. NOT: jewelry, handbags, fashion items.
+Examples: "La Mer moisturizer" \u2192 Beauty, "Dior lipstick" \u2192 Beauty, "Olaplex shampoo" \u2192 Beauty.
+
+Clothes: Apparel and footwear only\u2014shirts, pants, dresses, jackets, coats, sweaters, jeans, skirts, tops, blouses, suits, socks, underwear, shoes, sneakers, boots, sandals. NOT: jewelry, bags, watches, sports equipment.
+Examples: "Nike running shoes" can be Clothes (everyday wear) or Sports (athletic); prefer Sports if the name suggests athletic use. "Levi's jeans" \u2192 Clothes.
+
+Accessories: Jewelry (rings, necklaces, bracelets, earrings), handbags, purses, wallets, belts, fashion watches, sunglasses, scarves, hats, backpacks (non-sport), totes, clutches, hair accessories. Items that accessorize an outfit rather than being primary clothing or beauty.
+Examples: "Louis Vuitton handbag" \u2192 Accessories, "Cartier watch" \u2192 Accessories, "Ray-Ban sunglasses" \u2192 Accessories.
+
+Sports: Sports equipment, fitness gear, athletic apparel meant for sport (jerseys, cleats, gym wear), workout equipment, outdoor/activity gear, camping gear, bicycles, yoga mats.
+Examples: "Peloton bike" \u2192 Sports, "Wilson basketball" \u2192 Sports, "Yoga mat" \u2192 Sports, "Running shoes" (when clearly athletic) \u2192 Sports.
+
+Electronics: Phones, computers, tablets, cameras, TVs, headphones, earbuds, speakers, smartwatches (fitness/tech watches), gaming consoles, drones, chargers, cables, tech gadgets.
+Examples: "iPhone 15" \u2192 Electronics, "Sony headphones" \u2192 Electronics, "Apple Watch" \u2192 Electronics, "Nintendo Switch" \u2192 Electronics.
+
+Home: Furniture, home decor, bedding, kitchen items, appliances, lighting, rugs, storage, plants, candles, home organization.
+Examples: "West Elm sofa" \u2192 Home, "KitchenAid mixer" \u2192 Home, "Throw pillow" \u2192 Home.
+
+Other: Anything that does not clearly fit the above. When in doubt between two categories, choose the more specific one; use Other only when the product is ambiguous or fits none of the others.
+
+OUTPUT: Reply with exactly one word from the list above. No period, no explanation, no other text.`;
   function getApiKey2() {
     return getExpoPublic("EXPO_PUBLIC_ANTHROPIC_API_KEY");
   }
@@ -13098,7 +13115,9 @@ Return ONLY the category name (one word: Beauty, Clothes, Accessories, Sports, E
           messages: [
             {
               role: "user",
-              content: `What category does this product belong to: "${itemName}"?`
+              content: `Product name: "${itemName.trim()}"
+
+Reply with exactly one word: Beauty, Clothes, Accessories, Sports, Electronics, Home, or Other.`
             }
           ]
         })
@@ -13114,14 +13133,28 @@ Return ONLY the category name (one word: Beauty, Clothes, Accessories, Sports, E
         console.warn("No content in AI response, using fallback");
         return detectCategoryFallback(itemName);
       }
-      const detectedCategory = content.split(/\s+/)[0].trim();
-      if (CATEGORIES.includes(detectedCategory)) {
+      const contentLower = content.trim().toLowerCase();
+      let detectedCategory = null;
+      let earliestIndex = Infinity;
+      for (const cat of CATEGORIES) {
+        const regex = new RegExp(`\\b${cat.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`);
+        const match = contentLower.match(regex);
+        if (match && match.index !== void 0 && match.index < earliestIndex) {
+          earliestIndex = match.index;
+          detectedCategory = cat;
+        }
+      }
+      if (detectedCategory) {
         console.log("AI detected category:", detectedCategory);
         return detectedCategory;
-      } else {
-        console.warn("AI returned invalid category:", detectedCategory, "- using fallback");
-        return detectCategoryFallback(itemName);
       }
+      const firstWord = content.split(/\s+/)[0].replace(/[.,;:!?]+$/, "").trim();
+      if (CATEGORIES.includes(firstWord)) {
+        console.log("AI detected category (first word):", firstWord);
+        return firstWord;
+      }
+      console.warn("AI returned invalid category:", content.slice(0, 80), "- using fallback");
+      return detectCategoryFallback(itemName);
     } catch (error) {
       console.error("Error detecting category with AI:", error);
       console.log("Falling back to keyword-based detection");
@@ -13193,7 +13226,7 @@ Return ONLY the category name (one word: Beauty, Clothes, Accessories, Sports, E
           messages: [
             {
               role: "user",
-              content: `Extract the product name from this URL. Return ONLY the product name, nothing else. If you cannot determine a product name, return "Unknown Product".
+              content: `Extract a short, concise product name from this URL. Keep it brief (2-5 words max, e.g. "Nike Air Max 90" not "Nike Air Max 90 Men's Running Shoe - Black/White - Size 10"). Drop store names, descriptions, colors, sizes, and extra details. Return ONLY the short product name, nothing else. If you cannot determine a product name, return "Unknown Product".
 
 URL: ${url}`
             }
@@ -13223,7 +13256,7 @@ URL: ${url}`
       scrapeMetadata(url),
       inferProductNameFromUrl(url)
     ]);
-    const title = scraped.title || aiTitle;
+    const title = aiTitle || scraped.title;
     const image = scraped.image;
     console.log("Final result \u2014 scraped:", scraped.title, "| AI:", aiTitle, "| using:", title);
     return { title, image };
@@ -13379,4191 +13412,39 @@ URL: ${url}`
   var __iconNode2 = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
   var LoaderCircle = createLucideIcon("loader-circle", __iconNode2);
 
-  // components/ui/slider.tsx
-  var React12 = __toESM(require_react());
-
-  // node_modules/@radix-ui/react-slider/dist/index.mjs
-  var React11 = __toESM(require_react(), 1);
-
-  // node_modules/@radix-ui/number/dist/index.mjs
-  function clamp(value, [min, max]) {
-    return Math.min(max, Math.max(min, value));
-  }
-
-  // node_modules/@radix-ui/primitive/dist/index.mjs
-  var canUseDOM = !!(typeof window !== "undefined" && window.document && window.document.createElement);
-  function composeEventHandlers(originalEventHandler, ourEventHandler, { checkForDefaultPrevented = true } = {}) {
-    return function handleEvent(event) {
-      originalEventHandler?.(event);
-      if (checkForDefaultPrevented === false || !event.defaultPrevented) {
-        return ourEventHandler?.(event);
-      }
-    };
-  }
-
-  // node_modules/@radix-ui/react-compose-refs/dist/index.mjs
-  var React = __toESM(require_react(), 1);
-  function setRef(ref, value) {
-    if (typeof ref === "function") {
-      return ref(value);
-    } else if (ref !== null && ref !== void 0) {
-      ref.current = value;
-    }
-  }
-  function composeRefs(...refs) {
-    return (node) => {
-      let hasCleanup = false;
-      const cleanups = refs.map((ref) => {
-        const cleanup = setRef(ref, node);
-        if (!hasCleanup && typeof cleanup == "function") {
-          hasCleanup = true;
-        }
-        return cleanup;
-      });
-      if (hasCleanup) {
-        return () => {
-          for (let i = 0; i < cleanups.length; i++) {
-            const cleanup = cleanups[i];
-            if (typeof cleanup == "function") {
-              cleanup();
-            } else {
-              setRef(refs[i], null);
-            }
-          }
-        };
-      }
-    };
-  }
-  function useComposedRefs(...refs) {
-    return React.useCallback(composeRefs(...refs), refs);
-  }
-
-  // node_modules/@radix-ui/react-context/dist/index.mjs
-  var React2 = __toESM(require_react(), 1);
-  var import_jsx_runtime = __toESM(require_jsx_runtime(), 1);
-  function createContextScope(scopeName, createContextScopeDeps = []) {
-    let defaultContexts = [];
-    function createContext3(rootComponentName, defaultContext) {
-      const BaseContext = React2.createContext(defaultContext);
-      const index = defaultContexts.length;
-      defaultContexts = [...defaultContexts, defaultContext];
-      const Provider = (props) => {
-        const { scope, children, ...context } = props;
-        const Context = scope?.[scopeName]?.[index] || BaseContext;
-        const value = React2.useMemo(() => context, Object.values(context));
-        return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Context.Provider, { value, children });
-      };
-      Provider.displayName = rootComponentName + "Provider";
-      function useContext22(consumerName, scope) {
-        const Context = scope?.[scopeName]?.[index] || BaseContext;
-        const context = React2.useContext(Context);
-        if (context) return context;
-        if (defaultContext !== void 0) return defaultContext;
-        throw new Error(`\`${consumerName}\` must be used within \`${rootComponentName}\``);
-      }
-      return [Provider, useContext22];
-    }
-    const createScope = () => {
-      const scopeContexts = defaultContexts.map((defaultContext) => {
-        return React2.createContext(defaultContext);
-      });
-      return function useScope(scope) {
-        const contexts = scope?.[scopeName] || scopeContexts;
-        return React2.useMemo(
-          () => ({ [`__scope${scopeName}`]: { ...scope, [scopeName]: contexts } }),
-          [scope, contexts]
-        );
-      };
-    };
-    createScope.scopeName = scopeName;
-    return [createContext3, composeContextScopes(createScope, ...createContextScopeDeps)];
-  }
-  function composeContextScopes(...scopes) {
-    const baseScope = scopes[0];
-    if (scopes.length === 1) return baseScope;
-    const createScope = () => {
-      const scopeHooks = scopes.map((createScope2) => ({
-        useScope: createScope2(),
-        scopeName: createScope2.scopeName
-      }));
-      return function useComposedScopes(overrideScopes) {
-        const nextScopes = scopeHooks.reduce((nextScopes2, { useScope, scopeName }) => {
-          const scopeProps = useScope(overrideScopes);
-          const currentScope = scopeProps[`__scope${scopeName}`];
-          return { ...nextScopes2, ...currentScope };
-        }, {});
-        return React2.useMemo(() => ({ [`__scope${baseScope.scopeName}`]: nextScopes }), [nextScopes]);
-      };
-    };
-    createScope.scopeName = baseScope.scopeName;
-    return createScope;
-  }
-
-  // node_modules/@radix-ui/react-use-controllable-state/dist/index.mjs
-  var React4 = __toESM(require_react(), 1);
-
-  // node_modules/@radix-ui/react-use-layout-effect/dist/index.mjs
-  var React3 = __toESM(require_react(), 1);
-  var useLayoutEffect2 = globalThis?.document ? React3.useLayoutEffect : () => {
-  };
-
-  // node_modules/@radix-ui/react-use-controllable-state/dist/index.mjs
-  var React22 = __toESM(require_react(), 1);
-  var useInsertionEffect = React4[" useInsertionEffect ".trim().toString()] || useLayoutEffect2;
-  function useControllableState({
-    prop,
-    defaultProp,
-    onChange = () => {
-    },
-    caller
-  }) {
-    const [uncontrolledProp, setUncontrolledProp, onChangeRef] = useUncontrolledState({
-      defaultProp,
-      onChange
-    });
-    const isControlled = prop !== void 0;
-    const value = isControlled ? prop : uncontrolledProp;
-    if (true) {
-      const isControlledRef = React4.useRef(prop !== void 0);
-      React4.useEffect(() => {
-        const wasControlled = isControlledRef.current;
-        if (wasControlled !== isControlled) {
-          const from = wasControlled ? "controlled" : "uncontrolled";
-          const to = isControlled ? "controlled" : "uncontrolled";
-          console.warn(
-            `${caller} is changing from ${from} to ${to}. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.`
-          );
-        }
-        isControlledRef.current = isControlled;
-      }, [isControlled, caller]);
-    }
-    const setValue = React4.useCallback(
-      (nextValue) => {
-        if (isControlled) {
-          const value2 = isFunction(nextValue) ? nextValue(prop) : nextValue;
-          if (value2 !== prop) {
-            onChangeRef.current?.(value2);
-          }
-        } else {
-          setUncontrolledProp(nextValue);
-        }
-      },
-      [isControlled, prop, setUncontrolledProp, onChangeRef]
-    );
-    return [value, setValue];
-  }
-  function useUncontrolledState({
-    defaultProp,
-    onChange
-  }) {
-    const [value, setValue] = React4.useState(defaultProp);
-    const prevValueRef = React4.useRef(value);
-    const onChangeRef = React4.useRef(onChange);
-    useInsertionEffect(() => {
-      onChangeRef.current = onChange;
-    }, [onChange]);
-    React4.useEffect(() => {
-      if (prevValueRef.current !== value) {
-        onChangeRef.current?.(value);
-        prevValueRef.current = value;
-      }
-    }, [value, prevValueRef]);
-    return [value, setValue, onChangeRef];
-  }
-  function isFunction(value) {
-    return typeof value === "function";
-  }
-  var SYNC_STATE = Symbol("RADIX:SYNC_STATE");
-
-  // node_modules/@radix-ui/react-direction/dist/index.mjs
-  var React5 = __toESM(require_react(), 1);
-  var import_jsx_runtime2 = __toESM(require_jsx_runtime(), 1);
-  var DirectionContext = React5.createContext(void 0);
-  function useDirection(localDir) {
-    const globalDir = React5.useContext(DirectionContext);
-    return localDir || globalDir || "ltr";
-  }
-
-  // node_modules/@radix-ui/react-use-previous/dist/index.mjs
-  var React6 = __toESM(require_react(), 1);
-  function usePrevious(value) {
-    const ref = React6.useRef({ value, previous: value });
-    return React6.useMemo(() => {
-      if (ref.current.value !== value) {
-        ref.current.previous = ref.current.value;
-        ref.current.value = value;
-      }
-      return ref.current.previous;
-    }, [value]);
-  }
-
-  // node_modules/@radix-ui/react-use-size/dist/index.mjs
-  var React7 = __toESM(require_react(), 1);
-  function useSize(element) {
-    const [size, setSize] = React7.useState(void 0);
-    useLayoutEffect2(() => {
-      if (element) {
-        setSize({ width: element.offsetWidth, height: element.offsetHeight });
-        const resizeObserver = new ResizeObserver((entries) => {
-          if (!Array.isArray(entries)) {
-            return;
-          }
-          if (!entries.length) {
-            return;
-          }
-          const entry = entries[0];
-          let width;
-          let height;
-          if ("borderBoxSize" in entry) {
-            const borderSizeEntry = entry["borderBoxSize"];
-            const borderSize = Array.isArray(borderSizeEntry) ? borderSizeEntry[0] : borderSizeEntry;
-            width = borderSize["inlineSize"];
-            height = borderSize["blockSize"];
-          } else {
-            width = element.offsetWidth;
-            height = element.offsetHeight;
-          }
-          setSize({ width, height });
-        });
-        resizeObserver.observe(element, { box: "border-box" });
-        return () => resizeObserver.unobserve(element);
-      } else {
-        setSize(void 0);
-      }
-    }, [element]);
-    return size;
-  }
-
-  // node_modules/@radix-ui/react-slider/node_modules/@radix-ui/react-primitive/dist/index.mjs
-  var React9 = __toESM(require_react(), 1);
-  var ReactDOM = __toESM(require_react_dom(), 1);
-
-  // node_modules/@radix-ui/react-slider/node_modules/@radix-ui/react-slot/dist/index.mjs
-  var React8 = __toESM(require_react(), 1);
-  var import_jsx_runtime3 = __toESM(require_jsx_runtime(), 1);
-  // @__NO_SIDE_EFFECTS__
-  function createSlot(ownerName) {
-    const SlotClone = /* @__PURE__ */ createSlotClone(ownerName);
-    const Slot2 = React8.forwardRef((props, forwardedRef) => {
-      const { children, ...slotProps } = props;
-      const childrenArray = React8.Children.toArray(children);
-      const slottable = childrenArray.find(isSlottable);
-      if (slottable) {
-        const newElement = slottable.props.children;
-        const newChildren = childrenArray.map((child) => {
-          if (child === slottable) {
-            if (React8.Children.count(newElement) > 1) return React8.Children.only(null);
-            return React8.isValidElement(newElement) ? newElement.props.children : null;
-          } else {
-            return child;
-          }
-        });
-        return /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(SlotClone, { ...slotProps, ref: forwardedRef, children: React8.isValidElement(newElement) ? React8.cloneElement(newElement, void 0, newChildren) : null });
-      }
-      return /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(SlotClone, { ...slotProps, ref: forwardedRef, children });
-    });
-    Slot2.displayName = `${ownerName}.Slot`;
-    return Slot2;
-  }
-  // @__NO_SIDE_EFFECTS__
-  function createSlotClone(ownerName) {
-    const SlotClone = React8.forwardRef((props, forwardedRef) => {
-      const { children, ...slotProps } = props;
-      if (React8.isValidElement(children)) {
-        const childrenRef = getElementRef(children);
-        const props2 = mergeProps(slotProps, children.props);
-        if (children.type !== React8.Fragment) {
-          props2.ref = forwardedRef ? composeRefs(forwardedRef, childrenRef) : childrenRef;
-        }
-        return React8.cloneElement(children, props2);
-      }
-      return React8.Children.count(children) > 1 ? React8.Children.only(null) : null;
-    });
-    SlotClone.displayName = `${ownerName}.SlotClone`;
-    return SlotClone;
-  }
-  var SLOTTABLE_IDENTIFIER = Symbol("radix.slottable");
-  function isSlottable(child) {
-    return React8.isValidElement(child) && typeof child.type === "function" && "__radixId" in child.type && child.type.__radixId === SLOTTABLE_IDENTIFIER;
-  }
-  function mergeProps(slotProps, childProps) {
-    const overrideProps = { ...childProps };
-    for (const propName in childProps) {
-      const slotPropValue = slotProps[propName];
-      const childPropValue = childProps[propName];
-      const isHandler = /^on[A-Z]/.test(propName);
-      if (isHandler) {
-        if (slotPropValue && childPropValue) {
-          overrideProps[propName] = (...args) => {
-            const result = childPropValue(...args);
-            slotPropValue(...args);
-            return result;
-          };
-        } else if (slotPropValue) {
-          overrideProps[propName] = slotPropValue;
-        }
-      } else if (propName === "style") {
-        overrideProps[propName] = { ...slotPropValue, ...childPropValue };
-      } else if (propName === "className") {
-        overrideProps[propName] = [slotPropValue, childPropValue].filter(Boolean).join(" ");
-      }
-    }
-    return { ...slotProps, ...overrideProps };
-  }
-  function getElementRef(element) {
-    let getter = Object.getOwnPropertyDescriptor(element.props, "ref")?.get;
-    let mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
-    if (mayWarn) {
-      return element.ref;
-    }
-    getter = Object.getOwnPropertyDescriptor(element, "ref")?.get;
-    mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
-    if (mayWarn) {
-      return element.props.ref;
-    }
-    return element.props.ref || element.ref;
-  }
-
-  // node_modules/@radix-ui/react-slider/node_modules/@radix-ui/react-primitive/dist/index.mjs
-  var import_jsx_runtime4 = __toESM(require_jsx_runtime(), 1);
-  var NODES = [
-    "a",
-    "button",
-    "div",
-    "form",
-    "h2",
-    "h3",
-    "img",
-    "input",
-    "label",
-    "li",
-    "nav",
-    "ol",
-    "p",
-    "select",
-    "span",
-    "svg",
-    "ul"
-  ];
-  var Primitive = NODES.reduce((primitive, node) => {
-    const Slot = createSlot(`Primitive.${node}`);
-    const Node2 = React9.forwardRef((props, forwardedRef) => {
-      const { asChild, ...primitiveProps } = props;
-      const Comp = asChild ? Slot : node;
-      if (typeof window !== "undefined") {
-        window[Symbol.for("radix-ui")] = true;
-      }
-      return /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(Comp, { ...primitiveProps, ref: forwardedRef });
-    });
-    Node2.displayName = `Primitive.${node}`;
-    return { ...primitive, [node]: Node2 };
-  }, {});
-
-  // node_modules/@radix-ui/react-slider/node_modules/@radix-ui/react-collection/dist/index.mjs
-  var import_react3 = __toESM(require_react(), 1);
-  var import_jsx_runtime5 = __toESM(require_jsx_runtime(), 1);
-  var import_react4 = __toESM(require_react(), 1);
-  var import_jsx_runtime6 = __toESM(require_jsx_runtime(), 1);
-  function createCollection(name) {
-    const PROVIDER_NAME = name + "CollectionProvider";
-    const [createCollectionContext, createCollectionScope2] = createContextScope(PROVIDER_NAME);
-    const [CollectionProviderImpl, useCollectionContext] = createCollectionContext(
-      PROVIDER_NAME,
-      { collectionRef: { current: null }, itemMap: /* @__PURE__ */ new Map() }
-    );
-    const CollectionProvider = (props) => {
-      const { scope, children } = props;
-      const ref = import_react3.default.useRef(null);
-      const itemMap = import_react3.default.useRef(/* @__PURE__ */ new Map()).current;
-      return /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(CollectionProviderImpl, { scope, itemMap, collectionRef: ref, children });
-    };
-    CollectionProvider.displayName = PROVIDER_NAME;
-    const COLLECTION_SLOT_NAME = name + "CollectionSlot";
-    const CollectionSlotImpl = createSlot(COLLECTION_SLOT_NAME);
-    const CollectionSlot = import_react3.default.forwardRef(
-      (props, forwardedRef) => {
-        const { scope, children } = props;
-        const context = useCollectionContext(COLLECTION_SLOT_NAME, scope);
-        const composedRefs = useComposedRefs(forwardedRef, context.collectionRef);
-        return /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(CollectionSlotImpl, { ref: composedRefs, children });
-      }
-    );
-    CollectionSlot.displayName = COLLECTION_SLOT_NAME;
-    const ITEM_SLOT_NAME = name + "CollectionItemSlot";
-    const ITEM_DATA_ATTR = "data-radix-collection-item";
-    const CollectionItemSlotImpl = createSlot(ITEM_SLOT_NAME);
-    const CollectionItemSlot = import_react3.default.forwardRef(
-      (props, forwardedRef) => {
-        const { scope, children, ...itemData } = props;
-        const ref = import_react3.default.useRef(null);
-        const composedRefs = useComposedRefs(forwardedRef, ref);
-        const context = useCollectionContext(ITEM_SLOT_NAME, scope);
-        import_react3.default.useEffect(() => {
-          context.itemMap.set(ref, { ref, ...itemData });
-          return () => void context.itemMap.delete(ref);
-        });
-        return /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(CollectionItemSlotImpl, { ...{ [ITEM_DATA_ATTR]: "" }, ref: composedRefs, children });
-      }
-    );
-    CollectionItemSlot.displayName = ITEM_SLOT_NAME;
-    function useCollection2(scope) {
-      const context = useCollectionContext(name + "CollectionConsumer", scope);
-      const getItems = import_react3.default.useCallback(() => {
-        const collectionNode = context.collectionRef.current;
-        if (!collectionNode) return [];
-        const orderedNodes = Array.from(collectionNode.querySelectorAll(`[${ITEM_DATA_ATTR}]`));
-        const items = Array.from(context.itemMap.values());
-        const orderedItems = items.sort(
-          (a, b) => orderedNodes.indexOf(a.ref.current) - orderedNodes.indexOf(b.ref.current)
-        );
-        return orderedItems;
-      }, [context.collectionRef, context.itemMap]);
-      return getItems;
-    }
-    return [
-      { Provider: CollectionProvider, Slot: CollectionSlot, ItemSlot: CollectionItemSlot },
-      useCollection2,
-      createCollectionScope2
-    ];
-  }
-
-  // node_modules/@radix-ui/react-slider/dist/index.mjs
-  var import_jsx_runtime7 = __toESM(require_jsx_runtime(), 1);
-  var PAGE_KEYS = ["PageUp", "PageDown"];
-  var ARROW_KEYS = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"];
-  var BACK_KEYS = {
-    "from-left": ["Home", "PageDown", "ArrowDown", "ArrowLeft"],
-    "from-right": ["Home", "PageDown", "ArrowDown", "ArrowRight"],
-    "from-bottom": ["Home", "PageDown", "ArrowDown", "ArrowLeft"],
-    "from-top": ["Home", "PageDown", "ArrowUp", "ArrowLeft"]
-  };
-  var SLIDER_NAME = "Slider";
-  var [Collection, useCollection, createCollectionScope] = createCollection(SLIDER_NAME);
-  var [createSliderContext, createSliderScope] = createContextScope(SLIDER_NAME, [
-    createCollectionScope
-  ]);
-  var [SliderProvider, useSliderContext] = createSliderContext(SLIDER_NAME);
-  var Slider = React11.forwardRef(
-    (props, forwardedRef) => {
-      const {
-        name,
-        min = 0,
-        max = 100,
-        step = 1,
-        orientation = "horizontal",
-        disabled = false,
-        minStepsBetweenThumbs = 0,
-        defaultValue = [min],
-        value,
-        onValueChange = () => {
-        },
-        onValueCommit = () => {
-        },
-        inverted = false,
-        form,
-        ...sliderProps
-      } = props;
-      const thumbRefs = React11.useRef(/* @__PURE__ */ new Set());
-      const valueIndexToChangeRef = React11.useRef(0);
-      const isHorizontal = orientation === "horizontal";
-      const SliderOrientation = isHorizontal ? SliderHorizontal : SliderVertical;
-      const [values = [], setValues] = useControllableState({
-        prop: value,
-        defaultProp: defaultValue,
-        onChange: (value2) => {
-          const thumbs = [...thumbRefs.current];
-          thumbs[valueIndexToChangeRef.current]?.focus();
-          onValueChange(value2);
-        }
-      });
-      const valuesBeforeSlideStartRef = React11.useRef(values);
-      function handleSlideStart(value2) {
-        const closestIndex = getClosestValueIndex(values, value2);
-        updateValues(value2, closestIndex);
-      }
-      function handleSlideMove(value2) {
-        updateValues(value2, valueIndexToChangeRef.current);
-      }
-      function handleSlideEnd() {
-        const prevValue = valuesBeforeSlideStartRef.current[valueIndexToChangeRef.current];
-        const nextValue = values[valueIndexToChangeRef.current];
-        const hasChanged = nextValue !== prevValue;
-        if (hasChanged) onValueCommit(values);
-      }
-      function updateValues(value2, atIndex, { commit } = { commit: false }) {
-        const decimalCount = getDecimalCount(step);
-        const snapToStep = roundValue(Math.round((value2 - min) / step) * step + min, decimalCount);
-        const nextValue = clamp(snapToStep, [min, max]);
-        setValues((prevValues = []) => {
-          const nextValues = getNextSortedValues(prevValues, nextValue, atIndex);
-          if (hasMinStepsBetweenValues(nextValues, minStepsBetweenThumbs * step)) {
-            valueIndexToChangeRef.current = nextValues.indexOf(nextValue);
-            const hasChanged = String(nextValues) !== String(prevValues);
-            if (hasChanged && commit) onValueCommit(nextValues);
-            return hasChanged ? nextValues : prevValues;
-          } else {
-            return prevValues;
-          }
-        });
-      }
-      return /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
-        SliderProvider,
-        {
-          scope: props.__scopeSlider,
-          name,
-          disabled,
-          min,
-          max,
-          valueIndexToChangeRef,
-          thumbs: thumbRefs.current,
-          values,
-          orientation,
-          form,
-          children: /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(Collection.Provider, { scope: props.__scopeSlider, children: /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(Collection.Slot, { scope: props.__scopeSlider, children: /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
-            SliderOrientation,
-            {
-              "aria-disabled": disabled,
-              "data-disabled": disabled ? "" : void 0,
-              ...sliderProps,
-              ref: forwardedRef,
-              onPointerDown: composeEventHandlers(sliderProps.onPointerDown, () => {
-                if (!disabled) valuesBeforeSlideStartRef.current = values;
-              }),
-              min,
-              max,
-              inverted,
-              onSlideStart: disabled ? void 0 : handleSlideStart,
-              onSlideMove: disabled ? void 0 : handleSlideMove,
-              onSlideEnd: disabled ? void 0 : handleSlideEnd,
-              onHomeKeyDown: () => !disabled && updateValues(min, 0, { commit: true }),
-              onEndKeyDown: () => !disabled && updateValues(max, values.length - 1, { commit: true }),
-              onStepKeyDown: ({ event, direction: stepDirection }) => {
-                if (!disabled) {
-                  const isPageKey = PAGE_KEYS.includes(event.key);
-                  const isSkipKey = isPageKey || event.shiftKey && ARROW_KEYS.includes(event.key);
-                  const multiplier = isSkipKey ? 10 : 1;
-                  const atIndex = valueIndexToChangeRef.current;
-                  const value2 = values[atIndex];
-                  const stepInDirection = step * multiplier * stepDirection;
-                  updateValues(value2 + stepInDirection, atIndex, { commit: true });
-                }
-              }
-            }
-          ) }) })
-        }
-      );
-    }
-  );
-  Slider.displayName = SLIDER_NAME;
-  var [SliderOrientationProvider, useSliderOrientationContext] = createSliderContext(SLIDER_NAME, {
-    startEdge: "left",
-    endEdge: "right",
-    size: "width",
-    direction: 1
-  });
-  var SliderHorizontal = React11.forwardRef(
-    (props, forwardedRef) => {
-      const {
-        min,
-        max,
-        dir,
-        inverted,
-        onSlideStart,
-        onSlideMove,
-        onSlideEnd,
-        onStepKeyDown,
-        ...sliderProps
-      } = props;
-      const [slider, setSlider] = React11.useState(null);
-      const composedRefs = useComposedRefs(forwardedRef, (node) => setSlider(node));
-      const rectRef = React11.useRef(void 0);
-      const direction = useDirection(dir);
-      const isDirectionLTR = direction === "ltr";
-      const isSlidingFromLeft = isDirectionLTR && !inverted || !isDirectionLTR && inverted;
-      function getValueFromPointer(pointerPosition) {
-        const rect = rectRef.current || slider.getBoundingClientRect();
-        const input = [0, rect.width];
-        const output = isSlidingFromLeft ? [min, max] : [max, min];
-        const value = linearScale(input, output);
-        rectRef.current = rect;
-        return value(pointerPosition - rect.left);
-      }
-      return /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
-        SliderOrientationProvider,
-        {
-          scope: props.__scopeSlider,
-          startEdge: isSlidingFromLeft ? "left" : "right",
-          endEdge: isSlidingFromLeft ? "right" : "left",
-          direction: isSlidingFromLeft ? 1 : -1,
-          size: "width",
-          children: /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
-            SliderImpl,
-            {
-              dir: direction,
-              "data-orientation": "horizontal",
-              ...sliderProps,
-              ref: composedRefs,
-              style: {
-                ...sliderProps.style,
-                ["--radix-slider-thumb-transform"]: "translateX(-50%)"
-              },
-              onSlideStart: (event) => {
-                const value = getValueFromPointer(event.clientX);
-                onSlideStart?.(value);
-              },
-              onSlideMove: (event) => {
-                const value = getValueFromPointer(event.clientX);
-                onSlideMove?.(value);
-              },
-              onSlideEnd: () => {
-                rectRef.current = void 0;
-                onSlideEnd?.();
-              },
-              onStepKeyDown: (event) => {
-                const slideDirection = isSlidingFromLeft ? "from-left" : "from-right";
-                const isBackKey = BACK_KEYS[slideDirection].includes(event.key);
-                onStepKeyDown?.({ event, direction: isBackKey ? -1 : 1 });
-              }
-            }
-          )
-        }
-      );
-    }
-  );
-  var SliderVertical = React11.forwardRef(
-    (props, forwardedRef) => {
-      const {
-        min,
-        max,
-        inverted,
-        onSlideStart,
-        onSlideMove,
-        onSlideEnd,
-        onStepKeyDown,
-        ...sliderProps
-      } = props;
-      const sliderRef = React11.useRef(null);
-      const ref = useComposedRefs(forwardedRef, sliderRef);
-      const rectRef = React11.useRef(void 0);
-      const isSlidingFromBottom = !inverted;
-      function getValueFromPointer(pointerPosition) {
-        const rect = rectRef.current || sliderRef.current.getBoundingClientRect();
-        const input = [0, rect.height];
-        const output = isSlidingFromBottom ? [max, min] : [min, max];
-        const value = linearScale(input, output);
-        rectRef.current = rect;
-        return value(pointerPosition - rect.top);
-      }
-      return /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
-        SliderOrientationProvider,
-        {
-          scope: props.__scopeSlider,
-          startEdge: isSlidingFromBottom ? "bottom" : "top",
-          endEdge: isSlidingFromBottom ? "top" : "bottom",
-          size: "height",
-          direction: isSlidingFromBottom ? 1 : -1,
-          children: /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
-            SliderImpl,
-            {
-              "data-orientation": "vertical",
-              ...sliderProps,
-              ref,
-              style: {
-                ...sliderProps.style,
-                ["--radix-slider-thumb-transform"]: "translateY(50%)"
-              },
-              onSlideStart: (event) => {
-                const value = getValueFromPointer(event.clientY);
-                onSlideStart?.(value);
-              },
-              onSlideMove: (event) => {
-                const value = getValueFromPointer(event.clientY);
-                onSlideMove?.(value);
-              },
-              onSlideEnd: () => {
-                rectRef.current = void 0;
-                onSlideEnd?.();
-              },
-              onStepKeyDown: (event) => {
-                const slideDirection = isSlidingFromBottom ? "from-bottom" : "from-top";
-                const isBackKey = BACK_KEYS[slideDirection].includes(event.key);
-                onStepKeyDown?.({ event, direction: isBackKey ? -1 : 1 });
-              }
-            }
-          )
-        }
-      );
-    }
-  );
-  var SliderImpl = React11.forwardRef(
-    (props, forwardedRef) => {
-      const {
-        __scopeSlider,
-        onSlideStart,
-        onSlideMove,
-        onSlideEnd,
-        onHomeKeyDown,
-        onEndKeyDown,
-        onStepKeyDown,
-        ...sliderProps
-      } = props;
-      const context = useSliderContext(SLIDER_NAME, __scopeSlider);
-      return /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
-        Primitive.span,
-        {
-          ...sliderProps,
-          ref: forwardedRef,
-          onKeyDown: composeEventHandlers(props.onKeyDown, (event) => {
-            if (event.key === "Home") {
-              onHomeKeyDown(event);
-              event.preventDefault();
-            } else if (event.key === "End") {
-              onEndKeyDown(event);
-              event.preventDefault();
-            } else if (PAGE_KEYS.concat(ARROW_KEYS).includes(event.key)) {
-              onStepKeyDown(event);
-              event.preventDefault();
-            }
-          }),
-          onPointerDown: composeEventHandlers(props.onPointerDown, (event) => {
-            const target = event.target;
-            target.setPointerCapture(event.pointerId);
-            event.preventDefault();
-            if (context.thumbs.has(target)) {
-              target.focus();
-            } else {
-              onSlideStart(event);
-            }
-          }),
-          onPointerMove: composeEventHandlers(props.onPointerMove, (event) => {
-            const target = event.target;
-            if (target.hasPointerCapture(event.pointerId)) onSlideMove(event);
-          }),
-          onPointerUp: composeEventHandlers(props.onPointerUp, (event) => {
-            const target = event.target;
-            if (target.hasPointerCapture(event.pointerId)) {
-              target.releasePointerCapture(event.pointerId);
-              onSlideEnd(event);
-            }
-          })
-        }
-      );
-    }
-  );
-  var TRACK_NAME = "SliderTrack";
-  var SliderTrack = React11.forwardRef(
-    (props, forwardedRef) => {
-      const { __scopeSlider, ...trackProps } = props;
-      const context = useSliderContext(TRACK_NAME, __scopeSlider);
-      return /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
-        Primitive.span,
-        {
-          "data-disabled": context.disabled ? "" : void 0,
-          "data-orientation": context.orientation,
-          ...trackProps,
-          ref: forwardedRef
-        }
-      );
-    }
-  );
-  SliderTrack.displayName = TRACK_NAME;
-  var RANGE_NAME = "SliderRange";
-  var SliderRange = React11.forwardRef(
-    (props, forwardedRef) => {
-      const { __scopeSlider, ...rangeProps } = props;
-      const context = useSliderContext(RANGE_NAME, __scopeSlider);
-      const orientation = useSliderOrientationContext(RANGE_NAME, __scopeSlider);
-      const ref = React11.useRef(null);
-      const composedRefs = useComposedRefs(forwardedRef, ref);
-      const valuesCount = context.values.length;
-      const percentages = context.values.map(
-        (value) => convertValueToPercentage(value, context.min, context.max)
-      );
-      const offsetStart = valuesCount > 1 ? Math.min(...percentages) : 0;
-      const offsetEnd = 100 - Math.max(...percentages);
-      return /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
-        Primitive.span,
-        {
-          "data-orientation": context.orientation,
-          "data-disabled": context.disabled ? "" : void 0,
-          ...rangeProps,
-          ref: composedRefs,
-          style: {
-            ...props.style,
-            [orientation.startEdge]: offsetStart + "%",
-            [orientation.endEdge]: offsetEnd + "%"
-          }
-        }
-      );
-    }
-  );
-  SliderRange.displayName = RANGE_NAME;
-  var THUMB_NAME = "SliderThumb";
-  var SliderThumb = React11.forwardRef(
-    (props, forwardedRef) => {
-      const getItems = useCollection(props.__scopeSlider);
-      const [thumb, setThumb] = React11.useState(null);
-      const composedRefs = useComposedRefs(forwardedRef, (node) => setThumb(node));
-      const index = React11.useMemo(
-        () => thumb ? getItems().findIndex((item) => item.ref.current === thumb) : -1,
-        [getItems, thumb]
-      );
-      return /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(SliderThumbImpl, { ...props, ref: composedRefs, index });
-    }
-  );
-  var SliderThumbImpl = React11.forwardRef(
-    (props, forwardedRef) => {
-      const { __scopeSlider, index, name, ...thumbProps } = props;
-      const context = useSliderContext(THUMB_NAME, __scopeSlider);
-      const orientation = useSliderOrientationContext(THUMB_NAME, __scopeSlider);
-      const [thumb, setThumb] = React11.useState(null);
-      const composedRefs = useComposedRefs(forwardedRef, (node) => setThumb(node));
-      const isFormControl = thumb ? context.form || !!thumb.closest("form") : true;
-      const size = useSize(thumb);
-      const value = context.values[index];
-      const percent = value === void 0 ? 0 : convertValueToPercentage(value, context.min, context.max);
-      const label = getLabel(index, context.values.length);
-      const orientationSize = size?.[orientation.size];
-      const thumbInBoundsOffset = orientationSize ? getThumbInBoundsOffset(orientationSize, percent, orientation.direction) : 0;
-      React11.useEffect(() => {
-        if (thumb) {
-          context.thumbs.add(thumb);
-          return () => {
-            context.thumbs.delete(thumb);
-          };
-        }
-      }, [thumb, context.thumbs]);
-      return /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)(
-        "span",
-        {
-          style: {
-            transform: "var(--radix-slider-thumb-transform)",
-            position: "absolute",
-            [orientation.startEdge]: `calc(${percent}% + ${thumbInBoundsOffset}px)`
-          },
-          children: [
-            /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(Collection.ItemSlot, { scope: props.__scopeSlider, children: /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
-              Primitive.span,
-              {
-                role: "slider",
-                "aria-label": props["aria-label"] || label,
-                "aria-valuemin": context.min,
-                "aria-valuenow": value,
-                "aria-valuemax": context.max,
-                "aria-orientation": context.orientation,
-                "data-orientation": context.orientation,
-                "data-disabled": context.disabled ? "" : void 0,
-                tabIndex: context.disabled ? void 0 : 0,
-                ...thumbProps,
-                ref: composedRefs,
-                style: value === void 0 ? { display: "none" } : props.style,
-                onFocus: composeEventHandlers(props.onFocus, () => {
-                  context.valueIndexToChangeRef.current = index;
-                })
-              }
-            ) }),
-            isFormControl && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
-              SliderBubbleInput,
-              {
-                name: name ?? (context.name ? context.name + (context.values.length > 1 ? "[]" : "") : void 0),
-                form: context.form,
-                value
-              },
-              index
-            )
-          ]
-        }
-      );
-    }
-  );
-  SliderThumb.displayName = THUMB_NAME;
-  var BUBBLE_INPUT_NAME = "RadioBubbleInput";
-  var SliderBubbleInput = React11.forwardRef(
-    ({ __scopeSlider, value, ...props }, forwardedRef) => {
-      const ref = React11.useRef(null);
-      const composedRefs = useComposedRefs(ref, forwardedRef);
-      const prevValue = usePrevious(value);
-      React11.useEffect(() => {
-        const input = ref.current;
-        if (!input) return;
-        const inputProto = window.HTMLInputElement.prototype;
-        const descriptor = Object.getOwnPropertyDescriptor(inputProto, "value");
-        const setValue = descriptor.set;
-        if (prevValue !== value && setValue) {
-          const event = new Event("input", { bubbles: true });
-          setValue.call(input, value);
-          input.dispatchEvent(event);
-        }
-      }, [prevValue, value]);
-      return /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
-        Primitive.input,
-        {
-          style: { display: "none" },
-          ...props,
-          ref: composedRefs,
-          defaultValue: value
-        }
-      );
-    }
-  );
-  SliderBubbleInput.displayName = BUBBLE_INPUT_NAME;
-  function getNextSortedValues(prevValues = [], nextValue, atIndex) {
-    const nextValues = [...prevValues];
-    nextValues[atIndex] = nextValue;
-    return nextValues.sort((a, b) => a - b);
-  }
-  function convertValueToPercentage(value, min, max) {
-    const maxSteps = max - min;
-    const percentPerStep = 100 / maxSteps;
-    const percentage = percentPerStep * (value - min);
-    return clamp(percentage, [0, 100]);
-  }
-  function getLabel(index, totalValues) {
-    if (totalValues > 2) {
-      return `Value ${index + 1} of ${totalValues}`;
-    } else if (totalValues === 2) {
-      return ["Minimum", "Maximum"][index];
-    } else {
-      return void 0;
-    }
-  }
-  function getClosestValueIndex(values, nextValue) {
-    if (values.length === 1) return 0;
-    const distances = values.map((value) => Math.abs(value - nextValue));
-    const closestDistance = Math.min(...distances);
-    return distances.indexOf(closestDistance);
-  }
-  function getThumbInBoundsOffset(width, left, direction) {
-    const halfWidth = width / 2;
-    const halfPercent = 50;
-    const offset = linearScale([0, halfPercent], [0, halfWidth]);
-    return (halfWidth - offset(left) * direction) * direction;
-  }
-  function getStepsBetweenValues(values) {
-    return values.slice(0, -1).map((value, index) => values[index + 1] - value);
-  }
-  function hasMinStepsBetweenValues(values, minStepsBetweenValues) {
-    if (minStepsBetweenValues > 0) {
-      const stepsBetweenValues = getStepsBetweenValues(values);
-      const actualMinStepsBetweenValues = Math.min(...stepsBetweenValues);
-      return actualMinStepsBetweenValues >= minStepsBetweenValues;
-    }
-    return true;
-  }
-  function linearScale(input, output) {
-    return (value) => {
-      if (input[0] === input[1] || output[0] === output[1]) return output[0];
-      const ratio = (output[1] - output[0]) / (input[1] - input[0]);
-      return output[0] + ratio * (value - input[0]);
-    };
-  }
-  function getDecimalCount(value) {
-    return (String(value).split(".")[1] || "").length;
-  }
-  function roundValue(value, decimalCount) {
-    const rounder = Math.pow(10, decimalCount);
-    return Math.round(value * rounder) / rounder;
-  }
-  var Root = Slider;
-  var Track = SliderTrack;
-  var Range = SliderRange;
-  var Thumb = SliderThumb;
-
-  // node_modules/clsx/dist/clsx.mjs
-  function r(e) {
-    var t, f, n = "";
-    if ("string" == typeof e || "number" == typeof e) n += e;
-    else if ("object" == typeof e) if (Array.isArray(e)) {
-      var o = e.length;
-      for (t = 0; t < o; t++) e[t] && (f = r(e[t])) && (n && (n += " "), n += f);
-    } else for (f in e) e[f] && (n && (n += " "), n += f);
-    return n;
-  }
-  function clsx() {
-    for (var e, t, f = 0, n = "", o = arguments.length; f < o; f++) (e = arguments[f]) && (t = r(e)) && (n && (n += " "), n += t);
-    return n;
-  }
-
-  // node_modules/tailwind-merge/dist/bundle-mjs.mjs
-  var concatArrays = (array1, array2) => {
-    const combinedArray = new Array(array1.length + array2.length);
-    for (let i = 0; i < array1.length; i++) {
-      combinedArray[i] = array1[i];
-    }
-    for (let i = 0; i < array2.length; i++) {
-      combinedArray[array1.length + i] = array2[i];
-    }
-    return combinedArray;
-  };
-  var createClassValidatorObject = (classGroupId, validator) => ({
-    classGroupId,
-    validator
-  });
-  var createClassPartObject = (nextPart = /* @__PURE__ */ new Map(), validators = null, classGroupId) => ({
-    nextPart,
-    validators,
-    classGroupId
-  });
-  var CLASS_PART_SEPARATOR = "-";
-  var EMPTY_CONFLICTS = [];
-  var ARBITRARY_PROPERTY_PREFIX = "arbitrary..";
-  var createClassGroupUtils = (config) => {
-    const classMap = createClassMap(config);
-    const {
-      conflictingClassGroups,
-      conflictingClassGroupModifiers
-    } = config;
-    const getClassGroupId = (className) => {
-      if (className.startsWith("[") && className.endsWith("]")) {
-        return getGroupIdForArbitraryProperty(className);
-      }
-      const classParts = className.split(CLASS_PART_SEPARATOR);
-      const startIndex = classParts[0] === "" && classParts.length > 1 ? 1 : 0;
-      return getGroupRecursive(classParts, startIndex, classMap);
-    };
-    const getConflictingClassGroupIds = (classGroupId, hasPostfixModifier) => {
-      if (hasPostfixModifier) {
-        const modifierConflicts = conflictingClassGroupModifiers[classGroupId];
-        const baseConflicts = conflictingClassGroups[classGroupId];
-        if (modifierConflicts) {
-          if (baseConflicts) {
-            return concatArrays(baseConflicts, modifierConflicts);
-          }
-          return modifierConflicts;
-        }
-        return baseConflicts || EMPTY_CONFLICTS;
-      }
-      return conflictingClassGroups[classGroupId] || EMPTY_CONFLICTS;
-    };
-    return {
-      getClassGroupId,
-      getConflictingClassGroupIds
-    };
-  };
-  var getGroupRecursive = (classParts, startIndex, classPartObject) => {
-    const classPathsLength = classParts.length - startIndex;
-    if (classPathsLength === 0) {
-      return classPartObject.classGroupId;
-    }
-    const currentClassPart = classParts[startIndex];
-    const nextClassPartObject = classPartObject.nextPart.get(currentClassPart);
-    if (nextClassPartObject) {
-      const result = getGroupRecursive(classParts, startIndex + 1, nextClassPartObject);
-      if (result) return result;
-    }
-    const validators = classPartObject.validators;
-    if (validators === null) {
-      return void 0;
-    }
-    const classRest = startIndex === 0 ? classParts.join(CLASS_PART_SEPARATOR) : classParts.slice(startIndex).join(CLASS_PART_SEPARATOR);
-    const validatorsLength = validators.length;
-    for (let i = 0; i < validatorsLength; i++) {
-      const validatorObj = validators[i];
-      if (validatorObj.validator(classRest)) {
-        return validatorObj.classGroupId;
-      }
-    }
-    return void 0;
-  };
-  var getGroupIdForArbitraryProperty = (className) => className.slice(1, -1).indexOf(":") === -1 ? void 0 : (() => {
-    const content = className.slice(1, -1);
-    const colonIndex = content.indexOf(":");
-    const property = content.slice(0, colonIndex);
-    return property ? ARBITRARY_PROPERTY_PREFIX + property : void 0;
-  })();
-  var createClassMap = (config) => {
-    const {
-      theme,
-      classGroups
-    } = config;
-    return processClassGroups(classGroups, theme);
-  };
-  var processClassGroups = (classGroups, theme) => {
-    const classMap = createClassPartObject();
-    for (const classGroupId in classGroups) {
-      const group = classGroups[classGroupId];
-      processClassesRecursively(group, classMap, classGroupId, theme);
-    }
-    return classMap;
-  };
-  var processClassesRecursively = (classGroup, classPartObject, classGroupId, theme) => {
-    const len = classGroup.length;
-    for (let i = 0; i < len; i++) {
-      const classDefinition = classGroup[i];
-      processClassDefinition(classDefinition, classPartObject, classGroupId, theme);
-    }
-  };
-  var processClassDefinition = (classDefinition, classPartObject, classGroupId, theme) => {
-    if (typeof classDefinition === "string") {
-      processStringDefinition(classDefinition, classPartObject, classGroupId);
-      return;
-    }
-    if (typeof classDefinition === "function") {
-      processFunctionDefinition(classDefinition, classPartObject, classGroupId, theme);
-      return;
-    }
-    processObjectDefinition(classDefinition, classPartObject, classGroupId, theme);
-  };
-  var processStringDefinition = (classDefinition, classPartObject, classGroupId) => {
-    const classPartObjectToEdit = classDefinition === "" ? classPartObject : getPart(classPartObject, classDefinition);
-    classPartObjectToEdit.classGroupId = classGroupId;
-  };
-  var processFunctionDefinition = (classDefinition, classPartObject, classGroupId, theme) => {
-    if (isThemeGetter(classDefinition)) {
-      processClassesRecursively(classDefinition(theme), classPartObject, classGroupId, theme);
-      return;
-    }
-    if (classPartObject.validators === null) {
-      classPartObject.validators = [];
-    }
-    classPartObject.validators.push(createClassValidatorObject(classGroupId, classDefinition));
-  };
-  var processObjectDefinition = (classDefinition, classPartObject, classGroupId, theme) => {
-    const entries = Object.entries(classDefinition);
-    const len = entries.length;
-    for (let i = 0; i < len; i++) {
-      const [key, value] = entries[i];
-      processClassesRecursively(value, getPart(classPartObject, key), classGroupId, theme);
-    }
-  };
-  var getPart = (classPartObject, path) => {
-    let current = classPartObject;
-    const parts = path.split(CLASS_PART_SEPARATOR);
-    const len = parts.length;
-    for (let i = 0; i < len; i++) {
-      const part = parts[i];
-      let next = current.nextPart.get(part);
-      if (!next) {
-        next = createClassPartObject();
-        current.nextPart.set(part, next);
-      }
-      current = next;
-    }
-    return current;
-  };
-  var isThemeGetter = (func) => "isThemeGetter" in func && func.isThemeGetter === true;
-  var createLruCache = (maxCacheSize) => {
-    if (maxCacheSize < 1) {
-      return {
-        get: () => void 0,
-        set: () => {
-        }
-      };
-    }
-    let cacheSize = 0;
-    let cache = /* @__PURE__ */ Object.create(null);
-    let previousCache = /* @__PURE__ */ Object.create(null);
-    const update = (key, value) => {
-      cache[key] = value;
-      cacheSize++;
-      if (cacheSize > maxCacheSize) {
-        cacheSize = 0;
-        previousCache = cache;
-        cache = /* @__PURE__ */ Object.create(null);
-      }
-    };
-    return {
-      get(key) {
-        let value = cache[key];
-        if (value !== void 0) {
-          return value;
-        }
-        if ((value = previousCache[key]) !== void 0) {
-          update(key, value);
-          return value;
-        }
-      },
-      set(key, value) {
-        if (key in cache) {
-          cache[key] = value;
-        } else {
-          update(key, value);
-        }
-      }
-    };
-  };
-  var IMPORTANT_MODIFIER = "!";
-  var MODIFIER_SEPARATOR = ":";
-  var EMPTY_MODIFIERS = [];
-  var createResultObject = (modifiers, hasImportantModifier, baseClassName, maybePostfixModifierPosition, isExternal) => ({
-    modifiers,
-    hasImportantModifier,
-    baseClassName,
-    maybePostfixModifierPosition,
-    isExternal
-  });
-  var createParseClassName = (config) => {
-    const {
-      prefix,
-      experimentalParseClassName
-    } = config;
-    let parseClassName = (className) => {
-      const modifiers = [];
-      let bracketDepth = 0;
-      let parenDepth = 0;
-      let modifierStart = 0;
-      let postfixModifierPosition;
-      const len = className.length;
-      for (let index = 0; index < len; index++) {
-        const currentCharacter = className[index];
-        if (bracketDepth === 0 && parenDepth === 0) {
-          if (currentCharacter === MODIFIER_SEPARATOR) {
-            modifiers.push(className.slice(modifierStart, index));
-            modifierStart = index + 1;
-            continue;
-          }
-          if (currentCharacter === "/") {
-            postfixModifierPosition = index;
-            continue;
-          }
-        }
-        if (currentCharacter === "[") bracketDepth++;
-        else if (currentCharacter === "]") bracketDepth--;
-        else if (currentCharacter === "(") parenDepth++;
-        else if (currentCharacter === ")") parenDepth--;
-      }
-      const baseClassNameWithImportantModifier = modifiers.length === 0 ? className : className.slice(modifierStart);
-      let baseClassName = baseClassNameWithImportantModifier;
-      let hasImportantModifier = false;
-      if (baseClassNameWithImportantModifier.endsWith(IMPORTANT_MODIFIER)) {
-        baseClassName = baseClassNameWithImportantModifier.slice(0, -1);
-        hasImportantModifier = true;
-      } else if (
-        /**
-         * In Tailwind CSS v3 the important modifier was at the start of the base class name. This is still supported for legacy reasons.
-         * @see https://github.com/dcastil/tailwind-merge/issues/513#issuecomment-2614029864
-         */
-        baseClassNameWithImportantModifier.startsWith(IMPORTANT_MODIFIER)
-      ) {
-        baseClassName = baseClassNameWithImportantModifier.slice(1);
-        hasImportantModifier = true;
-      }
-      const maybePostfixModifierPosition = postfixModifierPosition && postfixModifierPosition > modifierStart ? postfixModifierPosition - modifierStart : void 0;
-      return createResultObject(modifiers, hasImportantModifier, baseClassName, maybePostfixModifierPosition);
-    };
-    if (prefix) {
-      const fullPrefix = prefix + MODIFIER_SEPARATOR;
-      const parseClassNameOriginal = parseClassName;
-      parseClassName = (className) => className.startsWith(fullPrefix) ? parseClassNameOriginal(className.slice(fullPrefix.length)) : createResultObject(EMPTY_MODIFIERS, false, className, void 0, true);
-    }
-    if (experimentalParseClassName) {
-      const parseClassNameOriginal = parseClassName;
-      parseClassName = (className) => experimentalParseClassName({
-        className,
-        parseClassName: parseClassNameOriginal
-      });
-    }
-    return parseClassName;
-  };
-  var createSortModifiers = (config) => {
-    const modifierWeights = /* @__PURE__ */ new Map();
-    config.orderSensitiveModifiers.forEach((mod, index) => {
-      modifierWeights.set(mod, 1e6 + index);
-    });
-    return (modifiers) => {
-      const result = [];
-      let currentSegment = [];
-      for (let i = 0; i < modifiers.length; i++) {
-        const modifier = modifiers[i];
-        const isArbitrary = modifier[0] === "[";
-        const isOrderSensitive = modifierWeights.has(modifier);
-        if (isArbitrary || isOrderSensitive) {
-          if (currentSegment.length > 0) {
-            currentSegment.sort();
-            result.push(...currentSegment);
-            currentSegment = [];
-          }
-          result.push(modifier);
-        } else {
-          currentSegment.push(modifier);
-        }
-      }
-      if (currentSegment.length > 0) {
-        currentSegment.sort();
-        result.push(...currentSegment);
-      }
-      return result;
-    };
-  };
-  var createConfigUtils = (config) => ({
-    cache: createLruCache(config.cacheSize),
-    parseClassName: createParseClassName(config),
-    sortModifiers: createSortModifiers(config),
-    ...createClassGroupUtils(config)
-  });
-  var SPLIT_CLASSES_REGEX = /\s+/;
-  var mergeClassList = (classList, configUtils) => {
-    const {
-      parseClassName,
-      getClassGroupId,
-      getConflictingClassGroupIds,
-      sortModifiers
-    } = configUtils;
-    const classGroupsInConflict = [];
-    const classNames = classList.trim().split(SPLIT_CLASSES_REGEX);
-    let result = "";
-    for (let index = classNames.length - 1; index >= 0; index -= 1) {
-      const originalClassName = classNames[index];
-      const {
-        isExternal,
-        modifiers,
-        hasImportantModifier,
-        baseClassName,
-        maybePostfixModifierPosition
-      } = parseClassName(originalClassName);
-      if (isExternal) {
-        result = originalClassName + (result.length > 0 ? " " + result : result);
-        continue;
-      }
-      let hasPostfixModifier = !!maybePostfixModifierPosition;
-      let classGroupId = getClassGroupId(hasPostfixModifier ? baseClassName.substring(0, maybePostfixModifierPosition) : baseClassName);
-      if (!classGroupId) {
-        if (!hasPostfixModifier) {
-          result = originalClassName + (result.length > 0 ? " " + result : result);
-          continue;
-        }
-        classGroupId = getClassGroupId(baseClassName);
-        if (!classGroupId) {
-          result = originalClassName + (result.length > 0 ? " " + result : result);
-          continue;
-        }
-        hasPostfixModifier = false;
-      }
-      const variantModifier = modifiers.length === 0 ? "" : modifiers.length === 1 ? modifiers[0] : sortModifiers(modifiers).join(":");
-      const modifierId = hasImportantModifier ? variantModifier + IMPORTANT_MODIFIER : variantModifier;
-      const classId = modifierId + classGroupId;
-      if (classGroupsInConflict.indexOf(classId) > -1) {
-        continue;
-      }
-      classGroupsInConflict.push(classId);
-      const conflictGroups = getConflictingClassGroupIds(classGroupId, hasPostfixModifier);
-      for (let i = 0; i < conflictGroups.length; ++i) {
-        const group = conflictGroups[i];
-        classGroupsInConflict.push(modifierId + group);
-      }
-      result = originalClassName + (result.length > 0 ? " " + result : result);
-    }
-    return result;
-  };
-  var twJoin = (...classLists) => {
-    let index = 0;
-    let argument;
-    let resolvedValue;
-    let string = "";
-    while (index < classLists.length) {
-      if (argument = classLists[index++]) {
-        if (resolvedValue = toValue(argument)) {
-          string && (string += " ");
-          string += resolvedValue;
-        }
-      }
-    }
-    return string;
-  };
-  var toValue = (mix) => {
-    if (typeof mix === "string") {
-      return mix;
-    }
-    let resolvedValue;
-    let string = "";
-    for (let k = 0; k < mix.length; k++) {
-      if (mix[k]) {
-        if (resolvedValue = toValue(mix[k])) {
-          string && (string += " ");
-          string += resolvedValue;
-        }
-      }
-    }
-    return string;
-  };
-  var createTailwindMerge = (createConfigFirst, ...createConfigRest) => {
-    let configUtils;
-    let cacheGet;
-    let cacheSet;
-    let functionToCall;
-    const initTailwindMerge = (classList) => {
-      const config = createConfigRest.reduce((previousConfig, createConfigCurrent) => createConfigCurrent(previousConfig), createConfigFirst());
-      configUtils = createConfigUtils(config);
-      cacheGet = configUtils.cache.get;
-      cacheSet = configUtils.cache.set;
-      functionToCall = tailwindMerge;
-      return tailwindMerge(classList);
-    };
-    const tailwindMerge = (classList) => {
-      const cachedResult = cacheGet(classList);
-      if (cachedResult) {
-        return cachedResult;
-      }
-      const result = mergeClassList(classList, configUtils);
-      cacheSet(classList, result);
-      return result;
-    };
-    functionToCall = initTailwindMerge;
-    return (...args) => functionToCall(twJoin(...args));
-  };
-  var fallbackThemeArr = [];
-  var fromTheme = (key) => {
-    const themeGetter = (theme) => theme[key] || fallbackThemeArr;
-    themeGetter.isThemeGetter = true;
-    return themeGetter;
-  };
-  var arbitraryValueRegex = /^\[(?:(\w[\w-]*):)?(.+)\]$/i;
-  var arbitraryVariableRegex = /^\((?:(\w[\w-]*):)?(.+)\)$/i;
-  var fractionRegex = /^\d+\/\d+$/;
-  var tshirtUnitRegex = /^(\d+(\.\d+)?)?(xs|sm|md|lg|xl)$/;
-  var lengthUnitRegex = /\d+(%|px|r?em|[sdl]?v([hwib]|min|max)|pt|pc|in|cm|mm|cap|ch|ex|r?lh|cq(w|h|i|b|min|max))|\b(calc|min|max|clamp)\(.+\)|^0$/;
-  var colorFunctionRegex = /^(rgba?|hsla?|hwb|(ok)?(lab|lch)|color-mix)\(.+\)$/;
-  var shadowRegex = /^(inset_)?-?((\d+)?\.?(\d+)[a-z]+|0)_-?((\d+)?\.?(\d+)[a-z]+|0)/;
-  var imageRegex = /^(url|image|image-set|cross-fade|element|(repeating-)?(linear|radial|conic)-gradient)\(.+\)$/;
-  var isFraction = (value) => fractionRegex.test(value);
-  var isNumber = (value) => !!value && !Number.isNaN(Number(value));
-  var isInteger = (value) => !!value && Number.isInteger(Number(value));
-  var isPercent = (value) => value.endsWith("%") && isNumber(value.slice(0, -1));
-  var isTshirtSize = (value) => tshirtUnitRegex.test(value);
-  var isAny = () => true;
-  var isLengthOnly = (value) => (
-    // `colorFunctionRegex` check is necessary because color functions can have percentages in them which which would be incorrectly classified as lengths.
-    // For example, `hsl(0 0% 0%)` would be classified as a length without this check.
-    // I could also use lookbehind assertion in `lengthUnitRegex` but that isn't supported widely enough.
-    lengthUnitRegex.test(value) && !colorFunctionRegex.test(value)
-  );
-  var isNever = () => false;
-  var isShadow = (value) => shadowRegex.test(value);
-  var isImage = (value) => imageRegex.test(value);
-  var isAnyNonArbitrary = (value) => !isArbitraryValue(value) && !isArbitraryVariable(value);
-  var isArbitrarySize = (value) => getIsArbitraryValue(value, isLabelSize, isNever);
-  var isArbitraryValue = (value) => arbitraryValueRegex.test(value);
-  var isArbitraryLength = (value) => getIsArbitraryValue(value, isLabelLength, isLengthOnly);
-  var isArbitraryNumber = (value) => getIsArbitraryValue(value, isLabelNumber, isNumber);
-  var isArbitraryPosition = (value) => getIsArbitraryValue(value, isLabelPosition, isNever);
-  var isArbitraryImage = (value) => getIsArbitraryValue(value, isLabelImage, isImage);
-  var isArbitraryShadow = (value) => getIsArbitraryValue(value, isLabelShadow, isShadow);
-  var isArbitraryVariable = (value) => arbitraryVariableRegex.test(value);
-  var isArbitraryVariableLength = (value) => getIsArbitraryVariable(value, isLabelLength);
-  var isArbitraryVariableFamilyName = (value) => getIsArbitraryVariable(value, isLabelFamilyName);
-  var isArbitraryVariablePosition = (value) => getIsArbitraryVariable(value, isLabelPosition);
-  var isArbitraryVariableSize = (value) => getIsArbitraryVariable(value, isLabelSize);
-  var isArbitraryVariableImage = (value) => getIsArbitraryVariable(value, isLabelImage);
-  var isArbitraryVariableShadow = (value) => getIsArbitraryVariable(value, isLabelShadow, true);
-  var getIsArbitraryValue = (value, testLabel, testValue) => {
-    const result = arbitraryValueRegex.exec(value);
-    if (result) {
-      if (result[1]) {
-        return testLabel(result[1]);
-      }
-      return testValue(result[2]);
-    }
-    return false;
-  };
-  var getIsArbitraryVariable = (value, testLabel, shouldMatchNoLabel = false) => {
-    const result = arbitraryVariableRegex.exec(value);
-    if (result) {
-      if (result[1]) {
-        return testLabel(result[1]);
-      }
-      return shouldMatchNoLabel;
-    }
-    return false;
-  };
-  var isLabelPosition = (label) => label === "position" || label === "percentage";
-  var isLabelImage = (label) => label === "image" || label === "url";
-  var isLabelSize = (label) => label === "length" || label === "size" || label === "bg-size";
-  var isLabelLength = (label) => label === "length";
-  var isLabelNumber = (label) => label === "number";
-  var isLabelFamilyName = (label) => label === "family-name";
-  var isLabelShadow = (label) => label === "shadow";
-  var getDefaultConfig = () => {
-    const themeColor = fromTheme("color");
-    const themeFont = fromTheme("font");
-    const themeText = fromTheme("text");
-    const themeFontWeight = fromTheme("font-weight");
-    const themeTracking = fromTheme("tracking");
-    const themeLeading = fromTheme("leading");
-    const themeBreakpoint = fromTheme("breakpoint");
-    const themeContainer = fromTheme("container");
-    const themeSpacing = fromTheme("spacing");
-    const themeRadius = fromTheme("radius");
-    const themeShadow = fromTheme("shadow");
-    const themeInsetShadow = fromTheme("inset-shadow");
-    const themeTextShadow = fromTheme("text-shadow");
-    const themeDropShadow = fromTheme("drop-shadow");
-    const themeBlur = fromTheme("blur");
-    const themePerspective = fromTheme("perspective");
-    const themeAspect = fromTheme("aspect");
-    const themeEase = fromTheme("ease");
-    const themeAnimate = fromTheme("animate");
-    const scaleBreak = () => ["auto", "avoid", "all", "avoid-page", "page", "left", "right", "column"];
-    const scalePosition = () => [
-      "center",
-      "top",
-      "bottom",
-      "left",
-      "right",
-      "top-left",
-      // Deprecated since Tailwind CSS v4.1.0, see https://github.com/tailwindlabs/tailwindcss/pull/17378
-      "left-top",
-      "top-right",
-      // Deprecated since Tailwind CSS v4.1.0, see https://github.com/tailwindlabs/tailwindcss/pull/17378
-      "right-top",
-      "bottom-right",
-      // Deprecated since Tailwind CSS v4.1.0, see https://github.com/tailwindlabs/tailwindcss/pull/17378
-      "right-bottom",
-      "bottom-left",
-      // Deprecated since Tailwind CSS v4.1.0, see https://github.com/tailwindlabs/tailwindcss/pull/17378
-      "left-bottom"
-    ];
-    const scalePositionWithArbitrary = () => [...scalePosition(), isArbitraryVariable, isArbitraryValue];
-    const scaleOverflow = () => ["auto", "hidden", "clip", "visible", "scroll"];
-    const scaleOverscroll = () => ["auto", "contain", "none"];
-    const scaleUnambiguousSpacing = () => [isArbitraryVariable, isArbitraryValue, themeSpacing];
-    const scaleInset = () => [isFraction, "full", "auto", ...scaleUnambiguousSpacing()];
-    const scaleGridTemplateColsRows = () => [isInteger, "none", "subgrid", isArbitraryVariable, isArbitraryValue];
-    const scaleGridColRowStartAndEnd = () => ["auto", {
-      span: ["full", isInteger, isArbitraryVariable, isArbitraryValue]
-    }, isInteger, isArbitraryVariable, isArbitraryValue];
-    const scaleGridColRowStartOrEnd = () => [isInteger, "auto", isArbitraryVariable, isArbitraryValue];
-    const scaleGridAutoColsRows = () => ["auto", "min", "max", "fr", isArbitraryVariable, isArbitraryValue];
-    const scaleAlignPrimaryAxis = () => ["start", "end", "center", "between", "around", "evenly", "stretch", "baseline", "center-safe", "end-safe"];
-    const scaleAlignSecondaryAxis = () => ["start", "end", "center", "stretch", "center-safe", "end-safe"];
-    const scaleMargin = () => ["auto", ...scaleUnambiguousSpacing()];
-    const scaleSizing = () => [isFraction, "auto", "full", "dvw", "dvh", "lvw", "lvh", "svw", "svh", "min", "max", "fit", ...scaleUnambiguousSpacing()];
-    const scaleColor = () => [themeColor, isArbitraryVariable, isArbitraryValue];
-    const scaleBgPosition = () => [...scalePosition(), isArbitraryVariablePosition, isArbitraryPosition, {
-      position: [isArbitraryVariable, isArbitraryValue]
-    }];
-    const scaleBgRepeat = () => ["no-repeat", {
-      repeat: ["", "x", "y", "space", "round"]
-    }];
-    const scaleBgSize = () => ["auto", "cover", "contain", isArbitraryVariableSize, isArbitrarySize, {
-      size: [isArbitraryVariable, isArbitraryValue]
-    }];
-    const scaleGradientStopPosition = () => [isPercent, isArbitraryVariableLength, isArbitraryLength];
-    const scaleRadius = () => [
-      // Deprecated since Tailwind CSS v4.0.0
-      "",
-      "none",
-      "full",
-      themeRadius,
-      isArbitraryVariable,
-      isArbitraryValue
-    ];
-    const scaleBorderWidth = () => ["", isNumber, isArbitraryVariableLength, isArbitraryLength];
-    const scaleLineStyle = () => ["solid", "dashed", "dotted", "double"];
-    const scaleBlendMode = () => ["normal", "multiply", "screen", "overlay", "darken", "lighten", "color-dodge", "color-burn", "hard-light", "soft-light", "difference", "exclusion", "hue", "saturation", "color", "luminosity"];
-    const scaleMaskImagePosition = () => [isNumber, isPercent, isArbitraryVariablePosition, isArbitraryPosition];
-    const scaleBlur = () => [
-      // Deprecated since Tailwind CSS v4.0.0
-      "",
-      "none",
-      themeBlur,
-      isArbitraryVariable,
-      isArbitraryValue
-    ];
-    const scaleRotate = () => ["none", isNumber, isArbitraryVariable, isArbitraryValue];
-    const scaleScale = () => ["none", isNumber, isArbitraryVariable, isArbitraryValue];
-    const scaleSkew = () => [isNumber, isArbitraryVariable, isArbitraryValue];
-    const scaleTranslate = () => [isFraction, "full", ...scaleUnambiguousSpacing()];
-    return {
-      cacheSize: 500,
-      theme: {
-        animate: ["spin", "ping", "pulse", "bounce"],
-        aspect: ["video"],
-        blur: [isTshirtSize],
-        breakpoint: [isTshirtSize],
-        color: [isAny],
-        container: [isTshirtSize],
-        "drop-shadow": [isTshirtSize],
-        ease: ["in", "out", "in-out"],
-        font: [isAnyNonArbitrary],
-        "font-weight": ["thin", "extralight", "light", "normal", "medium", "semibold", "bold", "extrabold", "black"],
-        "inset-shadow": [isTshirtSize],
-        leading: ["none", "tight", "snug", "normal", "relaxed", "loose"],
-        perspective: ["dramatic", "near", "normal", "midrange", "distant", "none"],
-        radius: [isTshirtSize],
-        shadow: [isTshirtSize],
-        spacing: ["px", isNumber],
-        text: [isTshirtSize],
-        "text-shadow": [isTshirtSize],
-        tracking: ["tighter", "tight", "normal", "wide", "wider", "widest"]
-      },
-      classGroups: {
-        // --------------
-        // --- Layout ---
-        // --------------
-        /**
-         * Aspect Ratio
-         * @see https://tailwindcss.com/docs/aspect-ratio
-         */
-        aspect: [{
-          aspect: ["auto", "square", isFraction, isArbitraryValue, isArbitraryVariable, themeAspect]
-        }],
-        /**
-         * Container
-         * @see https://tailwindcss.com/docs/container
-         * @deprecated since Tailwind CSS v4.0.0
-         */
-        container: ["container"],
-        /**
-         * Columns
-         * @see https://tailwindcss.com/docs/columns
-         */
-        columns: [{
-          columns: [isNumber, isArbitraryValue, isArbitraryVariable, themeContainer]
-        }],
-        /**
-         * Break After
-         * @see https://tailwindcss.com/docs/break-after
-         */
-        "break-after": [{
-          "break-after": scaleBreak()
-        }],
-        /**
-         * Break Before
-         * @see https://tailwindcss.com/docs/break-before
-         */
-        "break-before": [{
-          "break-before": scaleBreak()
-        }],
-        /**
-         * Break Inside
-         * @see https://tailwindcss.com/docs/break-inside
-         */
-        "break-inside": [{
-          "break-inside": ["auto", "avoid", "avoid-page", "avoid-column"]
-        }],
-        /**
-         * Box Decoration Break
-         * @see https://tailwindcss.com/docs/box-decoration-break
-         */
-        "box-decoration": [{
-          "box-decoration": ["slice", "clone"]
-        }],
-        /**
-         * Box Sizing
-         * @see https://tailwindcss.com/docs/box-sizing
-         */
-        box: [{
-          box: ["border", "content"]
-        }],
-        /**
-         * Display
-         * @see https://tailwindcss.com/docs/display
-         */
-        display: ["block", "inline-block", "inline", "flex", "inline-flex", "table", "inline-table", "table-caption", "table-cell", "table-column", "table-column-group", "table-footer-group", "table-header-group", "table-row-group", "table-row", "flow-root", "grid", "inline-grid", "contents", "list-item", "hidden"],
-        /**
-         * Screen Reader Only
-         * @see https://tailwindcss.com/docs/display#screen-reader-only
-         */
-        sr: ["sr-only", "not-sr-only"],
-        /**
-         * Floats
-         * @see https://tailwindcss.com/docs/float
-         */
-        float: [{
-          float: ["right", "left", "none", "start", "end"]
-        }],
-        /**
-         * Clear
-         * @see https://tailwindcss.com/docs/clear
-         */
-        clear: [{
-          clear: ["left", "right", "both", "none", "start", "end"]
-        }],
-        /**
-         * Isolation
-         * @see https://tailwindcss.com/docs/isolation
-         */
-        isolation: ["isolate", "isolation-auto"],
-        /**
-         * Object Fit
-         * @see https://tailwindcss.com/docs/object-fit
-         */
-        "object-fit": [{
-          object: ["contain", "cover", "fill", "none", "scale-down"]
-        }],
-        /**
-         * Object Position
-         * @see https://tailwindcss.com/docs/object-position
-         */
-        "object-position": [{
-          object: scalePositionWithArbitrary()
-        }],
-        /**
-         * Overflow
-         * @see https://tailwindcss.com/docs/overflow
-         */
-        overflow: [{
-          overflow: scaleOverflow()
-        }],
-        /**
-         * Overflow X
-         * @see https://tailwindcss.com/docs/overflow
-         */
-        "overflow-x": [{
-          "overflow-x": scaleOverflow()
-        }],
-        /**
-         * Overflow Y
-         * @see https://tailwindcss.com/docs/overflow
-         */
-        "overflow-y": [{
-          "overflow-y": scaleOverflow()
-        }],
-        /**
-         * Overscroll Behavior
-         * @see https://tailwindcss.com/docs/overscroll-behavior
-         */
-        overscroll: [{
-          overscroll: scaleOverscroll()
-        }],
-        /**
-         * Overscroll Behavior X
-         * @see https://tailwindcss.com/docs/overscroll-behavior
-         */
-        "overscroll-x": [{
-          "overscroll-x": scaleOverscroll()
-        }],
-        /**
-         * Overscroll Behavior Y
-         * @see https://tailwindcss.com/docs/overscroll-behavior
-         */
-        "overscroll-y": [{
-          "overscroll-y": scaleOverscroll()
-        }],
-        /**
-         * Position
-         * @see https://tailwindcss.com/docs/position
-         */
-        position: ["static", "fixed", "absolute", "relative", "sticky"],
-        /**
-         * Top / Right / Bottom / Left
-         * @see https://tailwindcss.com/docs/top-right-bottom-left
-         */
-        inset: [{
-          inset: scaleInset()
-        }],
-        /**
-         * Right / Left
-         * @see https://tailwindcss.com/docs/top-right-bottom-left
-         */
-        "inset-x": [{
-          "inset-x": scaleInset()
-        }],
-        /**
-         * Top / Bottom
-         * @see https://tailwindcss.com/docs/top-right-bottom-left
-         */
-        "inset-y": [{
-          "inset-y": scaleInset()
-        }],
-        /**
-         * Start
-         * @see https://tailwindcss.com/docs/top-right-bottom-left
-         */
-        start: [{
-          start: scaleInset()
-        }],
-        /**
-         * End
-         * @see https://tailwindcss.com/docs/top-right-bottom-left
-         */
-        end: [{
-          end: scaleInset()
-        }],
-        /**
-         * Top
-         * @see https://tailwindcss.com/docs/top-right-bottom-left
-         */
-        top: [{
-          top: scaleInset()
-        }],
-        /**
-         * Right
-         * @see https://tailwindcss.com/docs/top-right-bottom-left
-         */
-        right: [{
-          right: scaleInset()
-        }],
-        /**
-         * Bottom
-         * @see https://tailwindcss.com/docs/top-right-bottom-left
-         */
-        bottom: [{
-          bottom: scaleInset()
-        }],
-        /**
-         * Left
-         * @see https://tailwindcss.com/docs/top-right-bottom-left
-         */
-        left: [{
-          left: scaleInset()
-        }],
-        /**
-         * Visibility
-         * @see https://tailwindcss.com/docs/visibility
-         */
-        visibility: ["visible", "invisible", "collapse"],
-        /**
-         * Z-Index
-         * @see https://tailwindcss.com/docs/z-index
-         */
-        z: [{
-          z: [isInteger, "auto", isArbitraryVariable, isArbitraryValue]
-        }],
-        // ------------------------
-        // --- Flexbox and Grid ---
-        // ------------------------
-        /**
-         * Flex Basis
-         * @see https://tailwindcss.com/docs/flex-basis
-         */
-        basis: [{
-          basis: [isFraction, "full", "auto", themeContainer, ...scaleUnambiguousSpacing()]
-        }],
-        /**
-         * Flex Direction
-         * @see https://tailwindcss.com/docs/flex-direction
-         */
-        "flex-direction": [{
-          flex: ["row", "row-reverse", "col", "col-reverse"]
-        }],
-        /**
-         * Flex Wrap
-         * @see https://tailwindcss.com/docs/flex-wrap
-         */
-        "flex-wrap": [{
-          flex: ["nowrap", "wrap", "wrap-reverse"]
-        }],
-        /**
-         * Flex
-         * @see https://tailwindcss.com/docs/flex
-         */
-        flex: [{
-          flex: [isNumber, isFraction, "auto", "initial", "none", isArbitraryValue]
-        }],
-        /**
-         * Flex Grow
-         * @see https://tailwindcss.com/docs/flex-grow
-         */
-        grow: [{
-          grow: ["", isNumber, isArbitraryVariable, isArbitraryValue]
-        }],
-        /**
-         * Flex Shrink
-         * @see https://tailwindcss.com/docs/flex-shrink
-         */
-        shrink: [{
-          shrink: ["", isNumber, isArbitraryVariable, isArbitraryValue]
-        }],
-        /**
-         * Order
-         * @see https://tailwindcss.com/docs/order
-         */
-        order: [{
-          order: [isInteger, "first", "last", "none", isArbitraryVariable, isArbitraryValue]
-        }],
-        /**
-         * Grid Template Columns
-         * @see https://tailwindcss.com/docs/grid-template-columns
-         */
-        "grid-cols": [{
-          "grid-cols": scaleGridTemplateColsRows()
-        }],
-        /**
-         * Grid Column Start / End
-         * @see https://tailwindcss.com/docs/grid-column
-         */
-        "col-start-end": [{
-          col: scaleGridColRowStartAndEnd()
-        }],
-        /**
-         * Grid Column Start
-         * @see https://tailwindcss.com/docs/grid-column
-         */
-        "col-start": [{
-          "col-start": scaleGridColRowStartOrEnd()
-        }],
-        /**
-         * Grid Column End
-         * @see https://tailwindcss.com/docs/grid-column
-         */
-        "col-end": [{
-          "col-end": scaleGridColRowStartOrEnd()
-        }],
-        /**
-         * Grid Template Rows
-         * @see https://tailwindcss.com/docs/grid-template-rows
-         */
-        "grid-rows": [{
-          "grid-rows": scaleGridTemplateColsRows()
-        }],
-        /**
-         * Grid Row Start / End
-         * @see https://tailwindcss.com/docs/grid-row
-         */
-        "row-start-end": [{
-          row: scaleGridColRowStartAndEnd()
-        }],
-        /**
-         * Grid Row Start
-         * @see https://tailwindcss.com/docs/grid-row
-         */
-        "row-start": [{
-          "row-start": scaleGridColRowStartOrEnd()
-        }],
-        /**
-         * Grid Row End
-         * @see https://tailwindcss.com/docs/grid-row
-         */
-        "row-end": [{
-          "row-end": scaleGridColRowStartOrEnd()
-        }],
-        /**
-         * Grid Auto Flow
-         * @see https://tailwindcss.com/docs/grid-auto-flow
-         */
-        "grid-flow": [{
-          "grid-flow": ["row", "col", "dense", "row-dense", "col-dense"]
-        }],
-        /**
-         * Grid Auto Columns
-         * @see https://tailwindcss.com/docs/grid-auto-columns
-         */
-        "auto-cols": [{
-          "auto-cols": scaleGridAutoColsRows()
-        }],
-        /**
-         * Grid Auto Rows
-         * @see https://tailwindcss.com/docs/grid-auto-rows
-         */
-        "auto-rows": [{
-          "auto-rows": scaleGridAutoColsRows()
-        }],
-        /**
-         * Gap
-         * @see https://tailwindcss.com/docs/gap
-         */
-        gap: [{
-          gap: scaleUnambiguousSpacing()
-        }],
-        /**
-         * Gap X
-         * @see https://tailwindcss.com/docs/gap
-         */
-        "gap-x": [{
-          "gap-x": scaleUnambiguousSpacing()
-        }],
-        /**
-         * Gap Y
-         * @see https://tailwindcss.com/docs/gap
-         */
-        "gap-y": [{
-          "gap-y": scaleUnambiguousSpacing()
-        }],
-        /**
-         * Justify Content
-         * @see https://tailwindcss.com/docs/justify-content
-         */
-        "justify-content": [{
-          justify: [...scaleAlignPrimaryAxis(), "normal"]
-        }],
-        /**
-         * Justify Items
-         * @see https://tailwindcss.com/docs/justify-items
-         */
-        "justify-items": [{
-          "justify-items": [...scaleAlignSecondaryAxis(), "normal"]
-        }],
-        /**
-         * Justify Self
-         * @see https://tailwindcss.com/docs/justify-self
-         */
-        "justify-self": [{
-          "justify-self": ["auto", ...scaleAlignSecondaryAxis()]
-        }],
-        /**
-         * Align Content
-         * @see https://tailwindcss.com/docs/align-content
-         */
-        "align-content": [{
-          content: ["normal", ...scaleAlignPrimaryAxis()]
-        }],
-        /**
-         * Align Items
-         * @see https://tailwindcss.com/docs/align-items
-         */
-        "align-items": [{
-          items: [...scaleAlignSecondaryAxis(), {
-            baseline: ["", "last"]
-          }]
-        }],
-        /**
-         * Align Self
-         * @see https://tailwindcss.com/docs/align-self
-         */
-        "align-self": [{
-          self: ["auto", ...scaleAlignSecondaryAxis(), {
-            baseline: ["", "last"]
-          }]
-        }],
-        /**
-         * Place Content
-         * @see https://tailwindcss.com/docs/place-content
-         */
-        "place-content": [{
-          "place-content": scaleAlignPrimaryAxis()
-        }],
-        /**
-         * Place Items
-         * @see https://tailwindcss.com/docs/place-items
-         */
-        "place-items": [{
-          "place-items": [...scaleAlignSecondaryAxis(), "baseline"]
-        }],
-        /**
-         * Place Self
-         * @see https://tailwindcss.com/docs/place-self
-         */
-        "place-self": [{
-          "place-self": ["auto", ...scaleAlignSecondaryAxis()]
-        }],
-        // Spacing
-        /**
-         * Padding
-         * @see https://tailwindcss.com/docs/padding
-         */
-        p: [{
-          p: scaleUnambiguousSpacing()
-        }],
-        /**
-         * Padding X
-         * @see https://tailwindcss.com/docs/padding
-         */
-        px: [{
-          px: scaleUnambiguousSpacing()
-        }],
-        /**
-         * Padding Y
-         * @see https://tailwindcss.com/docs/padding
-         */
-        py: [{
-          py: scaleUnambiguousSpacing()
-        }],
-        /**
-         * Padding Start
-         * @see https://tailwindcss.com/docs/padding
-         */
-        ps: [{
-          ps: scaleUnambiguousSpacing()
-        }],
-        /**
-         * Padding End
-         * @see https://tailwindcss.com/docs/padding
-         */
-        pe: [{
-          pe: scaleUnambiguousSpacing()
-        }],
-        /**
-         * Padding Top
-         * @see https://tailwindcss.com/docs/padding
-         */
-        pt: [{
-          pt: scaleUnambiguousSpacing()
-        }],
-        /**
-         * Padding Right
-         * @see https://tailwindcss.com/docs/padding
-         */
-        pr: [{
-          pr: scaleUnambiguousSpacing()
-        }],
-        /**
-         * Padding Bottom
-         * @see https://tailwindcss.com/docs/padding
-         */
-        pb: [{
-          pb: scaleUnambiguousSpacing()
-        }],
-        /**
-         * Padding Left
-         * @see https://tailwindcss.com/docs/padding
-         */
-        pl: [{
-          pl: scaleUnambiguousSpacing()
-        }],
-        /**
-         * Margin
-         * @see https://tailwindcss.com/docs/margin
-         */
-        m: [{
-          m: scaleMargin()
-        }],
-        /**
-         * Margin X
-         * @see https://tailwindcss.com/docs/margin
-         */
-        mx: [{
-          mx: scaleMargin()
-        }],
-        /**
-         * Margin Y
-         * @see https://tailwindcss.com/docs/margin
-         */
-        my: [{
-          my: scaleMargin()
-        }],
-        /**
-         * Margin Start
-         * @see https://tailwindcss.com/docs/margin
-         */
-        ms: [{
-          ms: scaleMargin()
-        }],
-        /**
-         * Margin End
-         * @see https://tailwindcss.com/docs/margin
-         */
-        me: [{
-          me: scaleMargin()
-        }],
-        /**
-         * Margin Top
-         * @see https://tailwindcss.com/docs/margin
-         */
-        mt: [{
-          mt: scaleMargin()
-        }],
-        /**
-         * Margin Right
-         * @see https://tailwindcss.com/docs/margin
-         */
-        mr: [{
-          mr: scaleMargin()
-        }],
-        /**
-         * Margin Bottom
-         * @see https://tailwindcss.com/docs/margin
-         */
-        mb: [{
-          mb: scaleMargin()
-        }],
-        /**
-         * Margin Left
-         * @see https://tailwindcss.com/docs/margin
-         */
-        ml: [{
-          ml: scaleMargin()
-        }],
-        /**
-         * Space Between X
-         * @see https://tailwindcss.com/docs/margin#adding-space-between-children
-         */
-        "space-x": [{
-          "space-x": scaleUnambiguousSpacing()
-        }],
-        /**
-         * Space Between X Reverse
-         * @see https://tailwindcss.com/docs/margin#adding-space-between-children
-         */
-        "space-x-reverse": ["space-x-reverse"],
-        /**
-         * Space Between Y
-         * @see https://tailwindcss.com/docs/margin#adding-space-between-children
-         */
-        "space-y": [{
-          "space-y": scaleUnambiguousSpacing()
-        }],
-        /**
-         * Space Between Y Reverse
-         * @see https://tailwindcss.com/docs/margin#adding-space-between-children
-         */
-        "space-y-reverse": ["space-y-reverse"],
-        // --------------
-        // --- Sizing ---
-        // --------------
-        /**
-         * Size
-         * @see https://tailwindcss.com/docs/width#setting-both-width-and-height
-         */
-        size: [{
-          size: scaleSizing()
-        }],
-        /**
-         * Width
-         * @see https://tailwindcss.com/docs/width
-         */
-        w: [{
-          w: [themeContainer, "screen", ...scaleSizing()]
-        }],
-        /**
-         * Min-Width
-         * @see https://tailwindcss.com/docs/min-width
-         */
-        "min-w": [{
-          "min-w": [
-            themeContainer,
-            "screen",
-            /** Deprecated. @see https://github.com/tailwindlabs/tailwindcss.com/issues/2027#issuecomment-2620152757 */
-            "none",
-            ...scaleSizing()
-          ]
-        }],
-        /**
-         * Max-Width
-         * @see https://tailwindcss.com/docs/max-width
-         */
-        "max-w": [{
-          "max-w": [
-            themeContainer,
-            "screen",
-            "none",
-            /** Deprecated since Tailwind CSS v4.0.0. @see https://github.com/tailwindlabs/tailwindcss.com/issues/2027#issuecomment-2620152757 */
-            "prose",
-            /** Deprecated since Tailwind CSS v4.0.0. @see https://github.com/tailwindlabs/tailwindcss.com/issues/2027#issuecomment-2620152757 */
-            {
-              screen: [themeBreakpoint]
-            },
-            ...scaleSizing()
-          ]
-        }],
-        /**
-         * Height
-         * @see https://tailwindcss.com/docs/height
-         */
-        h: [{
-          h: ["screen", "lh", ...scaleSizing()]
-        }],
-        /**
-         * Min-Height
-         * @see https://tailwindcss.com/docs/min-height
-         */
-        "min-h": [{
-          "min-h": ["screen", "lh", "none", ...scaleSizing()]
-        }],
-        /**
-         * Max-Height
-         * @see https://tailwindcss.com/docs/max-height
-         */
-        "max-h": [{
-          "max-h": ["screen", "lh", ...scaleSizing()]
-        }],
-        // ------------------
-        // --- Typography ---
-        // ------------------
-        /**
-         * Font Size
-         * @see https://tailwindcss.com/docs/font-size
-         */
-        "font-size": [{
-          text: ["base", themeText, isArbitraryVariableLength, isArbitraryLength]
-        }],
-        /**
-         * Font Smoothing
-         * @see https://tailwindcss.com/docs/font-smoothing
-         */
-        "font-smoothing": ["antialiased", "subpixel-antialiased"],
-        /**
-         * Font Style
-         * @see https://tailwindcss.com/docs/font-style
-         */
-        "font-style": ["italic", "not-italic"],
-        /**
-         * Font Weight
-         * @see https://tailwindcss.com/docs/font-weight
-         */
-        "font-weight": [{
-          font: [themeFontWeight, isArbitraryVariable, isArbitraryNumber]
-        }],
-        /**
-         * Font Stretch
-         * @see https://tailwindcss.com/docs/font-stretch
-         */
-        "font-stretch": [{
-          "font-stretch": ["ultra-condensed", "extra-condensed", "condensed", "semi-condensed", "normal", "semi-expanded", "expanded", "extra-expanded", "ultra-expanded", isPercent, isArbitraryValue]
-        }],
-        /**
-         * Font Family
-         * @see https://tailwindcss.com/docs/font-family
-         */
-        "font-family": [{
-          font: [isArbitraryVariableFamilyName, isArbitraryValue, themeFont]
-        }],
-        /**
-         * Font Variant Numeric
-         * @see https://tailwindcss.com/docs/font-variant-numeric
-         */
-        "fvn-normal": ["normal-nums"],
-        /**
-         * Font Variant Numeric
-         * @see https://tailwindcss.com/docs/font-variant-numeric
-         */
-        "fvn-ordinal": ["ordinal"],
-        /**
-         * Font Variant Numeric
-         * @see https://tailwindcss.com/docs/font-variant-numeric
-         */
-        "fvn-slashed-zero": ["slashed-zero"],
-        /**
-         * Font Variant Numeric
-         * @see https://tailwindcss.com/docs/font-variant-numeric
-         */
-        "fvn-figure": ["lining-nums", "oldstyle-nums"],
-        /**
-         * Font Variant Numeric
-         * @see https://tailwindcss.com/docs/font-variant-numeric
-         */
-        "fvn-spacing": ["proportional-nums", "tabular-nums"],
-        /**
-         * Font Variant Numeric
-         * @see https://tailwindcss.com/docs/font-variant-numeric
-         */
-        "fvn-fraction": ["diagonal-fractions", "stacked-fractions"],
-        /**
-         * Letter Spacing
-         * @see https://tailwindcss.com/docs/letter-spacing
-         */
-        tracking: [{
-          tracking: [themeTracking, isArbitraryVariable, isArbitraryValue]
-        }],
-        /**
-         * Line Clamp
-         * @see https://tailwindcss.com/docs/line-clamp
-         */
-        "line-clamp": [{
-          "line-clamp": [isNumber, "none", isArbitraryVariable, isArbitraryNumber]
-        }],
-        /**
-         * Line Height
-         * @see https://tailwindcss.com/docs/line-height
-         */
-        leading: [{
-          leading: [
-            /** Deprecated since Tailwind CSS v4.0.0. @see https://github.com/tailwindlabs/tailwindcss.com/issues/2027#issuecomment-2620152757 */
-            themeLeading,
-            ...scaleUnambiguousSpacing()
-          ]
-        }],
-        /**
-         * List Style Image
-         * @see https://tailwindcss.com/docs/list-style-image
-         */
-        "list-image": [{
-          "list-image": ["none", isArbitraryVariable, isArbitraryValue]
-        }],
-        /**
-         * List Style Position
-         * @see https://tailwindcss.com/docs/list-style-position
-         */
-        "list-style-position": [{
-          list: ["inside", "outside"]
-        }],
-        /**
-         * List Style Type
-         * @see https://tailwindcss.com/docs/list-style-type
-         */
-        "list-style-type": [{
-          list: ["disc", "decimal", "none", isArbitraryVariable, isArbitraryValue]
-        }],
-        /**
-         * Text Alignment
-         * @see https://tailwindcss.com/docs/text-align
-         */
-        "text-alignment": [{
-          text: ["left", "center", "right", "justify", "start", "end"]
-        }],
-        /**
-         * Placeholder Color
-         * @deprecated since Tailwind CSS v3.0.0
-         * @see https://v3.tailwindcss.com/docs/placeholder-color
-         */
-        "placeholder-color": [{
-          placeholder: scaleColor()
-        }],
-        /**
-         * Text Color
-         * @see https://tailwindcss.com/docs/text-color
-         */
-        "text-color": [{
-          text: scaleColor()
-        }],
-        /**
-         * Text Decoration
-         * @see https://tailwindcss.com/docs/text-decoration
-         */
-        "text-decoration": ["underline", "overline", "line-through", "no-underline"],
-        /**
-         * Text Decoration Style
-         * @see https://tailwindcss.com/docs/text-decoration-style
-         */
-        "text-decoration-style": [{
-          decoration: [...scaleLineStyle(), "wavy"]
-        }],
-        /**
-         * Text Decoration Thickness
-         * @see https://tailwindcss.com/docs/text-decoration-thickness
-         */
-        "text-decoration-thickness": [{
-          decoration: [isNumber, "from-font", "auto", isArbitraryVariable, isArbitraryLength]
-        }],
-        /**
-         * Text Decoration Color
-         * @see https://tailwindcss.com/docs/text-decoration-color
-         */
-        "text-decoration-color": [{
-          decoration: scaleColor()
-        }],
-        /**
-         * Text Underline Offset
-         * @see https://tailwindcss.com/docs/text-underline-offset
-         */
-        "underline-offset": [{
-          "underline-offset": [isNumber, "auto", isArbitraryVariable, isArbitraryValue]
-        }],
-        /**
-         * Text Transform
-         * @see https://tailwindcss.com/docs/text-transform
-         */
-        "text-transform": ["uppercase", "lowercase", "capitalize", "normal-case"],
-        /**
-         * Text Overflow
-         * @see https://tailwindcss.com/docs/text-overflow
-         */
-        "text-overflow": ["truncate", "text-ellipsis", "text-clip"],
-        /**
-         * Text Wrap
-         * @see https://tailwindcss.com/docs/text-wrap
-         */
-        "text-wrap": [{
-          text: ["wrap", "nowrap", "balance", "pretty"]
-        }],
-        /**
-         * Text Indent
-         * @see https://tailwindcss.com/docs/text-indent
-         */
-        indent: [{
-          indent: scaleUnambiguousSpacing()
-        }],
-        /**
-         * Vertical Alignment
-         * @see https://tailwindcss.com/docs/vertical-align
-         */
-        "vertical-align": [{
-          align: ["baseline", "top", "middle", "bottom", "text-top", "text-bottom", "sub", "super", isArbitraryVariable, isArbitraryValue]
-        }],
-        /**
-         * Whitespace
-         * @see https://tailwindcss.com/docs/whitespace
-         */
-        whitespace: [{
-          whitespace: ["normal", "nowrap", "pre", "pre-line", "pre-wrap", "break-spaces"]
-        }],
-        /**
-         * Word Break
-         * @see https://tailwindcss.com/docs/word-break
-         */
-        break: [{
-          break: ["normal", "words", "all", "keep"]
-        }],
-        /**
-         * Overflow Wrap
-         * @see https://tailwindcss.com/docs/overflow-wrap
-         */
-        wrap: [{
-          wrap: ["break-word", "anywhere", "normal"]
-        }],
-        /**
-         * Hyphens
-         * @see https://tailwindcss.com/docs/hyphens
-         */
-        hyphens: [{
-          hyphens: ["none", "manual", "auto"]
-        }],
-        /**
-         * Content
-         * @see https://tailwindcss.com/docs/content
-         */
-        content: [{
-          content: ["none", isArbitraryVariable, isArbitraryValue]
-        }],
-        // -------------------
-        // --- Backgrounds ---
-        // -------------------
-        /**
-         * Background Attachment
-         * @see https://tailwindcss.com/docs/background-attachment
-         */
-        "bg-attachment": [{
-          bg: ["fixed", "local", "scroll"]
-        }],
-        /**
-         * Background Clip
-         * @see https://tailwindcss.com/docs/background-clip
-         */
-        "bg-clip": [{
-          "bg-clip": ["border", "padding", "content", "text"]
-        }],
-        /**
-         * Background Origin
-         * @see https://tailwindcss.com/docs/background-origin
-         */
-        "bg-origin": [{
-          "bg-origin": ["border", "padding", "content"]
-        }],
-        /**
-         * Background Position
-         * @see https://tailwindcss.com/docs/background-position
-         */
-        "bg-position": [{
-          bg: scaleBgPosition()
-        }],
-        /**
-         * Background Repeat
-         * @see https://tailwindcss.com/docs/background-repeat
-         */
-        "bg-repeat": [{
-          bg: scaleBgRepeat()
-        }],
-        /**
-         * Background Size
-         * @see https://tailwindcss.com/docs/background-size
-         */
-        "bg-size": [{
-          bg: scaleBgSize()
-        }],
-        /**
-         * Background Image
-         * @see https://tailwindcss.com/docs/background-image
-         */
-        "bg-image": [{
-          bg: ["none", {
-            linear: [{
-              to: ["t", "tr", "r", "br", "b", "bl", "l", "tl"]
-            }, isInteger, isArbitraryVariable, isArbitraryValue],
-            radial: ["", isArbitraryVariable, isArbitraryValue],
-            conic: [isInteger, isArbitraryVariable, isArbitraryValue]
-          }, isArbitraryVariableImage, isArbitraryImage]
-        }],
-        /**
-         * Background Color
-         * @see https://tailwindcss.com/docs/background-color
-         */
-        "bg-color": [{
-          bg: scaleColor()
-        }],
-        /**
-         * Gradient Color Stops From Position
-         * @see https://tailwindcss.com/docs/gradient-color-stops
-         */
-        "gradient-from-pos": [{
-          from: scaleGradientStopPosition()
-        }],
-        /**
-         * Gradient Color Stops Via Position
-         * @see https://tailwindcss.com/docs/gradient-color-stops
-         */
-        "gradient-via-pos": [{
-          via: scaleGradientStopPosition()
-        }],
-        /**
-         * Gradient Color Stops To Position
-         * @see https://tailwindcss.com/docs/gradient-color-stops
-         */
-        "gradient-to-pos": [{
-          to: scaleGradientStopPosition()
-        }],
-        /**
-         * Gradient Color Stops From
-         * @see https://tailwindcss.com/docs/gradient-color-stops
-         */
-        "gradient-from": [{
-          from: scaleColor()
-        }],
-        /**
-         * Gradient Color Stops Via
-         * @see https://tailwindcss.com/docs/gradient-color-stops
-         */
-        "gradient-via": [{
-          via: scaleColor()
-        }],
-        /**
-         * Gradient Color Stops To
-         * @see https://tailwindcss.com/docs/gradient-color-stops
-         */
-        "gradient-to": [{
-          to: scaleColor()
-        }],
-        // ---------------
-        // --- Borders ---
-        // ---------------
-        /**
-         * Border Radius
-         * @see https://tailwindcss.com/docs/border-radius
-         */
-        rounded: [{
-          rounded: scaleRadius()
-        }],
-        /**
-         * Border Radius Start
-         * @see https://tailwindcss.com/docs/border-radius
-         */
-        "rounded-s": [{
-          "rounded-s": scaleRadius()
-        }],
-        /**
-         * Border Radius End
-         * @see https://tailwindcss.com/docs/border-radius
-         */
-        "rounded-e": [{
-          "rounded-e": scaleRadius()
-        }],
-        /**
-         * Border Radius Top
-         * @see https://tailwindcss.com/docs/border-radius
-         */
-        "rounded-t": [{
-          "rounded-t": scaleRadius()
-        }],
-        /**
-         * Border Radius Right
-         * @see https://tailwindcss.com/docs/border-radius
-         */
-        "rounded-r": [{
-          "rounded-r": scaleRadius()
-        }],
-        /**
-         * Border Radius Bottom
-         * @see https://tailwindcss.com/docs/border-radius
-         */
-        "rounded-b": [{
-          "rounded-b": scaleRadius()
-        }],
-        /**
-         * Border Radius Left
-         * @see https://tailwindcss.com/docs/border-radius
-         */
-        "rounded-l": [{
-          "rounded-l": scaleRadius()
-        }],
-        /**
-         * Border Radius Start Start
-         * @see https://tailwindcss.com/docs/border-radius
-         */
-        "rounded-ss": [{
-          "rounded-ss": scaleRadius()
-        }],
-        /**
-         * Border Radius Start End
-         * @see https://tailwindcss.com/docs/border-radius
-         */
-        "rounded-se": [{
-          "rounded-se": scaleRadius()
-        }],
-        /**
-         * Border Radius End End
-         * @see https://tailwindcss.com/docs/border-radius
-         */
-        "rounded-ee": [{
-          "rounded-ee": scaleRadius()
-        }],
-        /**
-         * Border Radius End Start
-         * @see https://tailwindcss.com/docs/border-radius
-         */
-        "rounded-es": [{
-          "rounded-es": scaleRadius()
-        }],
-        /**
-         * Border Radius Top Left
-         * @see https://tailwindcss.com/docs/border-radius
-         */
-        "rounded-tl": [{
-          "rounded-tl": scaleRadius()
-        }],
-        /**
-         * Border Radius Top Right
-         * @see https://tailwindcss.com/docs/border-radius
-         */
-        "rounded-tr": [{
-          "rounded-tr": scaleRadius()
-        }],
-        /**
-         * Border Radius Bottom Right
-         * @see https://tailwindcss.com/docs/border-radius
-         */
-        "rounded-br": [{
-          "rounded-br": scaleRadius()
-        }],
-        /**
-         * Border Radius Bottom Left
-         * @see https://tailwindcss.com/docs/border-radius
-         */
-        "rounded-bl": [{
-          "rounded-bl": scaleRadius()
-        }],
-        /**
-         * Border Width
-         * @see https://tailwindcss.com/docs/border-width
-         */
-        "border-w": [{
-          border: scaleBorderWidth()
-        }],
-        /**
-         * Border Width X
-         * @see https://tailwindcss.com/docs/border-width
-         */
-        "border-w-x": [{
-          "border-x": scaleBorderWidth()
-        }],
-        /**
-         * Border Width Y
-         * @see https://tailwindcss.com/docs/border-width
-         */
-        "border-w-y": [{
-          "border-y": scaleBorderWidth()
-        }],
-        /**
-         * Border Width Start
-         * @see https://tailwindcss.com/docs/border-width
-         */
-        "border-w-s": [{
-          "border-s": scaleBorderWidth()
-        }],
-        /**
-         * Border Width End
-         * @see https://tailwindcss.com/docs/border-width
-         */
-        "border-w-e": [{
-          "border-e": scaleBorderWidth()
-        }],
-        /**
-         * Border Width Top
-         * @see https://tailwindcss.com/docs/border-width
-         */
-        "border-w-t": [{
-          "border-t": scaleBorderWidth()
-        }],
-        /**
-         * Border Width Right
-         * @see https://tailwindcss.com/docs/border-width
-         */
-        "border-w-r": [{
-          "border-r": scaleBorderWidth()
-        }],
-        /**
-         * Border Width Bottom
-         * @see https://tailwindcss.com/docs/border-width
-         */
-        "border-w-b": [{
-          "border-b": scaleBorderWidth()
-        }],
-        /**
-         * Border Width Left
-         * @see https://tailwindcss.com/docs/border-width
-         */
-        "border-w-l": [{
-          "border-l": scaleBorderWidth()
-        }],
-        /**
-         * Divide Width X
-         * @see https://tailwindcss.com/docs/border-width#between-children
-         */
-        "divide-x": [{
-          "divide-x": scaleBorderWidth()
-        }],
-        /**
-         * Divide Width X Reverse
-         * @see https://tailwindcss.com/docs/border-width#between-children
-         */
-        "divide-x-reverse": ["divide-x-reverse"],
-        /**
-         * Divide Width Y
-         * @see https://tailwindcss.com/docs/border-width#between-children
-         */
-        "divide-y": [{
-          "divide-y": scaleBorderWidth()
-        }],
-        /**
-         * Divide Width Y Reverse
-         * @see https://tailwindcss.com/docs/border-width#between-children
-         */
-        "divide-y-reverse": ["divide-y-reverse"],
-        /**
-         * Border Style
-         * @see https://tailwindcss.com/docs/border-style
-         */
-        "border-style": [{
-          border: [...scaleLineStyle(), "hidden", "none"]
-        }],
-        /**
-         * Divide Style
-         * @see https://tailwindcss.com/docs/border-style#setting-the-divider-style
-         */
-        "divide-style": [{
-          divide: [...scaleLineStyle(), "hidden", "none"]
-        }],
-        /**
-         * Border Color
-         * @see https://tailwindcss.com/docs/border-color
-         */
-        "border-color": [{
-          border: scaleColor()
-        }],
-        /**
-         * Border Color X
-         * @see https://tailwindcss.com/docs/border-color
-         */
-        "border-color-x": [{
-          "border-x": scaleColor()
-        }],
-        /**
-         * Border Color Y
-         * @see https://tailwindcss.com/docs/border-color
-         */
-        "border-color-y": [{
-          "border-y": scaleColor()
-        }],
-        /**
-         * Border Color S
-         * @see https://tailwindcss.com/docs/border-color
-         */
-        "border-color-s": [{
-          "border-s": scaleColor()
-        }],
-        /**
-         * Border Color E
-         * @see https://tailwindcss.com/docs/border-color
-         */
-        "border-color-e": [{
-          "border-e": scaleColor()
-        }],
-        /**
-         * Border Color Top
-         * @see https://tailwindcss.com/docs/border-color
-         */
-        "border-color-t": [{
-          "border-t": scaleColor()
-        }],
-        /**
-         * Border Color Right
-         * @see https://tailwindcss.com/docs/border-color
-         */
-        "border-color-r": [{
-          "border-r": scaleColor()
-        }],
-        /**
-         * Border Color Bottom
-         * @see https://tailwindcss.com/docs/border-color
-         */
-        "border-color-b": [{
-          "border-b": scaleColor()
-        }],
-        /**
-         * Border Color Left
-         * @see https://tailwindcss.com/docs/border-color
-         */
-        "border-color-l": [{
-          "border-l": scaleColor()
-        }],
-        /**
-         * Divide Color
-         * @see https://tailwindcss.com/docs/divide-color
-         */
-        "divide-color": [{
-          divide: scaleColor()
-        }],
-        /**
-         * Outline Style
-         * @see https://tailwindcss.com/docs/outline-style
-         */
-        "outline-style": [{
-          outline: [...scaleLineStyle(), "none", "hidden"]
-        }],
-        /**
-         * Outline Offset
-         * @see https://tailwindcss.com/docs/outline-offset
-         */
-        "outline-offset": [{
-          "outline-offset": [isNumber, isArbitraryVariable, isArbitraryValue]
-        }],
-        /**
-         * Outline Width
-         * @see https://tailwindcss.com/docs/outline-width
-         */
-        "outline-w": [{
-          outline: ["", isNumber, isArbitraryVariableLength, isArbitraryLength]
-        }],
-        /**
-         * Outline Color
-         * @see https://tailwindcss.com/docs/outline-color
-         */
-        "outline-color": [{
-          outline: scaleColor()
-        }],
-        // ---------------
-        // --- Effects ---
-        // ---------------
-        /**
-         * Box Shadow
-         * @see https://tailwindcss.com/docs/box-shadow
-         */
-        shadow: [{
-          shadow: [
-            // Deprecated since Tailwind CSS v4.0.0
-            "",
-            "none",
-            themeShadow,
-            isArbitraryVariableShadow,
-            isArbitraryShadow
-          ]
-        }],
-        /**
-         * Box Shadow Color
-         * @see https://tailwindcss.com/docs/box-shadow#setting-the-shadow-color
-         */
-        "shadow-color": [{
-          shadow: scaleColor()
-        }],
-        /**
-         * Inset Box Shadow
-         * @see https://tailwindcss.com/docs/box-shadow#adding-an-inset-shadow
-         */
-        "inset-shadow": [{
-          "inset-shadow": ["none", themeInsetShadow, isArbitraryVariableShadow, isArbitraryShadow]
-        }],
-        /**
-         * Inset Box Shadow Color
-         * @see https://tailwindcss.com/docs/box-shadow#setting-the-inset-shadow-color
-         */
-        "inset-shadow-color": [{
-          "inset-shadow": scaleColor()
-        }],
-        /**
-         * Ring Width
-         * @see https://tailwindcss.com/docs/box-shadow#adding-a-ring
-         */
-        "ring-w": [{
-          ring: scaleBorderWidth()
-        }],
-        /**
-         * Ring Width Inset
-         * @see https://v3.tailwindcss.com/docs/ring-width#inset-rings
-         * @deprecated since Tailwind CSS v4.0.0
-         * @see https://github.com/tailwindlabs/tailwindcss/blob/v4.0.0/packages/tailwindcss/src/utilities.ts#L4158
-         */
-        "ring-w-inset": ["ring-inset"],
-        /**
-         * Ring Color
-         * @see https://tailwindcss.com/docs/box-shadow#setting-the-ring-color
-         */
-        "ring-color": [{
-          ring: scaleColor()
-        }],
-        /**
-         * Ring Offset Width
-         * @see https://v3.tailwindcss.com/docs/ring-offset-width
-         * @deprecated since Tailwind CSS v4.0.0
-         * @see https://github.com/tailwindlabs/tailwindcss/blob/v4.0.0/packages/tailwindcss/src/utilities.ts#L4158
-         */
-        "ring-offset-w": [{
-          "ring-offset": [isNumber, isArbitraryLength]
-        }],
-        /**
-         * Ring Offset Color
-         * @see https://v3.tailwindcss.com/docs/ring-offset-color
-         * @deprecated since Tailwind CSS v4.0.0
-         * @see https://github.com/tailwindlabs/tailwindcss/blob/v4.0.0/packages/tailwindcss/src/utilities.ts#L4158
-         */
-        "ring-offset-color": [{
-          "ring-offset": scaleColor()
-        }],
-        /**
-         * Inset Ring Width
-         * @see https://tailwindcss.com/docs/box-shadow#adding-an-inset-ring
-         */
-        "inset-ring-w": [{
-          "inset-ring": scaleBorderWidth()
-        }],
-        /**
-         * Inset Ring Color
-         * @see https://tailwindcss.com/docs/box-shadow#setting-the-inset-ring-color
-         */
-        "inset-ring-color": [{
-          "inset-ring": scaleColor()
-        }],
-        /**
-         * Text Shadow
-         * @see https://tailwindcss.com/docs/text-shadow
-         */
-        "text-shadow": [{
-          "text-shadow": ["none", themeTextShadow, isArbitraryVariableShadow, isArbitraryShadow]
-        }],
-        /**
-         * Text Shadow Color
-         * @see https://tailwindcss.com/docs/text-shadow#setting-the-shadow-color
-         */
-        "text-shadow-color": [{
-          "text-shadow": scaleColor()
-        }],
-        /**
-         * Opacity
-         * @see https://tailwindcss.com/docs/opacity
-         */
-        opacity: [{
-          opacity: [isNumber, isArbitraryVariable, isArbitraryValue]
-        }],
-        /**
-         * Mix Blend Mode
-         * @see https://tailwindcss.com/docs/mix-blend-mode
-         */
-        "mix-blend": [{
-          "mix-blend": [...scaleBlendMode(), "plus-darker", "plus-lighter"]
-        }],
-        /**
-         * Background Blend Mode
-         * @see https://tailwindcss.com/docs/background-blend-mode
-         */
-        "bg-blend": [{
-          "bg-blend": scaleBlendMode()
-        }],
-        /**
-         * Mask Clip
-         * @see https://tailwindcss.com/docs/mask-clip
-         */
-        "mask-clip": [{
-          "mask-clip": ["border", "padding", "content", "fill", "stroke", "view"]
-        }, "mask-no-clip"],
-        /**
-         * Mask Composite
-         * @see https://tailwindcss.com/docs/mask-composite
-         */
-        "mask-composite": [{
-          mask: ["add", "subtract", "intersect", "exclude"]
-        }],
-        /**
-         * Mask Image
-         * @see https://tailwindcss.com/docs/mask-image
-         */
-        "mask-image-linear-pos": [{
-          "mask-linear": [isNumber]
-        }],
-        "mask-image-linear-from-pos": [{
-          "mask-linear-from": scaleMaskImagePosition()
-        }],
-        "mask-image-linear-to-pos": [{
-          "mask-linear-to": scaleMaskImagePosition()
-        }],
-        "mask-image-linear-from-color": [{
-          "mask-linear-from": scaleColor()
-        }],
-        "mask-image-linear-to-color": [{
-          "mask-linear-to": scaleColor()
-        }],
-        "mask-image-t-from-pos": [{
-          "mask-t-from": scaleMaskImagePosition()
-        }],
-        "mask-image-t-to-pos": [{
-          "mask-t-to": scaleMaskImagePosition()
-        }],
-        "mask-image-t-from-color": [{
-          "mask-t-from": scaleColor()
-        }],
-        "mask-image-t-to-color": [{
-          "mask-t-to": scaleColor()
-        }],
-        "mask-image-r-from-pos": [{
-          "mask-r-from": scaleMaskImagePosition()
-        }],
-        "mask-image-r-to-pos": [{
-          "mask-r-to": scaleMaskImagePosition()
-        }],
-        "mask-image-r-from-color": [{
-          "mask-r-from": scaleColor()
-        }],
-        "mask-image-r-to-color": [{
-          "mask-r-to": scaleColor()
-        }],
-        "mask-image-b-from-pos": [{
-          "mask-b-from": scaleMaskImagePosition()
-        }],
-        "mask-image-b-to-pos": [{
-          "mask-b-to": scaleMaskImagePosition()
-        }],
-        "mask-image-b-from-color": [{
-          "mask-b-from": scaleColor()
-        }],
-        "mask-image-b-to-color": [{
-          "mask-b-to": scaleColor()
-        }],
-        "mask-image-l-from-pos": [{
-          "mask-l-from": scaleMaskImagePosition()
-        }],
-        "mask-image-l-to-pos": [{
-          "mask-l-to": scaleMaskImagePosition()
-        }],
-        "mask-image-l-from-color": [{
-          "mask-l-from": scaleColor()
-        }],
-        "mask-image-l-to-color": [{
-          "mask-l-to": scaleColor()
-        }],
-        "mask-image-x-from-pos": [{
-          "mask-x-from": scaleMaskImagePosition()
-        }],
-        "mask-image-x-to-pos": [{
-          "mask-x-to": scaleMaskImagePosition()
-        }],
-        "mask-image-x-from-color": [{
-          "mask-x-from": scaleColor()
-        }],
-        "mask-image-x-to-color": [{
-          "mask-x-to": scaleColor()
-        }],
-        "mask-image-y-from-pos": [{
-          "mask-y-from": scaleMaskImagePosition()
-        }],
-        "mask-image-y-to-pos": [{
-          "mask-y-to": scaleMaskImagePosition()
-        }],
-        "mask-image-y-from-color": [{
-          "mask-y-from": scaleColor()
-        }],
-        "mask-image-y-to-color": [{
-          "mask-y-to": scaleColor()
-        }],
-        "mask-image-radial": [{
-          "mask-radial": [isArbitraryVariable, isArbitraryValue]
-        }],
-        "mask-image-radial-from-pos": [{
-          "mask-radial-from": scaleMaskImagePosition()
-        }],
-        "mask-image-radial-to-pos": [{
-          "mask-radial-to": scaleMaskImagePosition()
-        }],
-        "mask-image-radial-from-color": [{
-          "mask-radial-from": scaleColor()
-        }],
-        "mask-image-radial-to-color": [{
-          "mask-radial-to": scaleColor()
-        }],
-        "mask-image-radial-shape": [{
-          "mask-radial": ["circle", "ellipse"]
-        }],
-        "mask-image-radial-size": [{
-          "mask-radial": [{
-            closest: ["side", "corner"],
-            farthest: ["side", "corner"]
-          }]
-        }],
-        "mask-image-radial-pos": [{
-          "mask-radial-at": scalePosition()
-        }],
-        "mask-image-conic-pos": [{
-          "mask-conic": [isNumber]
-        }],
-        "mask-image-conic-from-pos": [{
-          "mask-conic-from": scaleMaskImagePosition()
-        }],
-        "mask-image-conic-to-pos": [{
-          "mask-conic-to": scaleMaskImagePosition()
-        }],
-        "mask-image-conic-from-color": [{
-          "mask-conic-from": scaleColor()
-        }],
-        "mask-image-conic-to-color": [{
-          "mask-conic-to": scaleColor()
-        }],
-        /**
-         * Mask Mode
-         * @see https://tailwindcss.com/docs/mask-mode
-         */
-        "mask-mode": [{
-          mask: ["alpha", "luminance", "match"]
-        }],
-        /**
-         * Mask Origin
-         * @see https://tailwindcss.com/docs/mask-origin
-         */
-        "mask-origin": [{
-          "mask-origin": ["border", "padding", "content", "fill", "stroke", "view"]
-        }],
-        /**
-         * Mask Position
-         * @see https://tailwindcss.com/docs/mask-position
-         */
-        "mask-position": [{
-          mask: scaleBgPosition()
-        }],
-        /**
-         * Mask Repeat
-         * @see https://tailwindcss.com/docs/mask-repeat
-         */
-        "mask-repeat": [{
-          mask: scaleBgRepeat()
-        }],
-        /**
-         * Mask Size
-         * @see https://tailwindcss.com/docs/mask-size
-         */
-        "mask-size": [{
-          mask: scaleBgSize()
-        }],
-        /**
-         * Mask Type
-         * @see https://tailwindcss.com/docs/mask-type
-         */
-        "mask-type": [{
-          "mask-type": ["alpha", "luminance"]
-        }],
-        /**
-         * Mask Image
-         * @see https://tailwindcss.com/docs/mask-image
-         */
-        "mask-image": [{
-          mask: ["none", isArbitraryVariable, isArbitraryValue]
-        }],
-        // ---------------
-        // --- Filters ---
-        // ---------------
-        /**
-         * Filter
-         * @see https://tailwindcss.com/docs/filter
-         */
-        filter: [{
-          filter: [
-            // Deprecated since Tailwind CSS v3.0.0
-            "",
-            "none",
-            isArbitraryVariable,
-            isArbitraryValue
-          ]
-        }],
-        /**
-         * Blur
-         * @see https://tailwindcss.com/docs/blur
-         */
-        blur: [{
-          blur: scaleBlur()
-        }],
-        /**
-         * Brightness
-         * @see https://tailwindcss.com/docs/brightness
-         */
-        brightness: [{
-          brightness: [isNumber, isArbitraryVariable, isArbitraryValue]
-        }],
-        /**
-         * Contrast
-         * @see https://tailwindcss.com/docs/contrast
-         */
-        contrast: [{
-          contrast: [isNumber, isArbitraryVariable, isArbitraryValue]
-        }],
-        /**
-         * Drop Shadow
-         * @see https://tailwindcss.com/docs/drop-shadow
-         */
-        "drop-shadow": [{
-          "drop-shadow": [
-            // Deprecated since Tailwind CSS v4.0.0
-            "",
-            "none",
-            themeDropShadow,
-            isArbitraryVariableShadow,
-            isArbitraryShadow
-          ]
-        }],
-        /**
-         * Drop Shadow Color
-         * @see https://tailwindcss.com/docs/filter-drop-shadow#setting-the-shadow-color
-         */
-        "drop-shadow-color": [{
-          "drop-shadow": scaleColor()
-        }],
-        /**
-         * Grayscale
-         * @see https://tailwindcss.com/docs/grayscale
-         */
-        grayscale: [{
-          grayscale: ["", isNumber, isArbitraryVariable, isArbitraryValue]
-        }],
-        /**
-         * Hue Rotate
-         * @see https://tailwindcss.com/docs/hue-rotate
-         */
-        "hue-rotate": [{
-          "hue-rotate": [isNumber, isArbitraryVariable, isArbitraryValue]
-        }],
-        /**
-         * Invert
-         * @see https://tailwindcss.com/docs/invert
-         */
-        invert: [{
-          invert: ["", isNumber, isArbitraryVariable, isArbitraryValue]
-        }],
-        /**
-         * Saturate
-         * @see https://tailwindcss.com/docs/saturate
-         */
-        saturate: [{
-          saturate: [isNumber, isArbitraryVariable, isArbitraryValue]
-        }],
-        /**
-         * Sepia
-         * @see https://tailwindcss.com/docs/sepia
-         */
-        sepia: [{
-          sepia: ["", isNumber, isArbitraryVariable, isArbitraryValue]
-        }],
-        /**
-         * Backdrop Filter
-         * @see https://tailwindcss.com/docs/backdrop-filter
-         */
-        "backdrop-filter": [{
-          "backdrop-filter": [
-            // Deprecated since Tailwind CSS v3.0.0
-            "",
-            "none",
-            isArbitraryVariable,
-            isArbitraryValue
-          ]
-        }],
-        /**
-         * Backdrop Blur
-         * @see https://tailwindcss.com/docs/backdrop-blur
-         */
-        "backdrop-blur": [{
-          "backdrop-blur": scaleBlur()
-        }],
-        /**
-         * Backdrop Brightness
-         * @see https://tailwindcss.com/docs/backdrop-brightness
-         */
-        "backdrop-brightness": [{
-          "backdrop-brightness": [isNumber, isArbitraryVariable, isArbitraryValue]
-        }],
-        /**
-         * Backdrop Contrast
-         * @see https://tailwindcss.com/docs/backdrop-contrast
-         */
-        "backdrop-contrast": [{
-          "backdrop-contrast": [isNumber, isArbitraryVariable, isArbitraryValue]
-        }],
-        /**
-         * Backdrop Grayscale
-         * @see https://tailwindcss.com/docs/backdrop-grayscale
-         */
-        "backdrop-grayscale": [{
-          "backdrop-grayscale": ["", isNumber, isArbitraryVariable, isArbitraryValue]
-        }],
-        /**
-         * Backdrop Hue Rotate
-         * @see https://tailwindcss.com/docs/backdrop-hue-rotate
-         */
-        "backdrop-hue-rotate": [{
-          "backdrop-hue-rotate": [isNumber, isArbitraryVariable, isArbitraryValue]
-        }],
-        /**
-         * Backdrop Invert
-         * @see https://tailwindcss.com/docs/backdrop-invert
-         */
-        "backdrop-invert": [{
-          "backdrop-invert": ["", isNumber, isArbitraryVariable, isArbitraryValue]
-        }],
-        /**
-         * Backdrop Opacity
-         * @see https://tailwindcss.com/docs/backdrop-opacity
-         */
-        "backdrop-opacity": [{
-          "backdrop-opacity": [isNumber, isArbitraryVariable, isArbitraryValue]
-        }],
-        /**
-         * Backdrop Saturate
-         * @see https://tailwindcss.com/docs/backdrop-saturate
-         */
-        "backdrop-saturate": [{
-          "backdrop-saturate": [isNumber, isArbitraryVariable, isArbitraryValue]
-        }],
-        /**
-         * Backdrop Sepia
-         * @see https://tailwindcss.com/docs/backdrop-sepia
-         */
-        "backdrop-sepia": [{
-          "backdrop-sepia": ["", isNumber, isArbitraryVariable, isArbitraryValue]
-        }],
-        // --------------
-        // --- Tables ---
-        // --------------
-        /**
-         * Border Collapse
-         * @see https://tailwindcss.com/docs/border-collapse
-         */
-        "border-collapse": [{
-          border: ["collapse", "separate"]
-        }],
-        /**
-         * Border Spacing
-         * @see https://tailwindcss.com/docs/border-spacing
-         */
-        "border-spacing": [{
-          "border-spacing": scaleUnambiguousSpacing()
-        }],
-        /**
-         * Border Spacing X
-         * @see https://tailwindcss.com/docs/border-spacing
-         */
-        "border-spacing-x": [{
-          "border-spacing-x": scaleUnambiguousSpacing()
-        }],
-        /**
-         * Border Spacing Y
-         * @see https://tailwindcss.com/docs/border-spacing
-         */
-        "border-spacing-y": [{
-          "border-spacing-y": scaleUnambiguousSpacing()
-        }],
-        /**
-         * Table Layout
-         * @see https://tailwindcss.com/docs/table-layout
-         */
-        "table-layout": [{
-          table: ["auto", "fixed"]
-        }],
-        /**
-         * Caption Side
-         * @see https://tailwindcss.com/docs/caption-side
-         */
-        caption: [{
-          caption: ["top", "bottom"]
-        }],
-        // ---------------------------------
-        // --- Transitions and Animation ---
-        // ---------------------------------
-        /**
-         * Transition Property
-         * @see https://tailwindcss.com/docs/transition-property
-         */
-        transition: [{
-          transition: ["", "all", "colors", "opacity", "shadow", "transform", "none", isArbitraryVariable, isArbitraryValue]
-        }],
-        /**
-         * Transition Behavior
-         * @see https://tailwindcss.com/docs/transition-behavior
-         */
-        "transition-behavior": [{
-          transition: ["normal", "discrete"]
-        }],
-        /**
-         * Transition Duration
-         * @see https://tailwindcss.com/docs/transition-duration
-         */
-        duration: [{
-          duration: [isNumber, "initial", isArbitraryVariable, isArbitraryValue]
-        }],
-        /**
-         * Transition Timing Function
-         * @see https://tailwindcss.com/docs/transition-timing-function
-         */
-        ease: [{
-          ease: ["linear", "initial", themeEase, isArbitraryVariable, isArbitraryValue]
-        }],
-        /**
-         * Transition Delay
-         * @see https://tailwindcss.com/docs/transition-delay
-         */
-        delay: [{
-          delay: [isNumber, isArbitraryVariable, isArbitraryValue]
-        }],
-        /**
-         * Animation
-         * @see https://tailwindcss.com/docs/animation
-         */
-        animate: [{
-          animate: ["none", themeAnimate, isArbitraryVariable, isArbitraryValue]
-        }],
-        // ------------------
-        // --- Transforms ---
-        // ------------------
-        /**
-         * Backface Visibility
-         * @see https://tailwindcss.com/docs/backface-visibility
-         */
-        backface: [{
-          backface: ["hidden", "visible"]
-        }],
-        /**
-         * Perspective
-         * @see https://tailwindcss.com/docs/perspective
-         */
-        perspective: [{
-          perspective: [themePerspective, isArbitraryVariable, isArbitraryValue]
-        }],
-        /**
-         * Perspective Origin
-         * @see https://tailwindcss.com/docs/perspective-origin
-         */
-        "perspective-origin": [{
-          "perspective-origin": scalePositionWithArbitrary()
-        }],
-        /**
-         * Rotate
-         * @see https://tailwindcss.com/docs/rotate
-         */
-        rotate: [{
-          rotate: scaleRotate()
-        }],
-        /**
-         * Rotate X
-         * @see https://tailwindcss.com/docs/rotate
-         */
-        "rotate-x": [{
-          "rotate-x": scaleRotate()
-        }],
-        /**
-         * Rotate Y
-         * @see https://tailwindcss.com/docs/rotate
-         */
-        "rotate-y": [{
-          "rotate-y": scaleRotate()
-        }],
-        /**
-         * Rotate Z
-         * @see https://tailwindcss.com/docs/rotate
-         */
-        "rotate-z": [{
-          "rotate-z": scaleRotate()
-        }],
-        /**
-         * Scale
-         * @see https://tailwindcss.com/docs/scale
-         */
-        scale: [{
-          scale: scaleScale()
-        }],
-        /**
-         * Scale X
-         * @see https://tailwindcss.com/docs/scale
-         */
-        "scale-x": [{
-          "scale-x": scaleScale()
-        }],
-        /**
-         * Scale Y
-         * @see https://tailwindcss.com/docs/scale
-         */
-        "scale-y": [{
-          "scale-y": scaleScale()
-        }],
-        /**
-         * Scale Z
-         * @see https://tailwindcss.com/docs/scale
-         */
-        "scale-z": [{
-          "scale-z": scaleScale()
-        }],
-        /**
-         * Scale 3D
-         * @see https://tailwindcss.com/docs/scale
-         */
-        "scale-3d": ["scale-3d"],
-        /**
-         * Skew
-         * @see https://tailwindcss.com/docs/skew
-         */
-        skew: [{
-          skew: scaleSkew()
-        }],
-        /**
-         * Skew X
-         * @see https://tailwindcss.com/docs/skew
-         */
-        "skew-x": [{
-          "skew-x": scaleSkew()
-        }],
-        /**
-         * Skew Y
-         * @see https://tailwindcss.com/docs/skew
-         */
-        "skew-y": [{
-          "skew-y": scaleSkew()
-        }],
-        /**
-         * Transform
-         * @see https://tailwindcss.com/docs/transform
-         */
-        transform: [{
-          transform: [isArbitraryVariable, isArbitraryValue, "", "none", "gpu", "cpu"]
-        }],
-        /**
-         * Transform Origin
-         * @see https://tailwindcss.com/docs/transform-origin
-         */
-        "transform-origin": [{
-          origin: scalePositionWithArbitrary()
-        }],
-        /**
-         * Transform Style
-         * @see https://tailwindcss.com/docs/transform-style
-         */
-        "transform-style": [{
-          transform: ["3d", "flat"]
-        }],
-        /**
-         * Translate
-         * @see https://tailwindcss.com/docs/translate
-         */
-        translate: [{
-          translate: scaleTranslate()
-        }],
-        /**
-         * Translate X
-         * @see https://tailwindcss.com/docs/translate
-         */
-        "translate-x": [{
-          "translate-x": scaleTranslate()
-        }],
-        /**
-         * Translate Y
-         * @see https://tailwindcss.com/docs/translate
-         */
-        "translate-y": [{
-          "translate-y": scaleTranslate()
-        }],
-        /**
-         * Translate Z
-         * @see https://tailwindcss.com/docs/translate
-         */
-        "translate-z": [{
-          "translate-z": scaleTranslate()
-        }],
-        /**
-         * Translate None
-         * @see https://tailwindcss.com/docs/translate
-         */
-        "translate-none": ["translate-none"],
-        // ---------------------
-        // --- Interactivity ---
-        // ---------------------
-        /**
-         * Accent Color
-         * @see https://tailwindcss.com/docs/accent-color
-         */
-        accent: [{
-          accent: scaleColor()
-        }],
-        /**
-         * Appearance
-         * @see https://tailwindcss.com/docs/appearance
-         */
-        appearance: [{
-          appearance: ["none", "auto"]
-        }],
-        /**
-         * Caret Color
-         * @see https://tailwindcss.com/docs/just-in-time-mode#caret-color-utilities
-         */
-        "caret-color": [{
-          caret: scaleColor()
-        }],
-        /**
-         * Color Scheme
-         * @see https://tailwindcss.com/docs/color-scheme
-         */
-        "color-scheme": [{
-          scheme: ["normal", "dark", "light", "light-dark", "only-dark", "only-light"]
-        }],
-        /**
-         * Cursor
-         * @see https://tailwindcss.com/docs/cursor
-         */
-        cursor: [{
-          cursor: ["auto", "default", "pointer", "wait", "text", "move", "help", "not-allowed", "none", "context-menu", "progress", "cell", "crosshair", "vertical-text", "alias", "copy", "no-drop", "grab", "grabbing", "all-scroll", "col-resize", "row-resize", "n-resize", "e-resize", "s-resize", "w-resize", "ne-resize", "nw-resize", "se-resize", "sw-resize", "ew-resize", "ns-resize", "nesw-resize", "nwse-resize", "zoom-in", "zoom-out", isArbitraryVariable, isArbitraryValue]
-        }],
-        /**
-         * Field Sizing
-         * @see https://tailwindcss.com/docs/field-sizing
-         */
-        "field-sizing": [{
-          "field-sizing": ["fixed", "content"]
-        }],
-        /**
-         * Pointer Events
-         * @see https://tailwindcss.com/docs/pointer-events
-         */
-        "pointer-events": [{
-          "pointer-events": ["auto", "none"]
-        }],
-        /**
-         * Resize
-         * @see https://tailwindcss.com/docs/resize
-         */
-        resize: [{
-          resize: ["none", "", "y", "x"]
-        }],
-        /**
-         * Scroll Behavior
-         * @see https://tailwindcss.com/docs/scroll-behavior
-         */
-        "scroll-behavior": [{
-          scroll: ["auto", "smooth"]
-        }],
-        /**
-         * Scroll Margin
-         * @see https://tailwindcss.com/docs/scroll-margin
-         */
-        "scroll-m": [{
-          "scroll-m": scaleUnambiguousSpacing()
-        }],
-        /**
-         * Scroll Margin X
-         * @see https://tailwindcss.com/docs/scroll-margin
-         */
-        "scroll-mx": [{
-          "scroll-mx": scaleUnambiguousSpacing()
-        }],
-        /**
-         * Scroll Margin Y
-         * @see https://tailwindcss.com/docs/scroll-margin
-         */
-        "scroll-my": [{
-          "scroll-my": scaleUnambiguousSpacing()
-        }],
-        /**
-         * Scroll Margin Start
-         * @see https://tailwindcss.com/docs/scroll-margin
-         */
-        "scroll-ms": [{
-          "scroll-ms": scaleUnambiguousSpacing()
-        }],
-        /**
-         * Scroll Margin End
-         * @see https://tailwindcss.com/docs/scroll-margin
-         */
-        "scroll-me": [{
-          "scroll-me": scaleUnambiguousSpacing()
-        }],
-        /**
-         * Scroll Margin Top
-         * @see https://tailwindcss.com/docs/scroll-margin
-         */
-        "scroll-mt": [{
-          "scroll-mt": scaleUnambiguousSpacing()
-        }],
-        /**
-         * Scroll Margin Right
-         * @see https://tailwindcss.com/docs/scroll-margin
-         */
-        "scroll-mr": [{
-          "scroll-mr": scaleUnambiguousSpacing()
-        }],
-        /**
-         * Scroll Margin Bottom
-         * @see https://tailwindcss.com/docs/scroll-margin
-         */
-        "scroll-mb": [{
-          "scroll-mb": scaleUnambiguousSpacing()
-        }],
-        /**
-         * Scroll Margin Left
-         * @see https://tailwindcss.com/docs/scroll-margin
-         */
-        "scroll-ml": [{
-          "scroll-ml": scaleUnambiguousSpacing()
-        }],
-        /**
-         * Scroll Padding
-         * @see https://tailwindcss.com/docs/scroll-padding
-         */
-        "scroll-p": [{
-          "scroll-p": scaleUnambiguousSpacing()
-        }],
-        /**
-         * Scroll Padding X
-         * @see https://tailwindcss.com/docs/scroll-padding
-         */
-        "scroll-px": [{
-          "scroll-px": scaleUnambiguousSpacing()
-        }],
-        /**
-         * Scroll Padding Y
-         * @see https://tailwindcss.com/docs/scroll-padding
-         */
-        "scroll-py": [{
-          "scroll-py": scaleUnambiguousSpacing()
-        }],
-        /**
-         * Scroll Padding Start
-         * @see https://tailwindcss.com/docs/scroll-padding
-         */
-        "scroll-ps": [{
-          "scroll-ps": scaleUnambiguousSpacing()
-        }],
-        /**
-         * Scroll Padding End
-         * @see https://tailwindcss.com/docs/scroll-padding
-         */
-        "scroll-pe": [{
-          "scroll-pe": scaleUnambiguousSpacing()
-        }],
-        /**
-         * Scroll Padding Top
-         * @see https://tailwindcss.com/docs/scroll-padding
-         */
-        "scroll-pt": [{
-          "scroll-pt": scaleUnambiguousSpacing()
-        }],
-        /**
-         * Scroll Padding Right
-         * @see https://tailwindcss.com/docs/scroll-padding
-         */
-        "scroll-pr": [{
-          "scroll-pr": scaleUnambiguousSpacing()
-        }],
-        /**
-         * Scroll Padding Bottom
-         * @see https://tailwindcss.com/docs/scroll-padding
-         */
-        "scroll-pb": [{
-          "scroll-pb": scaleUnambiguousSpacing()
-        }],
-        /**
-         * Scroll Padding Left
-         * @see https://tailwindcss.com/docs/scroll-padding
-         */
-        "scroll-pl": [{
-          "scroll-pl": scaleUnambiguousSpacing()
-        }],
-        /**
-         * Scroll Snap Align
-         * @see https://tailwindcss.com/docs/scroll-snap-align
-         */
-        "snap-align": [{
-          snap: ["start", "end", "center", "align-none"]
-        }],
-        /**
-         * Scroll Snap Stop
-         * @see https://tailwindcss.com/docs/scroll-snap-stop
-         */
-        "snap-stop": [{
-          snap: ["normal", "always"]
-        }],
-        /**
-         * Scroll Snap Type
-         * @see https://tailwindcss.com/docs/scroll-snap-type
-         */
-        "snap-type": [{
-          snap: ["none", "x", "y", "both"]
-        }],
-        /**
-         * Scroll Snap Type Strictness
-         * @see https://tailwindcss.com/docs/scroll-snap-type
-         */
-        "snap-strictness": [{
-          snap: ["mandatory", "proximity"]
-        }],
-        /**
-         * Touch Action
-         * @see https://tailwindcss.com/docs/touch-action
-         */
-        touch: [{
-          touch: ["auto", "none", "manipulation"]
-        }],
-        /**
-         * Touch Action X
-         * @see https://tailwindcss.com/docs/touch-action
-         */
-        "touch-x": [{
-          "touch-pan": ["x", "left", "right"]
-        }],
-        /**
-         * Touch Action Y
-         * @see https://tailwindcss.com/docs/touch-action
-         */
-        "touch-y": [{
-          "touch-pan": ["y", "up", "down"]
-        }],
-        /**
-         * Touch Action Pinch Zoom
-         * @see https://tailwindcss.com/docs/touch-action
-         */
-        "touch-pz": ["touch-pinch-zoom"],
-        /**
-         * User Select
-         * @see https://tailwindcss.com/docs/user-select
-         */
-        select: [{
-          select: ["none", "text", "all", "auto"]
-        }],
-        /**
-         * Will Change
-         * @see https://tailwindcss.com/docs/will-change
-         */
-        "will-change": [{
-          "will-change": ["auto", "scroll", "contents", "transform", isArbitraryVariable, isArbitraryValue]
-        }],
-        // -----------
-        // --- SVG ---
-        // -----------
-        /**
-         * Fill
-         * @see https://tailwindcss.com/docs/fill
-         */
-        fill: [{
-          fill: ["none", ...scaleColor()]
-        }],
-        /**
-         * Stroke Width
-         * @see https://tailwindcss.com/docs/stroke-width
-         */
-        "stroke-w": [{
-          stroke: [isNumber, isArbitraryVariableLength, isArbitraryLength, isArbitraryNumber]
-        }],
-        /**
-         * Stroke
-         * @see https://tailwindcss.com/docs/stroke
-         */
-        stroke: [{
-          stroke: ["none", ...scaleColor()]
-        }],
-        // ---------------------
-        // --- Accessibility ---
-        // ---------------------
-        /**
-         * Forced Color Adjust
-         * @see https://tailwindcss.com/docs/forced-color-adjust
-         */
-        "forced-color-adjust": [{
-          "forced-color-adjust": ["auto", "none"]
-        }]
-      },
-      conflictingClassGroups: {
-        overflow: ["overflow-x", "overflow-y"],
-        overscroll: ["overscroll-x", "overscroll-y"],
-        inset: ["inset-x", "inset-y", "start", "end", "top", "right", "bottom", "left"],
-        "inset-x": ["right", "left"],
-        "inset-y": ["top", "bottom"],
-        flex: ["basis", "grow", "shrink"],
-        gap: ["gap-x", "gap-y"],
-        p: ["px", "py", "ps", "pe", "pt", "pr", "pb", "pl"],
-        px: ["pr", "pl"],
-        py: ["pt", "pb"],
-        m: ["mx", "my", "ms", "me", "mt", "mr", "mb", "ml"],
-        mx: ["mr", "ml"],
-        my: ["mt", "mb"],
-        size: ["w", "h"],
-        "font-size": ["leading"],
-        "fvn-normal": ["fvn-ordinal", "fvn-slashed-zero", "fvn-figure", "fvn-spacing", "fvn-fraction"],
-        "fvn-ordinal": ["fvn-normal"],
-        "fvn-slashed-zero": ["fvn-normal"],
-        "fvn-figure": ["fvn-normal"],
-        "fvn-spacing": ["fvn-normal"],
-        "fvn-fraction": ["fvn-normal"],
-        "line-clamp": ["display", "overflow"],
-        rounded: ["rounded-s", "rounded-e", "rounded-t", "rounded-r", "rounded-b", "rounded-l", "rounded-ss", "rounded-se", "rounded-ee", "rounded-es", "rounded-tl", "rounded-tr", "rounded-br", "rounded-bl"],
-        "rounded-s": ["rounded-ss", "rounded-es"],
-        "rounded-e": ["rounded-se", "rounded-ee"],
-        "rounded-t": ["rounded-tl", "rounded-tr"],
-        "rounded-r": ["rounded-tr", "rounded-br"],
-        "rounded-b": ["rounded-br", "rounded-bl"],
-        "rounded-l": ["rounded-tl", "rounded-bl"],
-        "border-spacing": ["border-spacing-x", "border-spacing-y"],
-        "border-w": ["border-w-x", "border-w-y", "border-w-s", "border-w-e", "border-w-t", "border-w-r", "border-w-b", "border-w-l"],
-        "border-w-x": ["border-w-r", "border-w-l"],
-        "border-w-y": ["border-w-t", "border-w-b"],
-        "border-color": ["border-color-x", "border-color-y", "border-color-s", "border-color-e", "border-color-t", "border-color-r", "border-color-b", "border-color-l"],
-        "border-color-x": ["border-color-r", "border-color-l"],
-        "border-color-y": ["border-color-t", "border-color-b"],
-        translate: ["translate-x", "translate-y", "translate-none"],
-        "translate-none": ["translate", "translate-x", "translate-y", "translate-z"],
-        "scroll-m": ["scroll-mx", "scroll-my", "scroll-ms", "scroll-me", "scroll-mt", "scroll-mr", "scroll-mb", "scroll-ml"],
-        "scroll-mx": ["scroll-mr", "scroll-ml"],
-        "scroll-my": ["scroll-mt", "scroll-mb"],
-        "scroll-p": ["scroll-px", "scroll-py", "scroll-ps", "scroll-pe", "scroll-pt", "scroll-pr", "scroll-pb", "scroll-pl"],
-        "scroll-px": ["scroll-pr", "scroll-pl"],
-        "scroll-py": ["scroll-pt", "scroll-pb"],
-        touch: ["touch-x", "touch-y", "touch-pz"],
-        "touch-x": ["touch"],
-        "touch-y": ["touch"],
-        "touch-pz": ["touch"]
-      },
-      conflictingClassGroupModifiers: {
-        "font-size": ["leading"]
-      },
-      orderSensitiveModifiers: ["*", "**", "after", "backdrop", "before", "details-content", "file", "first-letter", "first-line", "marker", "placeholder", "selection"]
-    };
-  };
-  var twMerge = /* @__PURE__ */ createTailwindMerge(getDefaultConfig);
-
-  // components/ui/utils.ts
-  function cn(...inputs) {
-    return twMerge(clsx(inputs));
-  }
-
-  // components/ui/slider.tsx
-  var import_jsx_runtime8 = __toESM(require_jsx_runtime());
-  function Slider2({
-    className,
-    defaultValue,
-    value,
-    min = 0,
-    max = 100,
-    ...props
-  }) {
-    const _values = React12.useMemo(
-      () => Array.isArray(value) ? value : Array.isArray(defaultValue) ? defaultValue : [min, max],
-      [value, defaultValue, min, max]
-    );
-    return /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(
-      Root,
-      {
-        "data-slot": "slider",
-        defaultValue,
-        value,
-        min,
-        max,
-        className: cn(
-          "relative flex w-full touch-none items-center select-none data-[disabled]:opacity-50 data-[orientation=vertical]:h-full data-[orientation=vertical]:min-h-44 data-[orientation=vertical]:w-auto data-[orientation=vertical]:flex-col",
-          className
-        ),
-        ...props,
-        children: [
-          /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
-            Track,
-            {
-              "data-slot": "slider-track",
-              className: cn(
-                "bg-muted relative grow overflow-hidden rounded-full data-[orientation=horizontal]:h-4 data-[orientation=horizontal]:w-full data-[orientation=vertical]:h-full data-[orientation=vertical]:w-1.5"
-              ),
-              children: /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
-                Range,
-                {
-                  "data-slot": "slider-range",
-                  className: cn(
-                    "bg-primary absolute data-[orientation=horizontal]:h-full data-[orientation=vertical]:w-full"
-                  )
-                }
-              )
-            }
-          ),
-          Array.from({ length: _values.length }, (_, index) => /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
-            Thumb,
-            {
-              "data-slot": "slider-thumb",
-              className: "border-primary bg-background ring-ring/50 block size-4 shrink-0 rounded-full border shadow-sm transition-[color,box-shadow] hover:ring-4 focus-visible:ring-4 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50"
-            },
-            index
-          ))
-        ]
-      }
-    );
-  }
-
   // components/AddItemForm.tsx
-  var import_jsx_runtime9 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime = __toESM(require_jsx_runtime());
   var ITEM_CATEGORIES = ["Beauty", "Clothes", "Accessories", "Sports", "Electronics", "Home", "Other"];
-  function generateMindfulnessExplanation(questionnaire, finalScore) {
-    const insights = [];
-    const areasForGrowth = [];
-    questionnaire.forEach((qa) => {
-      const numericAnswer = parseInt(qa.answer, 10);
-      if (isNaN(numericAnswer) || numericAnswer < 1 || numericAnswer > 5) return;
-      if (qa.id === "consumption") {
-        const needLevel = numericAnswer <= 2 ? "low" : numericAnswer <= 3 ? "moderate" : "high";
-        insights.push(`You indicated a ${needLevel} need for this item (${numericAnswer}/5), showing you've recognized your desire`);
-      } else if (qa.id === "urgency") {
-        if (numericAnswer <= 2) {
-          insights.push(`You indicated low urgency (${numericAnswer}/5), demonstrating patience and thoughtful consideration rather than impulsive decision-making`);
-        } else if (numericAnswer >= 4) {
-          insights.push(`You indicated high urgency (${numericAnswer}/5), which suggests a more reactive approach that may limit reflection time`);
-          areasForGrowth.push("taking more time to reflect before acting");
-        } else {
-          insights.push(`You indicated moderate urgency (${numericAnswer}/5), showing some consideration of timing`);
-          areasForGrowth.push("allowing more time for reflection");
-        }
-      } else {
-        const qLower = qa.question.toLowerCase();
-        let questionMeaning = "";
-        let reflectionType = "";
-        let growthArea = "";
-        if (qLower.includes("essential") || qLower.includes("important")) {
-          questionMeaning = numericAnswer >= 4 ? "very essential" : numericAnswer <= 2 ? "not very essential" : "moderately essential";
-          reflectionType = "thoughtful reflection about its importance";
-          if (numericAnswer <= 3) {
-            growthArea = "deeper consideration of whether this truly meets your needs";
-          }
-        } else if (qLower.includes("alternative") || qLower.includes("satisfied")) {
-          questionMeaning = numericAnswer >= 4 ? "high satisfaction with alternatives" : numericAnswer <= 2 ? "low satisfaction with alternatives" : "moderate satisfaction with alternatives";
-          reflectionType = numericAnswer >= 4 ? "openness to alternatives and flexibility" : "you've considered alternatives and determined they don't meet your needs";
-          if (numericAnswer <= 2) {
-            growthArea = "exploring whether any alternatives could work with some adjustment";
-          } else if (numericAnswer <= 3) {
-            growthArea = "further exploration of alternative options";
-          }
-        } else if (qLower.includes("impact") || qLower.includes("consequence") || qLower.includes("significant")) {
-          questionMeaning = numericAnswer >= 4 ? "significant positive impact" : numericAnswer <= 2 ? "limited impact" : "moderate impact";
-          reflectionType = "awareness of the purchase's consequences";
-          if (numericAnswer <= 3) {
-            growthArea = "deeper reflection on the broader impact of this purchase";
-          }
-        } else if (qLower.includes("integrat") || qLower.includes("confident") || qLower.includes("expect")) {
-          questionMeaning = numericAnswer >= 4 ? "high confidence" : numericAnswer <= 2 ? "low confidence" : "moderate confidence";
-          reflectionType = "thoughtful evaluation of how this item fits into your life";
-          if (numericAnswer <= 3) {
-            growthArea = "more thorough evaluation of how this integrates with your lifestyle";
-          }
-        } else {
-          questionMeaning = numericAnswer >= 4 ? "strong agreement" : numericAnswer <= 2 ? "limited agreement" : "moderate agreement";
-          reflectionType = "reflection on this aspect";
-          if (numericAnswer <= 3) {
-            growthArea = "deeper consideration of this aspect";
-          }
-        }
-        insights.push(`You indicated ${questionMeaning} (${numericAnswer}/5), which demonstrates ${reflectionType}`);
-        if (growthArea && numericAnswer <= 3) {
-          areasForGrowth.push(growthArea);
-        }
-      }
-    });
-    if (insights.length === 0) return "";
-    let explanation = `Your score of ${finalScore}/10 reflects your thoughtful decision-making process. ${insights.join(". ")}.`;
-    if (finalScore < 10 && areasForGrowth.length > 0) {
-      explanation += ` You can reflect further on ${areasForGrowth[0]}${areasForGrowth.length > 1 ? `, as well as ${areasForGrowth.slice(1).join(", and ")}` : ""} to deepen your mindfulness around this decision.`;
-    } else if (finalScore < 10) {
-      explanation += ` You can reflect further across all dimensions of this decision to deepen your mindfulness.`;
-    } else {
-      explanation += ` Together, these responses demonstrate exceptional intentionality and awareness in your decision-making process.`;
-    }
-    return explanation;
-  }
   function AddItemForm({ onSubmit, onCancel, initialUrl, checkUrlInInventory }) {
-    const [step, setStep] = (0, import_react5.useState)(1);
-    const [productUrl, setProductUrl] = (0, import_react5.useState)(initialUrl ?? "");
-    const [name, setName] = (0, import_react5.useState)("");
-    const [imageUrl, setImageUrl] = (0, import_react5.useState)("");
-    const [hasProductUrlTouched, setHasProductUrlTouched] = (0, import_react5.useState)(false);
-    const [category, setCategory] = (0, import_react5.useState)("Other");
-    const [categoryIsAISuggested, setCategoryIsAISuggested] = (0, import_react5.useState)(false);
-    const [hasUrlTouched, setHasUrlTouched] = (0, import_react5.useState)(false);
-    const [constraintType, setConstraintType] = (0, import_react5.useState)("time");
-    const [waitUntilDate, setWaitUntilDate] = (0, import_react5.useState)("");
-    const [difficulty, setDifficulty] = (0, import_react5.useState)("medium");
-    const [consumptionScore, setConsumptionScore] = (0, import_react5.useState)(1);
-    const [goalDescription, setGoalDescription] = (0, import_react5.useState)("");
-    const [friendName, setFriendName] = (0, import_react5.useState)("");
-    const [friendEmail, setFriendEmail] = (0, import_react5.useState)("");
-    const [showAlreadyInInventory, setShowAlreadyInInventory] = (0, import_react5.useState)(false);
-    const [isCheckingUrl, setIsCheckingUrl] = (0, import_react5.useState)(false);
-    const [questions, setQuestions] = (0, import_react5.useState)([]);
-    const [questionsUsedFallback, setQuestionsUsedFallback] = (0, import_react5.useState)(false);
-    const [answers, setAnswers] = (0, import_react5.useState)({});
-    const [isLoadingQuestions, setIsLoadingQuestions] = (0, import_react5.useState)(false);
-    const [isLoadingMetadata, setIsLoadingMetadata] = (0, import_react5.useState)(false);
-    const [isGeneratingImage, setIsGeneratingImage] = (0, import_react5.useState)(false);
-    (0, import_react5.useEffect)(() => {
+    const [step, setStep] = (0, import_react3.useState)(1);
+    const [productUrl, setProductUrl] = (0, import_react3.useState)(initialUrl ?? "");
+    const [name, setName] = (0, import_react3.useState)("");
+    const [imageUrl, setImageUrl] = (0, import_react3.useState)("");
+    const [hasProductUrlTouched, setHasProductUrlTouched] = (0, import_react3.useState)(false);
+    const [category, setCategory] = (0, import_react3.useState)("Other");
+    const [categoryIsAISuggested, setCategoryIsAISuggested] = (0, import_react3.useState)(false);
+    const [hasUrlTouched, setHasUrlTouched] = (0, import_react3.useState)(false);
+    const [constraintType, setConstraintType] = (0, import_react3.useState)("time");
+    const [waitUntilDate, setWaitUntilDate] = (0, import_react3.useState)("");
+    const [difficulty, setDifficulty] = (0, import_react3.useState)("medium");
+    const [consumptionScore, setConsumptionScore] = (0, import_react3.useState)(3);
+    const [goalDescription, setGoalDescription] = (0, import_react3.useState)("");
+    const [friendName, setFriendName] = (0, import_react3.useState)("");
+    const [friendEmail, setFriendEmail] = (0, import_react3.useState)("");
+    const [showAlreadyInInventory, setShowAlreadyInInventory] = (0, import_react3.useState)(false);
+    const [isCheckingUrl, setIsCheckingUrl] = (0, import_react3.useState)(false);
+    const [questions, setQuestions] = (0, import_react3.useState)([]);
+    const [questionsUsedFallback, setQuestionsUsedFallback] = (0, import_react3.useState)(false);
+    const [answers, setAnswers] = (0, import_react3.useState)({});
+    const [isLoadingQuestions, setIsLoadingQuestions] = (0, import_react3.useState)(false);
+    const [isLoadingMetadata, setIsLoadingMetadata] = (0, import_react3.useState)(false);
+    const [isGeneratingImage, setIsGeneratingImage] = (0, import_react3.useState)(false);
+    (0, import_react3.useEffect)(() => {
       if (initialUrl) {
         setProductUrl(initialUrl);
       }
     }, [initialUrl]);
-    (0, import_react5.useEffect)(() => {
+    (0, import_react3.useEffect)(() => {
       if (initialUrl && !hasProductUrlTouched) {
         setProductUrl(initialUrl);
       }
@@ -17588,7 +13469,7 @@ URL: ${url}`
       setConstraintType("time");
       setWaitUntilDate("");
       setDifficulty("medium");
-      setConsumptionScore(1);
+      setConsumptionScore(3);
       setQuestions([]);
       setQuestionsUsedFallback(false);
       setAnswers({});
@@ -17596,6 +13477,16 @@ URL: ${url}`
       setFriendName("");
       setFriendEmail("");
       setShowAlreadyInInventory(false);
+    };
+    const handleNameBlur = async () => {
+      const trimmed = name.trim();
+      if (trimmed.length < 2) return;
+      try {
+        const detectedCategory = await detectCategory(trimmed);
+        setCategory(detectedCategory);
+        setCategoryIsAISuggested(true);
+      } catch {
+      }
     };
     const handleFetchMetadata = async () => {
       if (!productUrl) return;
@@ -17696,7 +13587,7 @@ URL: ${url}`
         setQuestionsUsedFallback(!!usedFallback);
         const initialAnswers = {};
         generatedQuestions.forEach((q) => {
-          initialAnswers[q.id] = 1;
+          initialAnswers[q.id] = 3;
         });
         setAnswers(initialAnswers);
         setStep(2);
@@ -17705,7 +13596,7 @@ URL: ${url}`
         setQuestions(DEFAULT_QUESTIONS);
         const initialAnswers = {};
         DEFAULT_QUESTIONS.forEach((q) => {
-          initialAnswers[q.id] = 1;
+          initialAnswers[q.id] = 3;
         });
         setAnswers(initialAnswers);
         setStep(2);
@@ -17716,7 +13607,11 @@ URL: ${url}`
     const handleStep2Submit = (e) => {
       e.preventDefault();
       const calculatedScore = calculateMindfulnessScore(answers);
-      const days = calculatedScore * 7;
+      const MIN_DAYS = 3;
+      const MAX_DAYS = 21;
+      const daysRange = MAX_DAYS - MIN_DAYS;
+      const normalized = (10 - calculatedScore) / 9;
+      const days = Math.round(MIN_DAYS + normalized * daysRange);
       const waitDate = /* @__PURE__ */ new Date();
       waitDate.setDate(waitDate.getDate() + days);
       setWaitUntilDate(waitDate.toISOString().split("T")[0]);
@@ -17741,7 +13636,7 @@ URL: ${url}`
         ...questions.map((q) => ({
           id: q.id,
           question: q.question,
-          answer: String(answers[q.id] || 1)
+          answer: String(answers[q.id] || 3)
         }))
       ];
       if (constraintType === "goals" && goalDescription.trim()) {
@@ -17769,24 +13664,24 @@ URL: ${url}`
       });
       resetForm();
     };
-    return /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "max-w-2xl mx-auto pb-12", children: /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "bg-card rounded-2xl shadow-sm border border-border/50 p-8", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "mb-6", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("h2", { className: "text-2xl font-serif text-foreground", children: [
+    return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "max-w-2xl mx-auto pb-12", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "bg-card rounded-2xl shadow-sm border border-border/50 p-8", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "mb-6", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("h2", { className: "text-2xl font-serif text-foreground", children: [
           step === 1 && "Add Item",
           step === 2 && "Reflection Questions",
           step === 3 && "Your Constraint Plan",
           step === 4 && "Your Goal Plan"
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("p", { className: "text-sm text-muted-foreground mt-1", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "text-sm text-muted-foreground mt-1", children: [
           "Step ",
           step,
           " of 4"
         ] })
       ] }),
-      showAlreadyInInventory && /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "space-y-6 py-4", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("p", { className: "text-lg text-foreground", children: "This item is already in your inventory!" }),
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("p", { className: "text-sm text-muted-foreground", children: "You've already saved this product. No need to add it again." }),
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+      showAlreadyInInventory && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "space-y-6 py-4", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-lg text-foreground", children: "This item is already in your inventory!" }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-sm text-muted-foreground", children: "You've already saved this product. No need to add it again." }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
           "button",
           {
             type: "button",
@@ -17796,11 +13691,11 @@ URL: ${url}`
           }
         )
       ] }),
-      !showAlreadyInInventory && step === 1 && /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(import_jsx_runtime9.Fragment, { children: /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("form", { onSubmit: handleStep1Submit, className: "space-y-6", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { className: "block text-sm font-medium text-foreground/80 mb-2", children: "Product URL" }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "flex gap-2", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+      !showAlreadyInInventory && step === 1 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_jsx_runtime.Fragment, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("form", { onSubmit: handleStep1Submit, className: "space-y-6", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", { className: "block text-sm font-medium text-foreground/80 mb-2", children: "Product URL" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex gap-2", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
               "input",
               {
                 type: "url",
@@ -17813,7 +13708,7 @@ URL: ${url}`
                 className: "flex-1 px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)(
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
               "button",
               {
                 type: "button",
@@ -17821,30 +13716,31 @@ URL: ${url}`
                 disabled: !productUrl || isLoadingMetadata,
                 className: "px-4 py-3 bg-secondary text-secondary-foreground rounded-xl hover:bg-secondary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2",
                 children: [
-                  isLoadingMetadata ? /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(LoaderCircle, { className: "w-5 h-5 animate-spin" }) : /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(Link, { className: "w-5 h-5" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "hidden sm:inline", children: "Fetch" })
+                  isLoadingMetadata ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoaderCircle, { className: "w-5 h-5 animate-spin" }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Link, { className: "w-5 h-5" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "hidden sm:inline", children: "Fetch" })
                 ]
               }
             )
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("p", { className: "text-xs text-muted-foreground mt-1", children: "Paste a product link to auto-fill name and image" })
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs text-muted-foreground mt-1", children: "Paste a product link to auto-fill name and image" })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { className: "block text-sm font-medium text-foreground/80 mb-2", children: "Item Name" }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", { className: "block text-sm font-medium text-foreground/80 mb-2", children: "Item Name" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
             "input",
             {
               type: "text",
               value: name,
               onChange: (e) => setName(e.target.value),
+              onBlur: handleNameBlur,
               placeholder: "Auto-filled from URL, or type manually",
               className: "w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
             }
           )
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { className: "block text-sm font-medium text-foreground/80 mb-2", children: "Image URL (Optional)" }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", { className: "block text-sm font-medium text-foreground/80 mb-2", children: "Image URL (Optional)" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
             "input",
             {
               type: "url",
@@ -17854,7 +13750,7 @@ URL: ${url}`
               className: "w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
             }
           ),
-          imageUrl && imageUrl.trim() ? /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "mt-3 relative rounded-xl overflow-hidden border border-border bg-muted/20", children: /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+          imageUrl && imageUrl.trim() ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "mt-3 relative rounded-xl overflow-hidden border border-border bg-muted/20", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
             "img",
             {
               src: imageUrl.trim(),
@@ -17869,19 +13765,19 @@ URL: ${url}`
             }
           ) }) : null
         ] }),
-        isGeneratingImage && /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "flex items-center gap-2 text-sm text-muted-foreground", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(LoaderCircle, { className: "w-4 h-4 animate-spin" }),
+        isGeneratingImage && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-2 text-sm text-muted-foreground", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoaderCircle, { className: "w-4 h-4 animate-spin" }),
           "Generating product image..."
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "flex items-center gap-2 mb-2", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { className: "text-sm font-medium text-foreground/80", children: "Category" }),
-            categoryIsAISuggested && /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("span", { className: "inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "w-1.5 h-1.5 rounded-full bg-primary animate-pulse" }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-2 mb-2", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", { className: "text-sm font-medium text-foreground/80", children: "Category" }),
+            categoryIsAISuggested && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "w-1.5 h-1.5 rounded-full bg-primary animate-pulse" }),
               "AI Suggested"
             ] })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
             "select",
             {
               value: category,
@@ -17890,27 +13786,27 @@ URL: ${url}`
                 setCategoryIsAISuggested(false);
               },
               className: "w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground",
-              children: ITEM_CATEGORIES.map((cat) => /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("option", { value: cat, children: cat }, cat))
+              children: ITEM_CATEGORIES.map((cat) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: cat, children: cat }, cat))
             }
           )
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "flex gap-3 pt-4", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex gap-3 pt-4", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
             "button",
             {
               type: "submit",
               disabled: isLoadingQuestions || isCheckingUrl || !productUrl,
               className: "flex-1 bg-primary text-primary-foreground px-6 py-3 rounded-full hover:bg-primary/90 transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2",
-              children: isCheckingUrl ? /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)(import_jsx_runtime9.Fragment, { children: [
-                /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(LoaderCircle, { className: "w-5 h-5 animate-spin" }),
+              children: isCheckingUrl ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoaderCircle, { className: "w-5 h-5 animate-spin" }),
                 "Checking..."
-              ] }) : isLoadingQuestions ? /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)(import_jsx_runtime9.Fragment, { children: [
-                /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(LoaderCircle, { className: "w-5 h-5 animate-spin" }),
+              ] }) : isLoadingQuestions ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoaderCircle, { className: "w-5 h-5 animate-spin" }),
                 "Generating Questions..."
               ] }) : "Continue to Reflection"
             }
           ),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
             "button",
             {
               type: "button",
@@ -17922,76 +13818,56 @@ URL: ${url}`
           )
         ] })
       ] }) }),
-      step === 2 && /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("form", { onSubmit: handleStep2Submit, className: "space-y-6", children: [
-        questionsUsedFallback && /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("p", { className: "text-sm text-muted-foreground bg-muted/50 rounded-xl px-4 py-3 border border-border/50", children: "Using default reflection questions (AI was temporarily busy). You can still continue." }),
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "space-y-6", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "space-y-3", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "flex items-center justify-between", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { className: "block text-sm font-medium text-foreground/80", children: "1. Rank your need for this item (1 = need less, 5 = need more)" }),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("span", { className: "text-lg font-semibold text-primary", children: [
-                consumptionScore,
-                "/5"
-              ] })
-            ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
-              Slider2,
+      step === 2 && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("form", { onSubmit: handleStep2Submit, className: "space-y-6", children: [
+        questionsUsedFallback && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-sm text-muted-foreground bg-muted/50 rounded-xl px-4 py-3 border border-border/50", children: "Using default reflection questions (AI was temporarily busy). You can still continue." }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "space-y-6", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "space-y-3", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", { className: "block text-sm font-medium text-foreground/80", children: "1. Rank your need for this item (1 = need less, 5 = need more)" }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "flex items-center justify-center gap-3", children: [1, 2, 3, 4, 5].map((value) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+              "button",
               {
-                value: [consumptionScore],
-                onValueChange: (value) => setConsumptionScore(value[0]),
-                min: 1,
-                max: 5,
-                step: 1,
-                className: "w-full"
-              }
-            ),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "flex justify-between text-xs text-muted-foreground", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { children: "1 - Need Less" }),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { children: "5 - Need More" })
+                type: "button",
+                onClick: () => setConsumptionScore(value),
+                className: `w-10 h-10 rounded-full font-semibold text-sm transition-all ${consumptionScore === value ? "bg-primary text-primary-foreground scale-110 shadow-md" : "bg-muted/50 text-muted-foreground hover:bg-muted hover:scale-105"}`,
+                children: value
+              },
+              value
+            )) }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex justify-between text-xs text-muted-foreground", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Need Less" }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Need More" })
             ] })
           ] }),
           questions.map((q, index) => {
-            const currentValue = answers[q.id] || 1;
+            const currentValue = answers[q.id] || 3;
             const scaleLabels = q.placeholder.split("/");
             const leftLabel = scaleLabels[0]?.trim() || "Low";
             const rightLabel = scaleLabels[1]?.trim() || "High";
-            return /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "space-y-3", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "flex items-center justify-between", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("label", { className: "block text-sm font-medium text-foreground/80", children: [
-                  index + 2,
-                  ". ",
-                  q.question
-                ] }),
-                /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("span", { className: "text-lg font-semibold text-primary", children: [
-                  currentValue,
-                  "/5"
-                ] })
+            return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "space-y-3", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("label", { className: "block text-sm font-medium text-foreground/80", children: [
+                index + 2,
+                ". ",
+                q.question
               ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
-                Slider2,
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "flex items-center justify-center gap-3", children: [1, 2, 3, 4, 5].map((value) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+                "button",
                 {
-                  value: [currentValue],
-                  onValueChange: (value) => setAnswers((prev) => ({ ...prev, [q.id]: value[0] })),
-                  min: 1,
-                  max: 5,
-                  step: 1,
-                  className: "w-full"
-                }
-              ),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "flex justify-between text-xs text-muted-foreground", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("span", { children: [
-                  "1 - ",
-                  leftLabel
-                ] }),
-                /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("span", { children: [
-                  "5 - ",
-                  rightLabel
-                ] })
+                  type: "button",
+                  onClick: () => setAnswers((prev) => ({ ...prev, [q.id]: value })),
+                  className: `w-10 h-10 rounded-full font-semibold text-sm transition-all ${currentValue === value ? "bg-primary text-primary-foreground scale-110 shadow-md" : "bg-muted/50 text-muted-foreground hover:bg-muted hover:scale-105"}`,
+                  children: value
+                },
+                value
+              )) }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex justify-between text-xs text-muted-foreground", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: leftLabel }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: rightLabel })
               ] })
             ] }, q.id);
           })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "flex gap-3 pt-4", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex gap-3 pt-4", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
             "button",
             {
               type: "button",
@@ -18000,7 +13876,7 @@ URL: ${url}`
               children: "Back"
             }
           ),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
             "button",
             {
               type: "submit",
@@ -18010,40 +13886,108 @@ URL: ${url}`
           )
         ] })
       ] }),
-      step === 3 && /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("form", { onSubmit: handleFinalSubmit, className: "space-y-6", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "mb-4 space-y-3", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "p-5 bg-muted/30 rounded-xl space-y-3", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "flex items-center justify-between", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "text-foreground/80 font-medium", children: "Your Mindfulness Score" }),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("span", { className: `text-2xl font-semibold font-serif ${calculateMindfulnessScore(answers) >= 7 ? "text-destructive" : calculateMindfulnessScore(answers) >= 4 ? "text-accent" : "text-primary"}`, children: [
-                calculateMindfulnessScore(answers),
-                "/10"
+      step === 3 && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("form", { onSubmit: handleFinalSubmit, className: "space-y-6", children: [
+        (() => {
+          const score = calculateMindfulnessScore(answers);
+          const percentage = score * 10;
+          const radius = 54;
+          const circumference = 2 * Math.PI * radius;
+          const strokeDashoffset = circumference - percentage / 100 * circumference;
+          const color = score >= 7 ? "#dc2626" : score >= 4 ? "#d97706" : "#255736";
+          const label = score >= 7 ? "High impulse" : score >= 4 ? "Moderate" : "Mindful";
+          const idToLabel = {
+            consumption: "Need",
+            urgency: "Urgency",
+            importance: "Importance",
+            alternatives: "Alternatives",
+            value: "Value",
+            impact: "Impact",
+            improvement: "Improvement",
+            need: "Need"
+          };
+          const components = [];
+          const consumptionVal = Math.max(1, Math.min(10, consumptionScore * 2));
+          components.push({ label: "Need", raw: consumptionScore, value: consumptionVal });
+          questions.forEach((q) => {
+            const answer = answers[q.id] || 3;
+            let val;
+            if (q.id === "urgency") {
+              val = 12 - answer * 2;
+            } else {
+              val = answer * 2;
+            }
+            val = Math.max(1, Math.min(10, val));
+            components.push({ label: idToLabel[q.id] || q.id, raw: answer, value: val });
+          });
+          return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "mb-4 space-y-4", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "p-6 bg-muted/30 rounded-xl space-y-5", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex flex-col items-center gap-3", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-foreground/80 font-medium", children: "Your Mindfulness Score" }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "relative w-28 h-28", children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { className: "w-28 h-28 -rotate-90", viewBox: "0 0 120 120", children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "60", cy: "60", r: radius, fill: "none", stroke: "#e5e7eb", strokeWidth: "10" }),
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+                      "circle",
+                      {
+                        cx: "60",
+                        cy: "60",
+                        r: radius,
+                        fill: "none",
+                        stroke: color,
+                        strokeWidth: "10",
+                        strokeLinecap: "round",
+                        strokeDasharray: circumference,
+                        strokeDashoffset,
+                        style: { transition: "stroke-dashoffset 0.5s ease" }
+                      }
+                    )
+                  ] }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "absolute inset-0 flex flex-col items-center justify-center", children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-2xl font-bold", style: { color }, children: score }),
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-xs text-muted-foreground", children: "/10" })
+                  ] })
+                ] }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-sm font-medium", style: { color }, children: label })
+              ] }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "border-t border-border/30 pt-4 space-y-3", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-xs font-medium text-muted-foreground uppercase tracking-wide", children: "Score Breakdown" }),
+                components.map((c, i) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "space-y-1", children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex justify-between text-xs", children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-foreground/70", children: c.label }),
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "text-foreground/50", children: [
+                      c.value,
+                      "/10"
+                    ] })
+                  ] }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "h-2 bg-muted rounded-full overflow-hidden", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+                    "div",
+                    {
+                      className: "h-full rounded-full transition-all duration-500",
+                      style: {
+                        width: `${c.value * 10}%`,
+                        backgroundColor: c.value >= 7 ? "#dc2626" : c.value >= 4 ? "#d97706" : "#255736"
+                      }
+                    }
+                  ) })
+                ] }, i)),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex justify-between text-xs pt-2 border-t border-border/30", children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-foreground/70 font-medium", children: "Average" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "font-semibold", style: { color }, children: [
+                    score,
+                    "/10"
+                  ] })
+                ] })
               ] })
             ] }),
-            (() => {
-              const tempQuestionnaire = [
-                {
-                  id: "consumption",
-                  question: "Rank your need for this item",
-                  answer: String(consumptionScore)
-                },
-                ...questions.map((q) => ({
-                  id: q.id,
-                  question: q.question,
-                  answer: String(answers[q.id] || 1)
-                }))
-              ];
-              return /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("p", { className: "text-sm text-foreground/70 leading-relaxed pt-2 border-t border-border/30", children: generateMindfulnessExplanation(tempQuestionnaire, calculateMindfulnessScore(answers)) });
-            })()
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("p", { className: "text-foreground/80", children: "Based on your mindfulness score, choose your preferred constraint approach:" })
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-foreground/80", children: "Based on your mindfulness score, choose your preferred constraint approach:" })
+          ] });
+        })(),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
           "label",
           {
             className: `block cursor-pointer rounded-xl border-2 p-6 transition-all ${constraintType === "time" ? "border-primary bg-primary/5" : "border-border hover:border-primary/50 hover:bg-muted/20"}`,
-            children: /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "flex items-start gap-4", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-start gap-4", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
                 "input",
                 {
                   type: "radio",
@@ -18053,21 +13997,21 @@ URL: ${url}`
                   className: "mt-1 accent-primary"
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "flex-1", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "flex items-center gap-2 mb-2", children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "text-2xl", children: "\u23F0" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("h3", { className: "text-lg font-semibold text-foreground", children: "Time-based Constraint" })
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex-1", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-2 mb-2", children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-2xl", children: "\u23F0" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("h3", { className: "text-lg font-semibold text-foreground", children: "Time-based Constraint" })
                 ] }),
-                /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("p", { className: "text-foreground/80 mb-3", children: "Wait a specific period before making your purchase decision." }),
-                /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "bg-background/50 rounded-lg p-3", children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("p", { className: "text-sm text-muted-foreground", children: "Wait until:" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("p", { className: "text-lg font-semibold text-primary mt-1", children: new Date(waitUntilDate).toLocaleDateString("en-US", {
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-foreground/80 mb-3", children: "Wait a specific period before making your purchase decision." }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "bg-background/50 rounded-lg p-3", children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-sm text-muted-foreground", children: "Wait until:" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-lg font-semibold text-primary mt-1", children: new Date(waitUntilDate).toLocaleDateString("en-US", {
                     weekday: "long",
                     year: "numeric",
                     month: "long",
                     day: "numeric"
                   }) }),
-                  /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("p", { className: "text-sm text-muted-foreground mt-1", children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "text-sm text-muted-foreground mt-1", children: [
                     "(",
                     Math.ceil((new Date(waitUntilDate).getTime() - (/* @__PURE__ */ new Date()).getTime()) / (1e3 * 60 * 60 * 24)),
                     " days from now)"
@@ -18077,12 +14021,12 @@ URL: ${url}`
             ] })
           }
         ),
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
           "label",
           {
             className: `block cursor-pointer rounded-xl border-2 p-6 transition-all ${constraintType === "goals" ? "border-primary bg-primary/5" : "border-border hover:border-primary/50 hover:bg-muted/20"}`,
-            children: /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "flex items-start gap-4", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-start gap-4", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
                 "input",
                 {
                   type: "radio",
@@ -18092,15 +14036,15 @@ URL: ${url}`
                   className: "mt-1 accent-primary"
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "flex-1", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "flex items-center gap-2 mb-2", children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "text-2xl", children: "\u{1F3AF}" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("h3", { className: "text-lg font-semibold text-foreground", children: "Goals-based Constraint" })
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex-1", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-2 mb-2", children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-2xl", children: "\u{1F3AF}" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("h3", { className: "text-lg font-semibold text-foreground", children: "Goals-based Constraint" })
                 ] }),
-                /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("p", { className: "text-foreground/80 mb-3", children: "Complete meaningful tasks before earning your purchase." }),
-                /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "bg-background/50 rounded-lg p-3", children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("p", { className: "text-sm text-muted-foreground", children: "Challenge difficulty:" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("p", { className: "text-lg font-semibold text-primary mt-1 capitalize", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-foreground/80 mb-3", children: "Complete meaningful tasks before earning your purchase." }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "bg-background/50 rounded-lg p-3", children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-sm text-muted-foreground", children: "Challenge difficulty:" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "text-lg font-semibold text-primary mt-1 capitalize", children: [
                     difficulty === "easy" && "\u2728 Easy - Complete simple daily goals",
                     difficulty === "medium" && "\u26A1 Medium - Complete moderate weekly goals",
                     difficulty === "hard" && "\u{1F525} Hard - Complete challenging long-term goals"
@@ -18110,8 +14054,8 @@ URL: ${url}`
             ] })
           }
         ),
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "flex gap-3 pt-4", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex gap-3 pt-4", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
             "button",
             {
               type: "button",
@@ -18120,14 +14064,14 @@ URL: ${url}`
               children: "Back"
             }
           ),
-          constraintType === "time" ? /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+          constraintType === "time" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
             "button",
             {
               type: "submit",
               className: "flex-1 bg-primary text-primary-foreground px-6 py-3 rounded-full hover:bg-primary/90 transition-all shadow-sm hover:shadow-md",
               children: "Add to Reflection List"
             }
-          ) : /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+          ) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
             "button",
             {
               type: "button",
@@ -18138,24 +14082,24 @@ URL: ${url}`
           )
         ] })
       ] }),
-      step === 4 && constraintType === "goals" && /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("form", { onSubmit: handleFinalSubmit, className: "space-y-6", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "mb-4 space-y-2", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("p", { className: "text-foreground/80", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("strong", { className: "capitalize", children: difficulty }),
+      step === 4 && constraintType === "goals" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("form", { onSubmit: handleFinalSubmit, className: "space-y-6", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "mb-4 space-y-2", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "text-foreground/80", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { className: "capitalize", children: difficulty }),
             " goals-based constraint for",
             " ",
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("strong", { children: name }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: name }),
             "."
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("p", { className: "text-sm text-muted-foreground", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "text-sm text-muted-foreground", children: [
             "What is a ",
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "font-medium capitalize", children: difficulty }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "font-medium capitalize", children: difficulty }),
             " goal you would like to complete before purchasing this item?"
           ] })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { className: "block text-sm font-medium text-foreground/80 mb-2", children: "Your goal" }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", { className: "block text-sm font-medium text-foreground/80 mb-2", children: "Your goal" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
             "textarea",
             {
               value: goalDescription,
@@ -18166,11 +14110,11 @@ URL: ${url}`
             }
           )
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "space-y-4 pt-4 border-t border-border/50", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("p", { className: "text-sm text-foreground/80", children: "Choose a friend who will receive a password to unlock this item once you complete your goal:" }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { children: [
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { className: "block text-sm font-medium text-foreground/80 mb-2", children: "Friend's Name *" }),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "space-y-4 pt-4 border-t border-border/50", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-sm text-foreground/80", children: "Choose a friend who will receive a password to unlock this item once you complete your goal:" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", { className: "block text-sm font-medium text-foreground/80 mb-2", children: "Friend's Name *" }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
               "input",
               {
                 type: "text",
@@ -18182,9 +14126,9 @@ URL: ${url}`
               }
             )
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { children: [
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { className: "block text-sm font-medium text-foreground/80 mb-2", children: "Friend's Email *" }),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", { className: "block text-sm font-medium text-foreground/80 mb-2", children: "Friend's Email *" }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
               "input",
               {
                 type: "email",
@@ -18195,11 +14139,11 @@ URL: ${url}`
                 className: "w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("p", { className: "text-xs text-muted-foreground mt-1", children: "Your friend will receive an email with a password to unlock this item once you complete your goal." })
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "text-xs text-muted-foreground mt-1", children: "Your friend will receive an email with a password to unlock this item once you complete your goal." })
           ] })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "flex gap-3 pt-4", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex gap-3 pt-4", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
             "button",
             {
               type: "button",
@@ -18208,7 +14152,7 @@ URL: ${url}`
               children: "Back"
             }
           ),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
             "button",
             {
               type: "submit",
@@ -18222,15 +14166,15 @@ URL: ${url}`
   }
 
   // components/Auth.tsx
-  var import_react6 = __toESM(require_react());
-  var import_jsx_runtime10 = __toESM(require_jsx_runtime());
+  var import_react4 = __toESM(require_react());
+  var import_jsx_runtime2 = __toESM(require_jsx_runtime());
   function Auth({ onSignIn, onSignUp, compact = false, embedded = false }) {
-    const [isSignUp, setIsSignUp] = (0, import_react6.useState)(false);
-    const [email, setEmail] = (0, import_react6.useState)("");
-    const [password, setPassword] = (0, import_react6.useState)("");
-    const [fullName, setFullName] = (0, import_react6.useState)("");
-    const [error, setError] = (0, import_react6.useState)("");
-    const [loading, setLoading] = (0, import_react6.useState)(false);
+    const [isSignUp, setIsSignUp] = (0, import_react4.useState)(false);
+    const [email, setEmail] = (0, import_react4.useState)("");
+    const [password, setPassword] = (0, import_react4.useState)("");
+    const [fullName, setFullName] = (0, import_react4.useState)("");
+    const [error, setError] = (0, import_react4.useState)("");
+    const [loading, setLoading] = (0, import_react4.useState)(false);
     const showSignUp = !!onSignUp;
     const handleSubmit = async (e) => {
       e.preventDefault();
@@ -18258,10 +14202,10 @@ URL: ${url}`
       }
     };
     if (embedded) {
-      return /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { className: "w-full", children: /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("form", { onSubmit: handleSubmit, className: "space-y-5", children: [
-        isSignUp && showSignUp && /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("label", { className: "block text-sm font-medium text-foreground/80 mb-2", children: "Full Name" }),
-          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
+      return /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "w-full", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("form", { onSubmit: handleSubmit, className: "space-y-5", children: [
+        isSignUp && showSignUp && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("label", { className: "block text-sm font-medium text-foreground/80 mb-2", children: "Full Name" }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
             "input",
             {
               type: "text",
@@ -18273,9 +14217,9 @@ URL: ${url}`
             }
           )
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("label", { className: "block text-sm font-medium text-foreground/80 mb-2", children: "Email" }),
-          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("label", { className: "block text-sm font-medium text-foreground/80 mb-2", children: "Email" }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
             "input",
             {
               type: "email",
@@ -18287,9 +14231,9 @@ URL: ${url}`
             }
           )
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("label", { className: "block text-sm font-medium text-foreground/80 mb-2", children: "Password" }),
-          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("label", { className: "block text-sm font-medium text-foreground/80 mb-2", children: "Password" }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
             "input",
             {
               type: "password",
@@ -18302,8 +14246,8 @@ URL: ${url}`
             }
           )
         ] }),
-        error && /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { className: "bg-destructive/10 border border-destructive/20 text-destructive rounded-xl p-3 text-sm", children: error }),
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
+        error && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "bg-destructive/10 border border-destructive/20 text-destructive rounded-xl p-3 text-sm", children: error }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
           "button",
           {
             type: "submit",
@@ -18312,7 +14256,7 @@ URL: ${url}`
             children: loading ? "Loading..." : isSignUp ? "Sign Up" : "Sign In"
           }
         ),
-        showSignUp && /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { className: "text-center", children: /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
+        showSignUp && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "text-center", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
           "button",
           {
             type: "button",
@@ -18326,15 +14270,15 @@ URL: ${url}`
         ) })
       ] }) });
     }
-    return /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { className: compact ? "" : "min-h-screen bg-background flex items-center justify-center p-8", children: /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: compact ? "w-full" : "w-full max-w-4xl", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: `text-center ${compact ? "mb-6" : "mb-12"}`, children: [
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("h1", { className: `font-bold text-foreground ${compact ? "text-2xl mb-1" : "text-5xl mb-4"}`, children: "Second Thought" }),
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("p", { className: `text-muted-foreground ${compact ? "text-sm" : "text-2xl"}`, children: isSignUp ? "Create your account" : compact ? "Sign in to save items" : "Welcome back" })
+    return /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: compact ? "" : "min-h-screen bg-background flex items-center justify-center p-8", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: compact ? "w-full" : "w-full max-w-4xl", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: `text-center ${compact ? "mb-6" : "mb-12"}`, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h1", { className: `font-bold text-foreground ${compact ? "text-2xl mb-1" : "text-5xl mb-4"}`, children: "Second Thought" }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { className: `text-muted-foreground ${compact ? "text-sm" : "text-2xl"}`, children: isSignUp ? "Create your account" : compact ? "Sign in to save items" : "Welcome back" })
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { className: compact ? "bg-card rounded-2xl shadow-sm border border-border/50 p-6" : "bg-card rounded-3xl shadow-xl border border-border p-12", children: /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("form", { onSubmit: handleSubmit, className: `space-y-${compact ? "4" : "6"} ${compact ? "" : "max-w-xl mx-auto"}`, children: [
-        isSignUp && showSignUp && /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("label", { className: "block text-base font-medium text-foreground/80 mb-3", children: "Full Name" }),
-          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: compact ? "bg-card rounded-2xl shadow-sm border border-border/50 p-6" : "bg-card rounded-3xl shadow-xl border border-border p-12", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("form", { onSubmit: handleSubmit, className: `space-y-${compact ? "4" : "6"} ${compact ? "" : "max-w-xl mx-auto"}`, children: [
+        isSignUp && showSignUp && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("label", { className: "block text-base font-medium text-foreground/80 mb-3", children: "Full Name" }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
             "input",
             {
               type: "text",
@@ -18346,9 +14290,9 @@ URL: ${url}`
             }
           )
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("label", { className: "block text-base font-medium text-foreground/80 mb-3", children: "Email" }),
-          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("label", { className: "block text-base font-medium text-foreground/80 mb-3", children: "Email" }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
             "input",
             {
               type: "email",
@@ -18360,9 +14304,9 @@ URL: ${url}`
             }
           )
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("label", { className: "block text-base font-medium text-foreground/80 mb-3", children: "Password" }),
-          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("label", { className: "block text-base font-medium text-foreground/80 mb-3", children: "Password" }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
             "input",
             {
               type: "password",
@@ -18375,8 +14319,8 @@ URL: ${url}`
             }
           )
         ] }),
-        error && /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { className: `bg-destructive/10 border border-destructive/20 text-destructive rounded-xl ${compact ? "p-3 text-sm" : "p-4 text-base"}`, children: error }),
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
+        error && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: `bg-destructive/10 border border-destructive/20 text-destructive rounded-xl ${compact ? "p-3 text-sm" : "p-4 text-base"}`, children: error }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
           "button",
           {
             type: "submit",
@@ -18385,7 +14329,7 @@ URL: ${url}`
             children: loading ? compact ? "Signing in..." : "Loading..." : isSignUp ? "Sign Up" : "Sign In"
           }
         ),
-        showSignUp && /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { className: `text-center ${compact ? "mt-4" : "mt-8"}`, children: /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
+        showSignUp && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: `text-center ${compact ? "mt-4" : "mt-8"}`, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
           "button",
           {
             type: "button",
@@ -20777,7 +16721,7 @@ Suggested solution: ${env.workaround}`;
       }
       if (this.state == CHANNEL_STATES.closed) {
         const { config: { broadcast, presence, private: isPrivate } } = this.params;
-        const postgres_changes = (_b = (_a = this.bindings.postgres_changes) === null || _a === void 0 ? void 0 : _a.map((r2) => r2.filter)) !== null && _b !== void 0 ? _b : [];
+        const postgres_changes = (_b = (_a = this.bindings.postgres_changes) === null || _a === void 0 ? void 0 : _a.map((r) => r.filter)) !== null && _b !== void 0 ? _b : [];
         const presence_enabled = !!this.bindings[REALTIME_LISTEN_TYPES.PRESENCE] && this.bindings[REALTIME_LISTEN_TYPES.PRESENCE].length > 0 || ((_c = this.params.config.presence) === null || _c === void 0 ? void 0 : _c.enabled) === true;
         const accessTokenPayload = {};
         const config = {
@@ -22624,42 +18568,42 @@ Option 2: Install and provide the "ws" package:
       return o$1 && "function" == typeof Symbol && o$1.constructor === Symbol && o$1 !== Symbol.prototype ? "symbol" : typeof o$1;
     }, _typeof(o);
   }
-  function toPrimitive(t, r2) {
+  function toPrimitive(t, r) {
     if ("object" != _typeof(t) || !t) return t;
     var e = t[Symbol.toPrimitive];
     if (void 0 !== e) {
-      var i = e.call(t, r2 || "default");
+      var i = e.call(t, r || "default");
       if ("object" != _typeof(i)) return i;
       throw new TypeError("@@toPrimitive must return a primitive value.");
     }
-    return ("string" === r2 ? String : Number)(t);
+    return ("string" === r ? String : Number)(t);
   }
   function toPropertyKey(t) {
     var i = toPrimitive(t, "string");
     return "symbol" == _typeof(i) ? i : i + "";
   }
-  function _defineProperty(e, r2, t) {
-    return (r2 = toPropertyKey(r2)) in e ? Object.defineProperty(e, r2, {
+  function _defineProperty(e, r, t) {
+    return (r = toPropertyKey(r)) in e ? Object.defineProperty(e, r, {
       value: t,
       enumerable: true,
       configurable: true,
       writable: true
-    }) : e[r2] = t, e;
+    }) : e[r] = t, e;
   }
-  function ownKeys(e, r2) {
+  function ownKeys(e, r) {
     var t = Object.keys(e);
     if (Object.getOwnPropertySymbols) {
       var o = Object.getOwnPropertySymbols(e);
-      r2 && (o = o.filter(function(r$1) {
+      r && (o = o.filter(function(r$1) {
         return Object.getOwnPropertyDescriptor(e, r$1).enumerable;
       })), t.push.apply(t, o);
     }
     return t;
   }
   function _objectSpread2(e) {
-    for (var r2 = 1; r2 < arguments.length; r2++) {
-      var t = null != arguments[r2] ? arguments[r2] : {};
-      r2 % 2 ? ownKeys(Object(t), true).forEach(function(r$1) {
+    for (var r = 1; r < arguments.length; r++) {
+      var t = null != arguments[r] ? arguments[r] : {};
+      r % 2 ? ownKeys(Object(t), true).forEach(function(r$1) {
         _defineProperty(e, r$1, t[r$1]);
       }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function(r$1) {
         Object.defineProperty(e, r$1, Object.getOwnPropertyDescriptor(t, r$1));
@@ -29452,42 +25396,42 @@ ${suffix}`;
       return o$1 && "function" == typeof Symbol && o$1.constructor === Symbol && o$1 !== Symbol.prototype ? "symbol" : typeof o$1;
     }, _typeof2(o);
   }
-  function toPrimitive2(t, r2) {
+  function toPrimitive2(t, r) {
     if ("object" != _typeof2(t) || !t) return t;
     var e = t[Symbol.toPrimitive];
     if (void 0 !== e) {
-      var i = e.call(t, r2 || "default");
+      var i = e.call(t, r || "default");
       if ("object" != _typeof2(i)) return i;
       throw new TypeError("@@toPrimitive must return a primitive value.");
     }
-    return ("string" === r2 ? String : Number)(t);
+    return ("string" === r ? String : Number)(t);
   }
   function toPropertyKey2(t) {
     var i = toPrimitive2(t, "string");
     return "symbol" == _typeof2(i) ? i : i + "";
   }
-  function _defineProperty2(e, r2, t) {
-    return (r2 = toPropertyKey2(r2)) in e ? Object.defineProperty(e, r2, {
+  function _defineProperty2(e, r, t) {
+    return (r = toPropertyKey2(r)) in e ? Object.defineProperty(e, r, {
       value: t,
       enumerable: true,
       configurable: true,
       writable: true
-    }) : e[r2] = t, e;
+    }) : e[r] = t, e;
   }
-  function ownKeys2(e, r2) {
+  function ownKeys2(e, r) {
     var t = Object.keys(e);
     if (Object.getOwnPropertySymbols) {
       var o = Object.getOwnPropertySymbols(e);
-      r2 && (o = o.filter(function(r$1) {
+      r && (o = o.filter(function(r$1) {
         return Object.getOwnPropertyDescriptor(e, r$1).enumerable;
       })), t.push.apply(t, o);
     }
     return t;
   }
   function _objectSpread22(e) {
-    for (var r2 = 1; r2 < arguments.length; r2++) {
-      var t = null != arguments[r2] ? arguments[r2] : {};
-      r2 % 2 ? ownKeys2(Object(t), true).forEach(function(r$1) {
+    for (var r = 1; r < arguments.length; r++) {
+      var t = null != arguments[r] ? arguments[r] : {};
+      r % 2 ? ownKeys2(Object(t), true).forEach(function(r$1) {
         _defineProperty2(e, r$1, t[r$1]);
       }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys2(Object(t)).forEach(function(r$1) {
         Object.defineProperty(e, r$1, Object.getOwnPropertyDescriptor(t, r$1));
@@ -29807,7 +25751,11 @@ ${suffix}`;
       added_date: (/* @__PURE__ */ new Date()).toISOString(),
       wait_until_date: item.waitUntilDate || null,
       difficulty: item.difficulty || null,
-      questionnaire: item.questionnaire
+      questionnaire: item.questionnaire,
+      friend_name: item.friendName?.trim() || null,
+      friend_email: item.friendEmail?.trim() || null,
+      unlock_password: item.unlockPassword?.trim() || null,
+      is_unlocked: false
     };
   }
 
@@ -29825,15 +25773,15 @@ ${suffix}`;
   }
 
   // extension/src/ContentOverlay.tsx
-  var import_jsx_runtime11 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime3 = __toESM(require_jsx_runtime());
   var OVERLAY_ID = "second-thought-overlay";
   function ContentOverlay({ onClose, pageUrl }) {
-    const [session, setSession] = (0, import_react7.useState)(null);
-    const [loading, setLoading] = (0, import_react7.useState)(true);
-    const [showForm, setShowForm] = (0, import_react7.useState)(false);
-    const [showSavedScreen, setShowSavedScreen] = (0, import_react7.useState)(false);
-    const [submitMessage, setSubmitMessage] = (0, import_react7.useState)("");
-    (0, import_react7.useEffect)(() => {
+    const [session, setSession] = (0, import_react5.useState)(null);
+    const [loading, setLoading] = (0, import_react5.useState)(true);
+    const [showForm, setShowForm] = (0, import_react5.useState)(false);
+    const [showSavedScreen, setShowSavedScreen] = (0, import_react5.useState)(false);
+    const [submitMessage, setSubmitMessage] = (0, import_react5.useState)("");
+    (0, import_react5.useEffect)(() => {
       supabase.auth.getSession().then(({ data: { session: session2 } }) => {
         setSession(session2);
         setLoading(false);
@@ -29878,13 +25826,13 @@ ${suffix}`;
       setShowForm(false);
       setSubmitMessage("");
     };
-    const checkUrlInInventory = (0, import_react7.useCallback)(
+    const checkUrlInInventory = (0, import_react5.useCallback)(
       async (url) => {
         if (!session?.user) return false;
         const { data, error } = await supabase.from("items").select("product_url").eq("user_id", session.user.id).not("product_url", "is", null);
         if (error || !data) return false;
         const normalized = normalizeProductUrl(url);
-        return data.some((r2) => r2.product_url && normalizeProductUrl(r2.product_url) === normalized);
+        return data.some((r) => r.product_url && normalizeProductUrl(r.product_url) === normalized);
       },
       [session?.user?.id]
     );
@@ -29893,14 +25841,14 @@ ${suffix}`;
       return { error };
     };
     if (loading) {
-      return /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { id: OVERLAY_ID, className: "st-overlay-root", children: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "st-overlay-backdrop", onClick: handleBackdropClick, children: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "st-overlay-card", children: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("p", { className: "st-overlay-message", children: "Loading..." }) }) }) });
+      return /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { id: OVERLAY_ID, className: "st-overlay-root", children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "st-overlay-backdrop", onClick: handleBackdropClick, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "st-overlay-card", children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { className: "st-overlay-message", children: "Loading..." }) }) }) });
     }
     if (!session) {
-      return /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { id: OVERLAY_ID, onClick: (e) => e.stopPropagation(), children: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "st-overlay-backdrop", onClick: handleBackdropClick, children: /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "st-overlay-card st-overlay-card-form", onClick: (e) => e.stopPropagation(), children: [
-        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("h1", { className: "st-overlay-title", children: "Second Thought" }),
-        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("p", { className: "st-overlay-message", children: "Sign in to save items to your mindful cart." }),
-        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Auth, { onSignIn: handleSignIn, compact: true }),
-        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
+      return /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { id: OVERLAY_ID, onClick: (e) => e.stopPropagation(), children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "st-overlay-backdrop", onClick: handleBackdropClick, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "st-overlay-card st-overlay-card-form", onClick: (e) => e.stopPropagation(), children: [
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("h1", { className: "st-overlay-title", children: "Second Thought" }),
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { className: "st-overlay-message", children: "Sign in to save items to your mindful cart." }),
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Auth, { onSignIn: handleSignIn, compact: true }),
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
           "button",
           {
             type: "button",
@@ -29916,9 +25864,9 @@ ${suffix}`;
       ] }) }) });
     }
     if (showSavedScreen) {
-      return /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { id: OVERLAY_ID, className: "st-overlay-root", onClick: (e) => e.stopPropagation(), children: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "st-overlay-backdrop", onClick: handleBackdropClick, children: /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "st-overlay-card", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("h1", { className: "st-overlay-title", children: "Item saved!" }),
-        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
+      return /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { id: OVERLAY_ID, className: "st-overlay-root", onClick: (e) => e.stopPropagation(), children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "st-overlay-backdrop", onClick: handleBackdropClick, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "st-overlay-card", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("h1", { className: "st-overlay-title", children: "Item saved!" }),
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
           "button",
           {
             type: "button",
@@ -29934,15 +25882,15 @@ ${suffix}`;
       ] }) }) });
     }
     if (showForm) {
-      return /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { id: OVERLAY_ID, className: "st-overlay-root", onClick: (e) => e.stopPropagation(), children: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "st-overlay-backdrop st-overlay-backdrop-form", onClick: handleBackdropClick, children: /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(
+      return /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { id: OVERLAY_ID, className: "st-overlay-root", onClick: (e) => e.stopPropagation(), children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "st-overlay-backdrop st-overlay-backdrop-form", onClick: handleBackdropClick, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(
         "div",
         {
           className: "st-overlay-card st-overlay-card-form",
           onClick: (e) => e.stopPropagation(),
           onMouseDown: (e) => e.stopPropagation(),
           children: [
-            submitMessage && /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "mb-3 p-3 rounded-xl text-sm bg-primary/10 border border-primary/20 text-foreground", children: submitMessage }),
-            /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
+            submitMessage && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "mb-3 p-3 rounded-xl text-sm bg-primary/10 border border-primary/20 text-foreground", children: submitMessage }),
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
               AddItemForm,
               {
                 onSubmit: handleSubmit,
@@ -29955,11 +25903,11 @@ ${suffix}`;
         }
       ) }) });
     }
-    return /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { id: OVERLAY_ID, onClick: (e) => e.stopPropagation(), children: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "st-overlay-backdrop", onClick: handleBackdropClick, children: /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "st-overlay-card", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("h1", { className: "st-overlay-title", children: "Second Thought" }),
-      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("p", { className: "st-overlay-message", children: "Would you like to give this purchase a second thought?" }),
-      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("button", { type: "button", className: "st-overlay-btn-primary", onClick: handleAddToMindfulCart, children: "Add to mindful cart" }),
-      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
+    return /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { id: OVERLAY_ID, onClick: (e) => e.stopPropagation(), children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "st-overlay-backdrop", onClick: handleBackdropClick, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "st-overlay-card", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("h1", { className: "st-overlay-title", children: "Second Thought" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { className: "st-overlay-message", children: "Would you like to give this purchase a second thought?" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { type: "button", className: "st-overlay-btn-primary", onClick: handleAddToMindfulCart, children: "Add to mindful cart" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
         "button",
         {
           type: "button",
@@ -29975,10 +25923,67 @@ ${suffix}`;
     ] }) }) });
   }
 
+  // lib/fetchUserProductUrls.ts
+  async function fetchItemByProductUrlWithClient(supabaseClient, userId, pageUrl) {
+    try {
+      const { data, error } = await supabaseClient.from("items").select("product_url, wait_until_date, friend_name, is_unlocked, goal").eq("user_id", userId).not("product_url", "is", null);
+      if (error) return { item: null, error };
+      const rows = data || [];
+      const normalizedPage = normalizeProductUrl(pageUrl);
+      const match = rows.find(
+        (r) => r.product_url && normalizeProductUrl(r.product_url) === normalizedPage
+      );
+      if (!match) return { item: null, error: null };
+      return {
+        item: {
+          wait_until_date: match.wait_until_date,
+          friend_name: match.friend_name,
+          is_unlocked: match.is_unlocked,
+          goal: match.goal
+        },
+        error: null
+      };
+    } catch (error) {
+      return { item: null, error };
+    }
+  }
+
+  // lib/dateUtils.ts
+  function daysRemainingUntil(dateStr) {
+    if (!dateStr || !dateStr.trim()) return 0;
+    try {
+      const d = new Date(dateStr.trim());
+      if (Number.isNaN(d.getTime())) return 0;
+      const today = /* @__PURE__ */ new Date();
+      today.setHours(0, 0, 0, 0);
+      d.setHours(0, 0, 0, 0);
+      const diffMs = d.getTime() - today.getTime();
+      const days = Math.floor(diffMs / (24 * 60 * 60 * 1e3));
+      return Math.max(0, days);
+    } catch {
+      return 0;
+    }
+  }
+  function formatUnlockDate(dateStr) {
+    if (!dateStr || !dateStr.trim()) return "\u2014";
+    try {
+      const d = new Date(dateStr.trim());
+      if (Number.isNaN(d.getTime())) return "\u2014";
+      return d.toLocaleDateString(void 0, {
+        month: "short",
+        day: "numeric",
+        year: "numeric"
+      });
+    } catch {
+      return "\u2014";
+    }
+  }
+
   // extension/src/content.tsx
-  var import_jsx_runtime12 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime4 = __toESM(require_jsx_runtime());
   var DEBUG = false;
   var CLOSE_COOLDOWN_MS = 800;
+  var BANNER_ID = "second-thought-url-banner";
   var lastOverlayCloseTime = 0;
   function showOverlay() {
     const doc = document;
@@ -30001,7 +26006,7 @@ ${suffix}`;
       doc.body.style.overflow = "";
     }
     root.render(
-      /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(ContentOverlay, { onClose: handleClose, pageUrl: doc.location?.href })
+      /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(ContentOverlay, { onClose: handleClose, pageUrl: doc.location?.href })
     );
   }
   function onDocumentClick(e) {
@@ -30011,8 +26016,128 @@ ${suffix}`;
     if (DEBUG) console.log("Second Thought: add-to-cart detected", addToCartEl);
     setTimeout(showOverlay, 100);
   }
+  function showUrlBanner(content) {
+    const doc = document;
+    if (doc.getElementById(BANNER_ID)) return;
+    const bar = doc.createElement("div");
+    bar.id = BANNER_ID;
+    const variantClass = content.variant === "unlocked" ? "st-url-banner st-url-banner--unlocked" : content.variant === "goals" ? "st-url-banner st-url-banner--goals" : "st-url-banner st-url-banner--time";
+    bar.className = variantClass;
+    const headingHtml = escapeHtml(content.title);
+    const subtitleHtml = content.subtitle ? escapeHtml(content.subtitle) : "";
+    const linesHtml = content.lines.map((line) => {
+      if (line.kind === "metrics") {
+        const [daysRaw, unlockRaw] = line.value.split("|");
+        const days = escapeHtml(daysRaw ?? "");
+        const unlock = escapeHtml(unlockRaw ?? "");
+        return `
+          <div class="st-url-banner-line st-url-banner-line--metrics">
+            <span class="st-url-banner-line-label">Days remaining:</span>
+            <span class="st-url-banner-line-value st-url-banner-line-value-days">${days}</span>
+            <span class="st-url-banner-line-separator">\xB7</span>
+            <span class="st-url-banner-line-label st-url-banner-line-label-unlock">Unlocks on:</span>
+            <span class="st-url-banner-line-value st-url-banner-line-value-unlock">${unlock}</span>
+          </div>
+        `;
+      }
+      const value = escapeHtml(line.value);
+      if (line.label) {
+        const label = escapeHtml(line.label);
+        return `<div class="st-url-banner-line"><span class="st-url-banner-line-label">${label}</span><span class="st-url-banner-line-value">${value}</span></div>`;
+      }
+      return `<div class="st-url-banner-line"><span class="st-url-banner-line-value">${value}</span></div>`;
+    }).join("");
+    bar.innerHTML = `
+    <div class="st-url-banner-inner">
+      <div class="st-url-banner-content">
+        <div class="st-url-banner-heading-row">
+          <div class="st-url-banner-heading">${headingHtml}</div>
+          ${subtitleHtml ? `<div class="st-url-banner-subtitle">${subtitleHtml}</div>` : ""}
+        </div>
+        <div class="st-url-banner-lines">
+          ${linesHtml}
+        </div>
+      </div>
+      <button type="button" class="st-url-banner-dismiss" aria-label="Dismiss">\xD7</button>
+    </div>
+  `;
+    const dismiss = bar.querySelector(".st-url-banner-dismiss");
+    if (dismiss) {
+      dismiss.addEventListener("click", () => {
+        bar.remove();
+      });
+    }
+    doc.body.insertBefore(bar, doc.body.firstChild);
+  }
+  function escapeHtml(s) {
+    const div = document.createElement("div");
+    div.textContent = s;
+    return div.innerHTML;
+  }
+  async function checkUrlAndShowBanner() {
+    if (window !== window.top) return;
+    const url = document.location?.href || "";
+    if (!url || url.startsWith("chrome:") || url.startsWith("edge:") || url.startsWith("about:")) return;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) return;
+      const { item, error } = await fetchItemByProductUrlWithClient(supabase, session.user.id, url);
+      if (error || !item) return;
+      if (item.is_unlocked) {
+        const isTimeBased = !!item.wait_until_date;
+        showUrlBanner({
+          variant: "unlocked",
+          title: "Mindfulness constraint reached",
+          lines: [
+            { value: isTimeBased ? "Time-based constraint \u23F3" : "Goals-based constraint \u{1F3AF}" },
+            ...item.goal?.trim() && !isTimeBased ? [{ label: "Your goal:", value: item.goal.trim() }] : [],
+            { value: "Congrats on unlocking this item and making a more mindful purchase!" }
+          ]
+        });
+        return;
+      }
+      if (item.wait_until_date) {
+        const days = daysRemainingUntil(item.wait_until_date);
+        const unlockDate = formatUnlockDate(item.wait_until_date);
+        showUrlBanner({
+          variant: "time",
+          title: "Mindful constraint active",
+          lines: [
+            { value: "Time-based constraint \u23F3" },
+            {
+              kind: "metrics",
+              value: `${days}|${unlockDate}`
+            }
+          ]
+        });
+      } else {
+        const friendLabel = item.friend_name?.trim() || "your friend";
+        const goalText = item.goal?.trim();
+        showUrlBanner({
+          variant: "goals",
+          title: "Mindful constraint active",
+          lines: [
+            { value: "Goals-based constraint \u{1F3AF}" },
+            ...goalText ? [{ label: "Your goal:", value: goalText }] : [],
+            {
+              value: `To unlock this item, complete your goal and enter the password from ${friendLabel}.`
+            }
+          ]
+        });
+      }
+    } catch {
+    }
+  }
   function init() {
     document.addEventListener("click", onDocumentClick, true);
+    chrome.runtime?.onMessage?.addListener((message) => {
+      if (message.type === "SHOW_URL_BANNER" && window === window.top) {
+        checkUrlAndShowBanner();
+      }
+    });
+    if (window === window.top) {
+      checkUrlAndShowBanner();
+    }
     if (DEBUG) console.log("Second Thought: content script loaded");
   }
   init();
