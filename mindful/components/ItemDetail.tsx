@@ -1,6 +1,6 @@
-import type { Item, QuestionAnswer } from '../types/item';
-import { ArrowLeft, Calendar, Target, Trash2, ShoppingBag, Lock } from 'lucide-react';
-import { useState } from 'react';
+import type { Item, QuestionAnswer, ItemCategory } from '../types/item';
+import { ArrowLeft, Calendar, Target, Trash2, ShoppingBag, Lock, ChevronDown, Check } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
 import { DeleteReasonDialog } from './DeleteReasonDialog';
 import { UnlockedItemRemoveDialog } from './UnlockedItemRemoveDialog';
 import type { DidntBuySubReason } from './UnlockedItemRemoveDialog';
@@ -13,12 +13,14 @@ export interface DeletionReasonData {
 interface ItemDetailProps {
   item: Item;
   onBack: () => void;
+  backLabel?: string;
   onDelete: (itemId: string, deletionReason?: DeletionReasonData) => void;
   /** Called when time has passed or goal password is correct; updates is_unlocked to true (does not delete). */
   onUnlock?: (itemId: string) => void;
   /** When true, this item is from the Unlocked tab; Delete shows reconsideration dialog and calls onRemoveUnlocked instead of onDelete. */
   isUnlockedItem?: boolean;
   onRemoveUnlocked?: (itemId: string, subReason: DidntBuySubReason | string) => void;
+  onUpdateCategory?: (itemId: string, category: ItemCategory) => void;
 }
 
 // Check if the item's constraint (time or goal) has been completed
@@ -117,7 +119,9 @@ function generateMindfulnessExplanation(questionnaire: QuestionAnswer[], finalSc
   return explanation;
 }
 
-export function ItemDetail({ item, onBack, onDelete, onUnlock, isUnlockedItem, onRemoveUnlocked }: ItemDetailProps) {
+const CATEGORY_OPTIONS: ItemCategory[] = ['Beauty', 'Clothes', 'Accessories', 'Sports', 'Electronics', 'Home', 'Other'];
+
+export function ItemDetail({ item, onBack, backLabel = 'Back to list', onDelete, onUnlock, isUnlockedItem, onRemoveUnlocked, onUpdateCategory }: ItemDetailProps) {
   const [unlockPassword, setUnlockPassword] = useState('');
   const [unlockError, setUnlockError] = useState('');
   const [unlockSuccess, setUnlockSuccess] = useState(false);
@@ -125,6 +129,24 @@ export function ItemDetail({ item, onBack, onDelete, onUnlock, isUnlockedItem, o
   const [showDeleteReasonDialog, setShowDeleteReasonDialog] = useState(false);
   const [showUnlockedRemoveDialog, setShowUnlockedRemoveDialog] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<ItemCategory>(item.category ?? 'Other');
+  const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
+  const categoryRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    setSelectedCategory(item.category ?? 'Other');
+  }, [item.id, item.category]);
+
+  useEffect(() => {
+    if (!isCategoryMenuOpen) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (categoryRef.current && !categoryRef.current.contains(e.target as Node)) {
+        setIsCategoryMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isCategoryMenuOpen]);
 
   const isAlreadyUnlocked = item.isUnlocked === true;
 
@@ -218,30 +240,158 @@ export function ItemDetail({ item, onBack, onDelete, onUnlock, isUnlockedItem, o
         onOpenChange={setShowUnlockedRemoveDialog}
         onConfirm={handleUnlockedRemoveConfirm}
       />
-      <button
-        onClick={onBack}
-        className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors"
-      >
-        <ArrowLeft className="w-5 h-5" />
-        Back to list
-      </button>
 
-      <div className="bg-card rounded-2xl shadow-sm border border-border/50 overflow-hidden">
-        <div className="grid md:grid-cols-2 gap-6 p-8">
-          {/* Image */}
-          <div className="aspect-square bg-muted/30 rounded-xl overflow-hidden flex items-center justify-center">
-            {(item.imageUrl && item.imageUrl.trim()) ? (
-              <img
-                src={item.imageUrl.trim()}
-                alt={item.name}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.currentTarget.src = 'https://via.placeholder.com/400/e5e7eb/9ca3af?text=No+Image';
-                }}
+      {/* Header row: Back + Category aligned on one line */}
+      <div className="mb-6 flex items-center justify-between gap-4">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          {backLabel}
+        </button>
+
+        <div className="flex items-center gap-3" ref={categoryRef}>
+          <span className="text-sm font-medium text-foreground/70 tracking-wide">
+            Category:
+          </span>
+          <div className="relative inline-flex items-center">
+            <button
+              type="button"
+              onClick={() => setIsCategoryMenuOpen((open) => !open)}
+              className="flex items-center gap-1 px-4 py-2 rounded-lg border border-border bg-card text-foreground hover:bg-muted/30 transition-colors min-w-[180px] justify-between text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/60 cursor-pointer"
+            >
+              <span>{selectedCategory}</span>
+              <ChevronDown
+                className={`w-4 h-4 shrink-0 transition-transform ${isCategoryMenuOpen ? 'rotate-180' : ''}`}
               />
-            ) : (
-              <ShoppingBag className="w-20 h-20 text-muted-foreground/30" />
+            </button>
+            {isCategoryMenuOpen && (
+              <div className="absolute top-full right-0 mt-1 w-56 rounded-lg border border-border bg-card shadow-lg py-1 z-10">
+                {CATEGORY_OPTIONS.map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => {
+                      setSelectedCategory(cat);
+                      onUpdateCategory?.(item.id, cat);
+                      setIsCategoryMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left hover:bg-muted/50 transition-colors ${
+                      cat === selectedCategory
+                        ? 'bg-muted/40 text-foreground font-medium'
+                        : 'text-foreground'
+                    }`}
+                  >
+                    {cat === selectedCategory && (
+                      <Check className="w-4 h-4 text-primary shrink-0" />
+                    )}
+                    {! (cat === selectedCategory) && (
+                      <span className="w-4 h-4 shrink-0" />
+                    )}
+                    <span>{cat}</span>
+                  </button>
+                ))}
+              </div>
             )}
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-card rounded-2xl shadow-sm border-2 border-border overflow-hidden">
+        {/* Unlocked banner: above photo and title */}
+        {(isUnlockedItem || isAlreadyUnlocked) && item.productUrl && (
+          <div className="border-b-2 px-6 py-4 flex items-center justify-center gap-2" style={{ background: '#d7e4d8', borderColor: '#A3B9A4', color: '#064e3b' }}>
+            <span className="text-2xl" aria-hidden>🔓</span>
+            <p className="text-sm font-medium">
+              You have unlocked this item!{' '}
+              <a
+                href={item.productUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold underline underline-offset-2 decoration-2"
+                style={{ color: '#064e3b' }}
+              >
+              Go to Item Page
+              </a>
+            </p>
+          </div>
+        )}
+
+        <div className="grid md:grid-cols-2 gap-6 p-8">
+          {/* Image + Time-Based Constraint (when applicable) */}
+          <div className="flex flex-col gap-4">
+            <div className="aspect-square bg-muted/30 rounded-xl overflow-hidden flex items-center justify-center">
+              {(item.imageUrl && item.imageUrl.trim()) ? (
+                <img
+                  src={item.imageUrl.trim()}
+                  alt={item.name}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = 'https://via.placeholder.com/400/e5e7eb/9ca3af?text=No+Image';
+                  }}
+                />
+              ) : (
+                <ShoppingBag className="w-20 h-20 text-muted-foreground/30" />
+              )}
+            </div>
+
+            {item.constraintType === 'time' && item.waitUntilDate && (
+              <div className="flex items-center gap-3 p-5 bg-primary/10 rounded-xl border-2 border-primary/40">
+                <Calendar className="w-5 h-5 text-primary flex-shrink-0" />
+                <div>
+                  <div className="text-sm text-foreground/80 font-medium">Time-Based Constraint</div>
+                  <div className="text-primary font-medium">
+                    Wait until {new Date(item.waitUntilDate).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Goals-based: Your Goal + Unlock Guardian + difficulty below image */}
+            {item.constraintType === 'goals' && (() => {
+              const goalQuestion = item.questionnaire?.find(qa => qa.id === 'goal');
+              return (
+                <div className="flex flex-col gap-4">
+                  {goalQuestion && goalQuestion.answer && (
+                    <div className="p-5 bg-secondary/20 rounded-xl border-2 border-secondary/50">
+                      <div className="flex items-start gap-3">
+                        <Target className="w-5 h-5 text-accent mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <div className="text-sm text-foreground/80 font-medium mb-2">Your Goal</div>
+                          <p className="text-foreground/90 leading-relaxed mb-3">
+                            {goalQuestion.answer}
+                          </p>
+                          {item.friendName && (
+                            <div className="pt-3 border-t border-secondary/30">
+                              <div className="text-xs text-foreground/70 mb-1">Unlock Guardian</div>
+                              <div className="text-sm font-medium text-accent">
+                                {item.friendName}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {item.difficulty && (
+                    <div className="flex items-center gap-3 p-5 bg-secondary/30 rounded-xl border-2 border-secondary/50">
+                      <Target className="w-5 h-5 text-accent flex-shrink-0" />
+                      <div>
+                        <div className="text-sm text-foreground/80 font-medium">Goals-Based Constraint</div>
+                        <div className="text-accent font-medium capitalize">
+                          {item.difficulty} difficulty
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
 
           {/* Details */}
@@ -251,8 +401,8 @@ export function ItemDetail({ item, onBack, onDelete, onUnlock, isUnlockedItem, o
                 {item.name}
               </h1>
 
-              <div className="space-y-4 mb-6">
-                <div className="p-5 bg-muted/30 rounded-xl space-y-3">
+              <div className="space-y-5">
+                <div className="p-5 rounded-xl space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-foreground/80">Mindfulness Score</span>
                     <span className={`text-2xl font-semibold font-serif ${
@@ -270,36 +420,12 @@ export function ItemDetail({ item, onBack, onDelete, onUnlock, isUnlockedItem, o
                   )}
                 </div>
 
-                {/* Goal description for goals-based items */}
-                {item.constraintType === 'goals' && (() => {
-                  const goalQuestion = item.questionnaire?.find(qa => qa.id === 'goal');
-                  return (
-                    <div className="space-y-4">
-                      {goalQuestion && goalQuestion.answer && (
-                        <div className="p-5 bg-secondary/20 rounded-xl border border-secondary/30">
-                          <div className="flex items-start gap-3">
-                            <Target className="w-5 h-5 text-accent mt-0.5 flex-shrink-0" />
-                            <div className="flex-1">
-                              <div className="text-sm text-foreground/80 font-medium mb-2">Your Goal</div>
-                              <p className="text-foreground/90 leading-relaxed mb-3">
-                                {goalQuestion.answer}
-                              </p>
-                              {item.friendName && (
-                                <div className="pt-3 border-t border-secondary/30">
-                                  <div className="text-xs text-foreground/70 mb-1">Unlock Guardian</div>
-                                  <div className="text-sm font-medium text-accent">
-                                    {item.friendName}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
+                {/* Goal: Unlock Password form only (goal + difficulty boxes moved below image) */}
+                {item.constraintType === 'goals' && (
+                  <div className="space-y-4">
                       {/* Unlock Password Input - hide when viewing from Unlocked tab or if item already unlocked */}
                       {!isUnlockedItem && !isAlreadyUnlocked && (
-                        <form onSubmit={handleUnlock} className="p-5 bg-primary/10 rounded-xl border border-primary/20">
+                        <form onSubmit={handleUnlock} className="p-5 bg-primary/10 rounded-xl border-2 border-primary/40">
                           <div className="flex items-start gap-3">
                             <Lock className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
                             <div className="flex-1">
@@ -363,50 +489,21 @@ export function ItemDetail({ item, onBack, onDelete, onUnlock, isUnlockedItem, o
                         </form>
                       )}
                     </div>
-                  );
-                })()}
-
-                {item.constraintType === 'time' && item.waitUntilDate && (
-                  <div className="flex items-center gap-3 p-5 bg-primary/10 rounded-xl border border-primary/20">
-                    <Calendar className="w-5 h-5 text-primary" />
-                    <div>
-                      <div className="text-sm text-foreground/80 font-medium">Time-Based Constraint</div>
-                      <div className="text-primary font-medium">
-                        Wait until {new Date(item.waitUntilDate).toLocaleDateString('en-US', { 
-                          year: 'numeric', 
-                          month: 'long', 
-                          day: 'numeric' 
-                        })}
-                      </div>
-                    </div>
-                  </div>
                 )}
+              </div>
 
-                {item.constraintType === 'goals' && item.difficulty && (
-                  <div className="flex items-center gap-3 p-5 bg-secondary/30 rounded-xl border border-secondary/40">
-                    <Target className="w-5 h-5 text-accent" />
-                    <div>
-                      <div className="text-sm text-foreground/80 font-medium">Goals-Based Constraint</div>
-                      <div className="text-accent font-medium capitalize">
-                        {item.difficulty} difficulty
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div className="text-sm text-muted-foreground">
-                  Added on {new Date(item.addedDate).toLocaleDateString('en-US', { 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
-                  })}
-                </div>
+              <div className="text-sm text-muted-foreground px-5 mt-1 mb-3">
+                Added on {new Date(item.addedDate).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}
               </div>
             </div>
 
             <button
               onClick={handleDelete}
-              className="flex items-center justify-center gap-2 w-full px-4 py-3 border border-destructive/30 text-destructive rounded-xl hover:bg-destructive/10 transition-colors"
+              className="flex items-center justify-center gap-2 w-full px-4 py-3 border-2 border-destructive/50 text-destructive rounded-xl hover:bg-destructive/10 transition-colors"
             >
               <Trash2 className="w-4 h-4" />
               {isUnlockedItem ? 'Remove from list' : 'Delete Item'}
@@ -415,7 +512,7 @@ export function ItemDetail({ item, onBack, onDelete, onUnlock, isUnlockedItem, o
         </div>
 
         {/* Questionnaire Answers */}
-        <div className="border-t border-border/50 p-8">
+        <div className="border-t-2 border-border/60 p-8">
           <h2 className="text-2xl font-serif text-foreground mb-6">
             Your Reflections
           </h2>
@@ -461,7 +558,7 @@ export function ItemDetail({ item, onBack, onDelete, onUnlock, isUnlockedItem, o
 
       {showCelebration && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-          <div className="relative max-w-md w-full mx-4 bg-card rounded-3xl shadow-xl border border-primary/30 px-8 py-10 text-center overflow-hidden">
+          <div className="relative max-w-md w-full mx-4 bg-card rounded-3xl shadow-xl border-2 border-primary/50 px-8 py-10 text-center overflow-hidden">
             <div className="absolute inset-0 pointer-events-none">
               <div className="confetti-container">
                 {Array.from({ length: 80 }).map((_, index) => (

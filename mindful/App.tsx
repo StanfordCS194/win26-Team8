@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Home } from './components/Home';
 import { ItemDetail } from './components/ItemDetail';
 import { AddItemForm } from './components/AddItemForm';
@@ -7,13 +7,13 @@ import { GoalsBasedView } from './components/GoalsBasedView';
 import { OurMission } from './components/OurMission';
 import { Profile } from './components/Profile';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { fetchItems, deleteItem as deleteItemDb, updateItemUnlocked } from './lib/database';
+import { fetchItems, deleteItem as deleteItemDb, updateItemUnlocked, updateItemCategory } from './lib/database';
 import { saveItemDirect, saveDeletionReasonDirect } from './lib/database-alt';
 import { normalizeProductUrl } from './lib/urlUtils';
 import { Plus, User } from 'lucide-react';
 import './styles/globals.css';
 import logoImage from './assets/logo.png';
-import type { Item } from './types/item';
+import type { Item, ItemCategory } from './types/item';
 import type { DeletionReasonData } from './components/ItemDetail';
 
 const FETCH_ITEMS_TIMEOUT_MS = 20000;
@@ -22,10 +22,13 @@ type View = 'home' | 'item' | 'add' | 'time' | 'goals' | 'mission' | 'profile';
 
 function AppContent() {
   const { user, session, loading } = useAuth();
+  const appScrollRef = useRef<HTMLDivElement | null>(null);
   const [items, setItems] = useState<Item[]>([]);
   const [currentView, setCurrentView] = useState<View>('mission');
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [itemOriginView, setItemOriginView] = useState<'home' | 'time' | 'goals'>('home');
   const [homeSubtab, setHomeSubtab] = useState<'locked' | 'unlocked'>('locked');
+  const [goalsSubtab, setGoalsSubtab] = useState<'locked' | 'unlocked'>('locked');
   const [refreshingItems, setRefreshingItems] = useState(false);
   const [itemsLoading, setItemsLoading] = useState(false);
   const [itemsLoadError, setItemsLoadError] = useState<string | null>(null);
@@ -295,10 +298,20 @@ function AppContent() {
     }
   };
 
-  const handleItemClick = (itemId: string) => {
+  const handleItemClick = (itemId: string, originView: 'home' | 'time' | 'goals' = 'home') => {
+    setItemOriginView(originView);
     setSelectedItemId(itemId);
     setCurrentView('item');
   };
+
+  useEffect(() => {
+    if (currentView !== 'item' || !selectedItemId) return;
+    // Scroll both container and window after item view mounts.
+    requestAnimationFrame(() => {
+      appScrollRef.current?.scrollTo({ top: 0, behavior: 'auto' });
+      window.scrollTo({ top: 0, behavior: 'auto' });
+    });
+  }, [currentView, selectedItemId]);
 
   const handleUnlockItem = async (itemId: string) => {
     if (!user) return;
@@ -367,6 +380,32 @@ function AppContent() {
 
   const selectedItem = items.find((i) => i.id === selectedItemId);
   const isSelectedUnlockedItem = selectedItem?.isUnlocked === true;
+  const highlightedTopNavView: View = currentView === 'item' ? itemOriginView : currentView;
+
+  const handleUpdateItemCategory = async (itemId: string, category: ItemCategory) => {
+    if (!user) return;
+
+    const localKey = `secondThought_user_${user.id}_items`;
+    const previousItems = items;
+
+    // Optimistic update
+    const updatedItems = items.map((i) =>
+      i.id === itemId ? { ...i, category } : i
+    );
+    setItems(updatedItems);
+    localStorage.setItem(localKey, JSON.stringify(updatedItems));
+
+    const { success, error } = await updateItemCategory(itemId, user.id, category);
+    if (!success) {
+      console.error('Failed to update category:', error);
+      const errorMsg = error?.message || error?.toString() || 'Unknown error';
+      alert(`Failed to update category.\n\nError: ${errorMsg}`);
+
+      // Roll back on failure
+      setItems(previousItems);
+      localStorage.setItem(localKey, JSON.stringify(previousItems));
+    }
+  };
 
   const handleRemoveUnlockedItem = async (itemId: string, subReason?: string) => {
     if (!user) return;
@@ -407,8 +446,10 @@ function AppContent() {
   };
 
   const handleBackFromItem = () => {
-    setHomeSubtab(selectedItem?.isUnlocked ? 'unlocked' : 'locked');
-    setCurrentView('home');
+    if (itemOriginView === 'home') {
+      setHomeSubtab(selectedItem?.isUnlocked ? 'unlocked' : 'locked');
+    }
+    setCurrentView(itemOriginView);
     setSelectedItemId(null);
   };
 
@@ -523,10 +564,10 @@ function AppContent() {
   };
 
   return (
-    <div className="w-full min-h-screen bg-background overflow-y-auto relative">
+    <div ref={appScrollRef} className="w-full min-h-screen bg-background overflow-y-auto relative">
       {/* Header */}
       <header className="bg-card/80 backdrop-blur-sm border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
             <img
               src={typeof logoImage === 'string' ? logoImage : (logoImage as any).default || (logoImage as any).uri || logoImage}
@@ -539,8 +580,8 @@ function AppContent() {
               <nav className="flex gap-1">
                 <button
                   onClick={() => setCurrentView('mission')}
-                  className={`px-4 py-2 font-medium text-sm transition-colors rounded-lg ${
-                    currentView === 'mission'
+                  className={`px-4 py-1.5 font-medium text-sm transition-colors rounded-lg ${
+                    highlightedTopNavView === 'mission'
                       ? 'bg-primary text-primary-foreground'
                       : 'text-[#255736] hover:bg-muted/30'
                   }`}
@@ -549,8 +590,8 @@ function AppContent() {
                 </button>
                 <button
                   onClick={() => setCurrentView('home')}
-                  className={`px-4 py-2 font-medium text-sm transition-colors rounded-lg ${
-                    currentView === 'home'
+                  className={`px-4 py-1.5 font-medium text-sm transition-colors rounded-lg ${
+                    highlightedTopNavView === 'home'
                       ? 'bg-primary text-primary-foreground'
                       : 'text-[#255736] hover:bg-muted/30'
                   }`}
@@ -559,8 +600,8 @@ function AppContent() {
                 </button>
                 <button
                   onClick={() => setCurrentView('time')}
-                  className={`px-4 py-2 font-medium text-sm transition-colors rounded-lg ${
-                    currentView === 'time'
+                  className={`px-4 py-1.5 font-medium text-sm transition-colors rounded-lg ${
+                    highlightedTopNavView === 'time'
                       ? 'bg-primary text-primary-foreground'
                       : 'text-[#255736] hover:bg-muted/30'
                   }`}
@@ -569,8 +610,8 @@ function AppContent() {
                 </button>
                 <button
                   onClick={() => setCurrentView('goals')}
-                  className={`px-4 py-2 font-medium text-sm transition-colors rounded-lg ${
-                    currentView === 'goals'
+                  className={`px-4 py-1.5 font-medium text-sm transition-colors rounded-lg ${
+                    highlightedTopNavView === 'goals'
                       ? 'bg-primary text-primary-foreground'
                       : 'text-[#255736] hover:bg-muted/30'
                   }`}
@@ -598,7 +639,7 @@ function AppContent() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-16">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-16">
         {currentView === 'mission' && (
           <OurMission onGetStarted={() => setCurrentView('home')} userEmail={user?.email} />
         )}
@@ -608,7 +649,7 @@ function AppContent() {
               items={items}
               activeSubtab={homeSubtab}
               onSubtabChange={setHomeSubtab}
-              onItemClick={handleItemClick}
+              onItemClick={(itemId) => handleItemClick(itemId, 'home')}
               onAddItem={() => setCurrentView('add')}
               onRefresh={handleRefreshItems}
               onRetry={loadItems}
@@ -625,10 +666,18 @@ function AppContent() {
             <ItemDetail
               item={selectedItem}
               onBack={handleBackFromItem}
+              backLabel={
+                itemOriginView === 'time'
+                  ? 'Back to Timeline'
+                  : itemOriginView === 'goals'
+                  ? 'Back to Goals'
+                  : 'Back to All Items'
+              }
               onDelete={handleDeleteItem}
               onUnlock={handleUnlockItem}
               isUnlockedItem={isSelectedUnlockedItem}
               onRemoveUnlocked={handleRemoveUnlockedItem}
+              onUpdateCategory={handleUpdateItemCategory}
             />
           ) : (
             <SignInRequired />
@@ -652,7 +701,7 @@ function AppContent() {
           user ? (
             <TimeBasedView
               items={items}
-              onItemClick={handleItemClick}
+              onItemClick={(itemId) => handleItemClick(itemId, 'time')}
               onAddItem={() => setCurrentView('add')}
             />
           ) : (
@@ -663,7 +712,9 @@ function AppContent() {
           user ? (
             <GoalsBasedView
               items={items}
-              onItemClick={handleItemClick}
+              activeSubtab={goalsSubtab}
+              onSubtabChange={setGoalsSubtab}
+              onItemClick={(itemId) => handleItemClick(itemId, 'goals')}
               onAddItem={() => setCurrentView('add')}
             />
           ) : (
