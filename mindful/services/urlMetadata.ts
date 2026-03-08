@@ -98,7 +98,7 @@ async function inferProductNameFromUrl(url: string): Promise<string | null> {
         messages: [
           {
             role: 'user',
-            content: `Extract the product name from this URL. Return ONLY the product name, nothing else. If you cannot determine a product name, return "Unknown Product".
+            content: `Extract a short, concise product name from this URL. Keep it brief (2-5 words max, e.g. "Nike Air Max 90" not "Nike Air Max 90 Men's Running Shoe - Black/White - Size 10"). Drop store names, descriptions, colors, sizes, and extra details. Return ONLY the short product name, nothing else. If you cannot determine a product name, return "Unknown Product".
 
 URL: ${url}`,
           },
@@ -135,8 +135,8 @@ export async function fetchUrlMetadata(url: string): Promise<UrlMetadata> {
     inferProductNameFromUrl(url),
   ]);
 
-  // Prefer scraped title (more accurate), fall back to AI
-  const title = scraped.title || aiTitle;
+  // Prefer AI title (shorter/cleaner), fall back to scraped
+  const title = aiTitle || scraped.title;
   const image = scraped.image;
   console.log('Final result — scraped:', scraped.title, '| AI:', aiTitle, '| using:', title);
   return { title, image };

@@ -115,7 +115,7 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl, checkUrlInInventor
   const [constraintType, setConstraintType] = useState<'time' | 'goals'>('time');
   const [waitUntilDate, setWaitUntilDate] = useState('');
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
-  const [consumptionScore, setConsumptionScore] = useState(1);
+  const [consumptionScore, setConsumptionScore] = useState(3);
   const [goalDescription, setGoalDescription] = useState('');
   const [friendName, setFriendName] = useState('');
   const [friendEmail, setFriendEmail] = useState('');
@@ -166,7 +166,7 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl, checkUrlInInventor
     setConstraintType('time');
     setWaitUntilDate('');
     setDifficulty('medium');
-    setConsumptionScore(1);
+    setConsumptionScore(3);
     setQuestions([]);
     setQuestionsUsedFallback(false);
     setAnswers({});
@@ -174,6 +174,18 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl, checkUrlInInventor
     setFriendName('');
     setFriendEmail('');
     setShowAlreadyInInventory(false);
+  };
+
+  const handleNameBlur = async () => {
+    const trimmed = name.trim();
+    if (trimmed.length < 2) return;
+    try {
+      const detectedCategory = await detectCategory(trimmed);
+      setCategory(detectedCategory);
+      setCategoryIsAISuggested(true);
+    } catch {
+      // keep current category on error
+    }
   };
 
   const handleFetchMetadata = async () => {
@@ -292,7 +304,7 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl, checkUrlInInventor
 
       const initialAnswers: Record<string, number> = {};
       generatedQuestions.forEach((q) => {
-        initialAnswers[q.id] = 1;
+        initialAnswers[q.id] = 3;
       });
       setAnswers(initialAnswers);
 
@@ -303,7 +315,7 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl, checkUrlInInventor
       setQuestions(DEFAULT_QUESTIONS);
       const initialAnswers: Record<string, number> = {};
       DEFAULT_QUESTIONS.forEach((q) => {
-        initialAnswers[q.id] = 1;
+        initialAnswers[q.id] = 3;
       });
       setAnswers(initialAnswers);
       setStep(2);
@@ -351,7 +363,7 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl, checkUrlInInventor
       ...questions.map((q) => ({
         id: q.id,
         question: q.question,
-        answer: String(answers[q.id] || 1),
+        answer: String(answers[q.id] || 3),
       })),
     ];
 
@@ -464,6 +476,7 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl, checkUrlInInventor
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              onBlur={handleNameBlur}
               placeholder="Auto-filled from URL, or type manually"
               className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
             />
@@ -579,58 +592,64 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl, checkUrlInInventor
             <div className="space-y-6">
               {/* Consumption Score - Question 1 */}
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="block text-sm font-medium text-foreground/80">
-                    1. Rank your need for this item (1 = need less, 5 = need more)
-                  </label>
-                  <span className="text-lg font-semibold text-primary">
-                    {consumptionScore}/5
-                  </span>
+                <label className="block text-sm font-medium text-foreground/80">
+                  1. Rank your need for this item (1 = need less, 5 = need more)
+                </label>
+                <div className="flex items-center justify-center gap-3">
+                  {[1, 2, 3, 4, 5].map((value) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setConsumptionScore(value)}
+                      className={`w-10 h-10 rounded-full font-semibold text-sm transition-all ${
+                        consumptionScore === value
+                          ? 'bg-primary text-primary-foreground scale-110 shadow-md'
+                          : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:scale-105'
+                      }`}
+                    >
+                      {value}
+                    </button>
+                  ))}
                 </div>
-                <Slider
-                  value={[consumptionScore]}
-                  onValueChange={(value) => setConsumptionScore(value[0])}
-                  min={1}
-                  max={5}
-                  step={1}
-                  className="w-full"
-                />
                 <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>1 - Need Less</span>
-                  <span>5 - Need More</span>
+                  <span>Need Less</span>
+                  <span>Need More</span>
                 </div>
               </div>
 
               {/* Dynamic Questionnaire - Questions 2, 3, 4, etc. */}
               {questions.map((q, index) => {
-                const currentValue = answers[q.id] || 1;
+                const currentValue = answers[q.id] || 3;
                 const scaleLabels = q.placeholder.split('/');
                 const leftLabel = scaleLabels[0]?.trim() || 'Low';
                 const rightLabel = scaleLabels[1]?.trim() || 'High';
 
                 return (
                   <div key={q.id} className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <label className="block text-sm font-medium text-foreground/80">
-                        {index + 2}. {q.question}
-                      </label>
-                      <span className="text-lg font-semibold text-primary">
-                        {currentValue}/5
-                      </span>
+                    <label className="block text-sm font-medium text-foreground/80">
+                      {index + 2}. {q.question}
+                    </label>
+                    <div className="flex items-center justify-center gap-3">
+                      {[1, 2, 3, 4, 5].map((value) => (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() =>
+                            setAnswers((prev) => ({ ...prev, [q.id]: value }))
+                          }
+                          className={`w-10 h-10 rounded-full font-semibold text-sm transition-all ${
+                            currentValue === value
+                              ? 'bg-primary text-primary-foreground scale-110 shadow-md'
+                              : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:scale-105'
+                          }`}
+                        >
+                          {value}
+                        </button>
+                      ))}
                     </div>
-                    <Slider
-                      value={[currentValue]}
-                      onValueChange={(value) =>
-                        setAnswers((prev) => ({ ...prev, [q.id]: value[0] }))
-                      }
-                      min={1}
-                      max={5}
-                      step={1}
-                      className="w-full"
-                    />
                     <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>1 - {leftLabel}</span>
-                      <span>5 - {rightLabel}</span>
+                      <span>{leftLabel}</span>
+                      <span>{rightLabel}</span>
                     </div>
                   </div>
                 );
@@ -658,42 +677,92 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl, checkUrlInInventor
 
         {step === 3 && (
           <form onSubmit={handleFinalSubmit} className="space-y-6">
-            <div className="mb-4 space-y-3">
-              <div className="p-5 bg-muted/30 rounded-xl space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-foreground/80 font-medium">Your Mindfulness Score</span>
-                  <span className={`text-2xl font-semibold font-serif ${
-                    calculateMindfulnessScore(answers) >= 7 ? 'text-destructive' :
-                    calculateMindfulnessScore(answers) >= 4 ? 'text-accent' :
-                    'text-primary'
-                  }`}>
-                    {calculateMindfulnessScore(answers)}/10
-                  </span>
+            {(() => {
+              const score = calculateMindfulnessScore(answers);
+              const percentage = score * 10;
+              const radius = 54;
+              const circumference = 2 * Math.PI * radius;
+              const strokeDashoffset = circumference - (percentage / 100) * circumference;
+              const color = score >= 7 ? '#dc2626' : score >= 4 ? '#d97706' : '#255736';
+              const label = score >= 7 ? 'High impulse' : score >= 4 ? 'Moderate' : 'Mindful';
+
+              // Build breakdown of each component
+              const idToLabel: Record<string, string> = {
+                consumption: 'Need',
+                urgency: 'Urgency',
+                importance: 'Importance',
+                alternatives: 'Alternatives',
+                value: 'Value',
+                impact: 'Impact',
+                improvement: 'Improvement',
+                need: 'Need',
+              };
+              const components: { label: string; raw: number; value: number }[] = [];
+              const consumptionVal = Math.max(1, Math.min(10, consumptionScore * 2));
+              components.push({ label: 'Need', raw: consumptionScore, value: consumptionVal });
+              questions.forEach((q) => {
+                const answer = answers[q.id] || 3;
+                let val: number;
+                if (q.id === 'urgency') {
+                  val = 12 - (answer * 2);
+                } else {
+                  val = answer * 2;
+                }
+                val = Math.max(1, Math.min(10, val));
+                components.push({ label: idToLabel[q.id] || q.id, raw: answer, value: val });
+              });
+
+              return (
+                <div className="mb-4 space-y-4">
+                  <div className="p-6 bg-muted/30 rounded-xl space-y-5">
+                    <div className="flex flex-col items-center gap-3">
+                      <span className="text-foreground/80 font-medium">Your Mindfulness Score</span>
+                      <div className="relative w-28 h-28">
+                        <svg className="w-28 h-28 -rotate-90" viewBox="0 0 120 120">
+                          <circle cx="60" cy="60" r={radius} fill="none" stroke="#e5e7eb" strokeWidth="10" />
+                          <circle cx="60" cy="60" r={radius} fill="none" stroke={color} strokeWidth="10"
+                            strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={strokeDashoffset}
+                            style={{ transition: 'stroke-dashoffset 0.5s ease' }} />
+                        </svg>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                          <span className="text-2xl font-bold" style={{ color }}>{score}</span>
+                          <span className="text-xs text-muted-foreground">/10</span>
+                        </div>
+                      </div>
+                      <span className="text-sm font-medium" style={{ color }}>{label}</span>
+                    </div>
+
+                    <div className="border-t border-border/30 pt-4 space-y-3">
+                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Score Breakdown</span>
+                      {components.map((c, i) => (
+                        <div key={i} className="space-y-1">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-foreground/70">{c.label}</span>
+                            <span className="text-foreground/50">{c.value}/10</span>
+                          </div>
+                          <div className="h-2 bg-muted rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full transition-all duration-500"
+                              style={{
+                                width: `${c.value * 10}%`,
+                                backgroundColor: c.value >= 7 ? '#dc2626' : c.value >= 4 ? '#d97706' : '#255736',
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                      <div className="flex justify-between text-xs pt-2 border-t border-border/30">
+                        <span className="text-foreground/70 font-medium">Average</span>
+                        <span className="font-semibold" style={{ color }}>{score}/10</span>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-foreground/80">
+                    Based on your mindfulness score, choose your preferred constraint approach:
+                  </p>
                 </div>
-                {(() => {
-                  const tempQuestionnaire: QuestionAnswer[] = [
-                    {
-                      id: 'consumption',
-                      question: 'Rank your need for this item',
-                      answer: String(consumptionScore),
-                    },
-                    ...questions.map((q) => ({
-                      id: q.id,
-                      question: q.question,
-                      answer: String(answers[q.id] || 1),
-                    })),
-                  ];
-                  return (
-                    <p className="text-sm text-foreground/70 leading-relaxed pt-2 border-t border-border/30">
-                      {generateMindfulnessExplanation(tempQuestionnaire, calculateMindfulnessScore(answers))}
-                    </p>
-                  );
-                })()}
-              </div>
-              <p className="text-foreground/80">
-                Based on your mindfulness score, choose your preferred constraint approach:
-              </p>
-            </div>
+              );
+            })()}
 
             {/* Time-based option */}
             <label
