@@ -2918,52 +2918,284 @@ html {
   }
 }
 
-/* Extension-only layout tweaks */
+/* Banner shown when current page URL is already in the user's mindful cart */
 
-body {
-  width: 480px;
-  min-height: 480px;
-  padding: 22px;
-  overflow-y: auto;
-  font-size: 17px;
+.st-url-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2147483646;
+  display: flex;
+  justify-content: center;
+  padding: 12px 16px;
+  box-sizing: border-box;
+  pointer-events: none;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
 }
 
-#root {
+/* LOCKED BANNER STYLE*/
+
+.st-url-banner-inner {
+  max-width: 960px;
   width: 100%;
-  height: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  padding-right: 40px;
+  border-radius: 18px;
+  background: #efdac1;
+  border: 1px solid #d8a56a;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.45);
+  box-sizing: border-box;
+  pointer-events: auto;
 }
 
-h1 {
+.st-url-banner-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.st-url-banner-heading-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.st-url-banner-heading {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #047857;
+  opacity: 0.9;
+}
+
+.st-url-banner-subtitle {
+  font-size: 11px;
+  font-weight: 500;
+  color: #065f46;
+  opacity: 0.9;
+}
+
+.st-url-banner-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.st-url-banner-line {
+  display: flex;
+  gap: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.st-url-banner-line--metrics {
+  font-size: 14px;
+}
+
+.st-url-banner-line-label {
+  font-weight: 600;
+}
+
+.st-url-banner-line-value {
+  font-size: 13px;
+  font-weight: 400;
+  opacity: 0.96;
+}
+
+.st-url-banner-line-separator {
+  margin: 0 6px;
+  opacity: 0.7;
+}
+
+.st-url-banner-line-label-unlock {
+  font-weight: 700;
+  /* make "Unlocks on" bolder */
+}
+
+.st-url-banner-dismiss {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: auto;
+  height: auto;
+  padding: 4px;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  color: #92400e;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.st-url-banner-dismiss:hover {
+  opacity: 0.8;
+}
+
+.st-url-banner--time .st-url-banner-heading,
+.st-url-banner--goals .st-url-banner-heading {
+  color: #92400e;
+  /* deeper amber for locked state heading */
+}
+
+.st-url-banner--time .st-url-banner-subtitle,
+.st-url-banner--goals .st-url-banner-subtitle {
+  color: #b45309;
+}
+
+/* Green variant when item is unlocked */
+
+.st-url-banner--unlocked .st-url-banner-inner {
+  background: #d7e4d8;
+  /* green-100 */
+  border-color: #A3B9A4;
+  color: #064e3b;
+  /* dark green text */
+}
+
+.st-url-banner--unlocked .st-url-banner-dismiss {
+  color: #064e3b;
+  background: transparent;
+  border: none;
+}
+
+.st-url-banner--unlocked .st-url-banner-dismiss:hover {
+  opacity: 0.8;
+}
+
+/* Emphasize final line in unlocked banner ("This item is now unlocked…") */
+
+.st-url-banner--unlocked .st-url-banner-lines .st-url-banner-line:last-child .st-url-banner-line-value {
+  font-weight: 600;
+}
+
+/* Emphasize final line in locked goals-based banner ("To unlock this item…") */
+
+.st-url-banner--goals .st-url-banner-lines .st-url-banner-line:last-child .st-url-banner-line-value {
+  font-weight: 600;
+}
+
+/* Second Thought content overlay – shown when user clicks add-to-cart on a site */
+
+#second-thought-overlay,
+.st-overlay-root {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
+}
+
+.st-overlay-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.st-overlay-backdrop-form {
+  align-items: stretch;
+  padding: 24px;
+}
+
+.st-overlay-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 28px 32px;
+  max-width: 380px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+}
+
+.st-overlay-card-form {
+  max-width: 520px;
+  max-height: 90vh;
+  overflow: auto;
+  padding: 24px;
+}
+
+.st-overlay-title {
+  margin: 0 0 12px;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111;
+}
+
+.st-overlay-message {
+  margin: 0 0 20px;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: #444;
+}
+
+.st-overlay-message.st-overlay-success {
+  color: var(--primary);
   margin-bottom: 12px;
 }
 
-#root > div {
-  min-height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-#root .max-w-2xl {
-  max-width: 100%;
+.st-overlay-btn-primary {
   width: 100%;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-#root .bg-card {
-  flex: 1;
-}
-
-#root input,
-#root textarea {
+  padding: 12px 20px;
+  margin-bottom: 10px;
   font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--primary);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
 }
 
-#root button {
+.st-overlay-btn-primary:hover {
+  filter: brightness(0.95);
+}
+
+.st-overlay-btn-primary:active {
+  transform: scale(0.98);
+}
+
+.st-overlay-close {
+  width: 100%;
+  padding: 12px 20px;
   font-size: 1rem;
-  padding-top: 0.5rem;
-  padding-bottom: 0.5rem;
+  font-weight: 600;
+  color: var(--foreground);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.st-overlay-close:hover {
+  background: var(--muted);
+}
+
+.st-overlay-close:active {
+  transform: scale(0.98);
+}
+
+/* Form rendered inside overlay – scope Tailwind-like vars */
+
+.st-overlay-card-form .max-w-2xl {
+  max-width: 100%;
+}
+
+.st-overlay-card-form input,
+.st-overlay-card-form textarea,
+.st-overlay-card-form button {
+  font-size: 1rem;
 }
 
 .selection\:bg-primary *::-moz-selection{

@@ -1,8 +1,9 @@
 import { useEffect, useState, useRef } from 'react';
 import type { Item, ItemCategory, QuestionAnswer } from '../types/item';
-import { generateQuestions, GeneratedQuestion } from '../services/questionGenerator';
+import { generateQuestions, GeneratedQuestion, DEFAULT_QUESTIONS } from '../services/questionGenerator';
 import { detectCategory } from '../services/categoryDetector';
 import { fetchUrlMetadata } from '../services/urlMetadata';
+import { generateProductImage } from '../services/imageGenerator';
 import { Loader2, Link } from 'lucide-react';
 import { Slider } from './ui/slider';
 
@@ -97,23 +98,31 @@ function generateMindfulnessExplanation(questionnaire: QuestionAnswer[], finalSc
 interface AddItemFormProps {
   onSubmit: (item: Omit<Item, 'id' | 'addedDate'>) => void;
   onCancel: () => void;
+  initialUrl?: string;
+  /** If provided, called when moving to dynamic questions. Return true to block and show "already in inventory". */
+  checkUrlInInventory?: (url: string) => Promise<boolean>;
 }
 
-export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
+export function AddItemForm({ onSubmit, onCancel, initialUrl, checkUrlInInventory }: AddItemFormProps) {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
-  const [productUrl, setProductUrl] = useState('');
+  const [productUrl, setProductUrl] = useState(initialUrl ?? '');
   const [name, setName] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [hasProductUrlTouched, setHasProductUrlTouched] = useState(false);
   const [category, setCategory] = useState<ItemCategory>('Other');
   const [categoryIsAISuggested, setCategoryIsAISuggested] = useState(false);
   const [hasUrlTouched, setHasUrlTouched] = useState(false);
   const [constraintType, setConstraintType] = useState<'time' | 'goals'>('time');
   const [waitUntilDate, setWaitUntilDate] = useState('');
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
-  const [consumptionScore, setConsumptionScore] = useState(1);
+  const [consumptionScore, setConsumptionScore] = useState(3);
   const [goalDescription, setGoalDescription] = useState('');
   const [friendName, setFriendName] = useState('');
   const [friendEmail, setFriendEmail] = useState('');
+
+  // Already-in-inventory state (stops flow and shows message)
+  const [showAlreadyInInventory, setShowAlreadyInInventory] = useState(false);
+  const [isCheckingUrl, setIsCheckingUrl] = useState(false);
 
   // Dynamic questions state
   const [questions, setQuestions] = useState<GeneratedQuestion[]>([]);
@@ -121,6 +130,19 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
   const [isLoadingMetadata, setIsLoadingMetadata] = useState(false);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+
+  useEffect(() => {
+    if (initialUrl) {
+      setProductUrl(initialUrl);
+    }
+  }, [initialUrl]);
+
+  useEffect(() => {
+    if (initialUrl && !hasProductUrlTouched) {
+      setProductUrl(initialUrl);
+    }
+  }, [initialUrl, hasProductUrlTouched]);
 
   // Generate a random unlock password
   const generateUnlockPassword = (): string => {
@@ -134,22 +156,36 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
 
   const resetForm = () => {
     setStep(1);
-    setProductUrl('');
+    setProductUrl(initialUrl ?? '');
     setName('');
     setImageUrl('');
+    setHasProductUrlTouched(false);
     setCategory('Other');
     setCategoryIsAISuggested(false);
     setHasUrlTouched(false);
     setConstraintType('time');
     setWaitUntilDate('');
     setDifficulty('medium');
-    setConsumptionScore(1);
+    setConsumptionScore(3);
     setQuestions([]);
     setQuestionsUsedFallback(false);
     setAnswers({});
     setGoalDescription('');
     setFriendName('');
     setFriendEmail('');
+    setShowAlreadyInInventory(false);
+  };
+
+  const handleNameBlur = async () => {
+    const trimmed = name.trim();
+    if (trimmed.length < 2) return;
+    try {
+      const detectedCategory = await detectCategory(trimmed);
+      setCategory(detectedCategory);
+      setCategoryIsAISuggested(true);
+    } catch {
+      // keep current category on error
+    }
   };
 
   const handleFetchMetadata = async () => {
@@ -167,12 +203,34 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
       }
       if (metadata.image) {
         setImageUrl(metadata.image);
+      } else {
+        // No image from scraping — generate one with DALL-E
+        const itemName = metadata.title || name;
+        if (itemName) {
+          setIsGeneratingImage(true);
+          const generatedImage = await generateProductImage(itemName);
+          if (generatedImage) {
+            setImageUrl(generatedImage);
+          }
+          setIsGeneratingImage(false);
+        }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching metadata:', error);
-      alert('Failed to fetch product details. Please enter manually.');
+      const msg = (error?.message ?? String(error)) || '';
+      const isExtensionInvalidated =
+        /Extension context invalidated/i.test(msg) ||
+        /context invalidated/i.test(msg);
+      if (isExtensionInvalidated) {
+        alert(
+          'The extension was reloaded or updated. Please refresh this page and try adding the item again.'
+        );
+      } else {
+        alert('Failed to fetch product details. Please enter manually.');
+      }
     } finally {
       setIsLoadingMetadata(false);
+      setIsGeneratingImage(false);
     }
   };
 
@@ -212,22 +270,55 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
 
   const handleStep1Submit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // If name is still empty, derive from URL hostname
+    const itemName = name.trim() || (() => {
+      try { return new URL(productUrl).hostname.replace('www.', ''); } catch { return 'Item'; }
+    })();
+    if (!name.trim()) {
+      setName(itemName);
+    }
+
+    // Check if this URL is already in the user's inventory (before dynamic questions)
+    if (productUrl.trim() && checkUrlInInventory) {
+      setIsCheckingUrl(true);
+      try {
+        const alreadyInInventory = await checkUrlInInventory(productUrl.trim());
+        if (alreadyInInventory) {
+          setShowAlreadyInInventory(true);
+          return;
+        }
+      } catch (err) {
+        console.error('Error checking URL in inventory:', err);
+      } finally {
+        setIsCheckingUrl(false);
+      }
+    }
+
     setIsLoadingQuestions(true);
 
     try {
-      const { questions: generatedQuestions, usedFallback } = await generateQuestions(name);
+      const { questions: generatedQuestions, usedFallback } = await generateQuestions(itemName);
       setQuestions(generatedQuestions);
       setQuestionsUsedFallback(!!usedFallback);
 
       const initialAnswers: Record<string, number> = {};
       generatedQuestions.forEach((q) => {
-        initialAnswers[q.id] = 1;
+        initialAnswers[q.id] = 3;
       });
       setAnswers(initialAnswers);
 
       setStep(2);
     } catch (error) {
       console.error('Error generating questions:', error);
+      // Still advance to step 2 with default questions (e.g. in extension content script when API fails)
+      setQuestions(DEFAULT_QUESTIONS);
+      const initialAnswers: Record<string, number> = {};
+      DEFAULT_QUESTIONS.forEach((q) => {
+        initialAnswers[q.id] = 3;
+      });
+      setAnswers(initialAnswers);
+      setStep(2);
     } finally {
       setIsLoadingQuestions(false);
     }
@@ -238,7 +329,12 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
 
     const calculatedScore = calculateMindfulnessScore(answers);
 
-    const days = calculatedScore * 7;
+    // Lower mindfulness score → longer wait, higher score → shorter wait
+    const MIN_DAYS = 3;   // very mindful
+    const MAX_DAYS = 21;  // least mindful
+    const daysRange = MAX_DAYS - MIN_DAYS;
+    const normalized = (10 - calculatedScore) / 9; // 0 when score=10, 1 when score=1
+    const days = Math.round(MIN_DAYS + normalized * daysRange);
     const waitDate = new Date();
     waitDate.setDate(waitDate.getDate() + days);
     setWaitUntilDate(waitDate.toISOString().split('T')[0]);
@@ -267,7 +363,7 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
       ...questions.map((q) => ({
         id: q.id,
         question: q.question,
-        answer: String(answers[q.id] || 1),
+        answer: String(answers[q.id] || 3),
       })),
     ];
 
@@ -284,6 +380,7 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
     onSubmit({
       name,
       imageUrl: imageUrl?.trim() || undefined,
+      productUrl: productUrl?.trim() || undefined,
       category,
       constraintType,
       consumptionScore: calculatedMindfulnessScore,
@@ -314,7 +411,26 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
           </p>
         </div>
 
-        {step === 1 && (
+        {showAlreadyInInventory && (
+          <div className="space-y-6 py-4">
+            <p className="text-lg text-foreground">
+              This item is already in your inventory!
+            </p>
+            <p className="text-sm text-muted-foreground">
+              You've already saved this product. No need to add it again.
+            </p>
+            <button
+              type="button"
+              onClick={onCancel}
+              className="px-4 py-3 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-colors"
+            >
+              Back
+            </button>
+          </div>
+        )}
+
+        {!showAlreadyInInventory && step === 1 && (
+          <>
           <form onSubmit={handleStep1Submit} className="space-y-6">
           {/* Product URL - Auto-fetch metadata */}
           <div>
@@ -325,7 +441,10 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
               <input
                 type="url"
                 value={productUrl}
-                onChange={(e) => setProductUrl(e.target.value)}
+                onChange={(e) => {
+                  setProductUrl(e.target.value);
+                  setHasProductUrlTouched(true);
+                }}
                 placeholder="https://amazon.com/product/..."
                 className="flex-1 px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
               />
@@ -351,14 +470,14 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
           {/* Item Name */}
           <div>
             <label className="block text-sm font-medium text-foreground/80 mb-2">
-              Item Name *
+              Item Name
             </label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              required
-              placeholder="e.g., Wireless Headphones"
+              onBlur={handleNameBlur}
+              placeholder="Auto-filled from URL, or type manually"
               className="w-full px-4 py-3 border border-border bg-input-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
             />
           </div>
@@ -377,18 +496,28 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
             />
             {(imageUrl && imageUrl.trim()) ? (
               <div className="mt-3 relative rounded-xl overflow-hidden border border-border bg-muted/20">
-                <img 
-                  src={imageUrl.trim()} 
-                  alt="Product preview" 
+                <img
+                  src={imageUrl.trim()}
+                  alt="Product preview"
                   className="w-full max-h-96 object-contain"
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';
-                    e.currentTarget.parentElement!.innerHTML = '<p class="text-sm text-muted-foreground p-4">Invalid image URL</p>';
+                    if (e.currentTarget.parentElement) {
+                      e.currentTarget.parentElement.innerHTML = '<p class="text-sm text-muted-foreground p-4">Invalid image URL</p>';
+                    }
                   }}
                 />
               </div>
             ) : null}
           </div>
+
+          {/* Image generation loading state */}
+          {isGeneratingImage && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Generating product image...
+            </div>
+          )}
 
           {/* Category */}
           <div>
@@ -423,10 +552,15 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
           <div className="flex gap-3 pt-4">
             <button
               type="submit"
-              disabled={isLoadingQuestions}
+              disabled={isLoadingQuestions || isCheckingUrl || !productUrl}
               className="flex-1 bg-primary text-primary-foreground px-6 py-3 rounded-full hover:bg-primary/90 transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {isLoadingQuestions ? (
+              {isCheckingUrl ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Checking...
+                </>
+              ) : isLoadingQuestions ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
                   Generating Questions...
@@ -438,13 +572,14 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
             <button
               type="button"
               onClick={onCancel}
-              disabled={isLoadingQuestions}
+              disabled={isLoadingQuestions || isCheckingUrl}
               className="px-8 py-3 border border-border text-foreground rounded-full hover:bg-muted/30 transition-colors disabled:opacity-50"
             >
               Cancel
             </button>
           </div>
         </form>
+          </>
         )}
 
         {step === 2 && (
@@ -457,58 +592,64 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
             <div className="space-y-6">
               {/* Consumption Score - Question 1 */}
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="block text-sm font-medium text-foreground/80">
-                    1. Rank your need for this item (1 = need less, 5 = need more)
-                  </label>
-                  <span className="text-lg font-semibold text-primary">
-                    {consumptionScore}/5
-                  </span>
+                <label className="block text-sm font-medium text-foreground/80">
+                  1. Rank your need for this item (1 = need less, 5 = need more)
+                </label>
+                <div className="flex items-center justify-center gap-3">
+                  {[1, 2, 3, 4, 5].map((value) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setConsumptionScore(value)}
+                      className={`w-10 h-10 rounded-full font-semibold text-sm transition-all ${
+                        consumptionScore === value
+                          ? 'bg-primary text-primary-foreground scale-110 shadow-md'
+                          : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:scale-105'
+                      }`}
+                    >
+                      {value}
+                    </button>
+                  ))}
                 </div>
-                <Slider
-                  value={[consumptionScore]}
-                  onValueChange={(value) => setConsumptionScore(value[0])}
-                  min={1}
-                  max={5}
-                  step={1}
-                  className="w-full"
-                />
                 <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>1 - Need Less</span>
-                  <span>5 - Need More</span>
+                  <span>Need Less</span>
+                  <span>Need More</span>
                 </div>
               </div>
 
               {/* Dynamic Questionnaire - Questions 2, 3, 4, etc. */}
               {questions.map((q, index) => {
-                const currentValue = answers[q.id] || 1;
+                const currentValue = answers[q.id] || 3;
                 const scaleLabels = q.placeholder.split('/');
                 const leftLabel = scaleLabels[0]?.trim() || 'Low';
                 const rightLabel = scaleLabels[1]?.trim() || 'High';
 
                 return (
                   <div key={q.id} className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <label className="block text-sm font-medium text-foreground/80">
-                        {index + 2}. {q.question}
-                      </label>
-                      <span className="text-lg font-semibold text-primary">
-                        {currentValue}/5
-                      </span>
+                    <label className="block text-sm font-medium text-foreground/80">
+                      {index + 2}. {q.question}
+                    </label>
+                    <div className="flex items-center justify-center gap-3">
+                      {[1, 2, 3, 4, 5].map((value) => (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() =>
+                            setAnswers((prev) => ({ ...prev, [q.id]: value }))
+                          }
+                          className={`w-10 h-10 rounded-full font-semibold text-sm transition-all ${
+                            currentValue === value
+                              ? 'bg-primary text-primary-foreground scale-110 shadow-md'
+                              : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:scale-105'
+                          }`}
+                        >
+                          {value}
+                        </button>
+                      ))}
                     </div>
-                    <Slider
-                      value={[currentValue]}
-                      onValueChange={(value) =>
-                        setAnswers((prev) => ({ ...prev, [q.id]: value[0] }))
-                      }
-                      min={1}
-                      max={5}
-                      step={1}
-                      className="w-full"
-                    />
                     <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>1 - {leftLabel}</span>
-                      <span>5 - {rightLabel}</span>
+                      <span>{leftLabel}</span>
+                      <span>{rightLabel}</span>
                     </div>
                   </div>
                 );
@@ -536,42 +677,92 @@ export function AddItemForm({ onSubmit, onCancel }: AddItemFormProps) {
 
         {step === 3 && (
           <form onSubmit={handleFinalSubmit} className="space-y-6">
-            <div className="mb-4 space-y-3">
-              <div className="p-5 bg-muted/30 rounded-xl space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-foreground/80 font-medium">Your Mindfulness Score</span>
-                  <span className={`text-2xl font-semibold font-serif ${
-                    calculateMindfulnessScore(answers) >= 7 ? 'text-destructive' :
-                    calculateMindfulnessScore(answers) >= 4 ? 'text-accent' :
-                    'text-primary'
-                  }`}>
-                    {calculateMindfulnessScore(answers)}/10
-                  </span>
+            {(() => {
+              const score = calculateMindfulnessScore(answers);
+              const percentage = score * 10;
+              const radius = 54;
+              const circumference = 2 * Math.PI * radius;
+              const strokeDashoffset = circumference - (percentage / 100) * circumference;
+              const color = score >= 7 ? '#dc2626' : score >= 4 ? '#d97706' : '#255736';
+              const label = score >= 7 ? 'High impulse' : score >= 4 ? 'Moderate' : 'Mindful';
+
+              // Build breakdown of each component
+              const idToLabel: Record<string, string> = {
+                consumption: 'Need',
+                urgency: 'Urgency',
+                importance: 'Importance',
+                alternatives: 'Alternatives',
+                value: 'Value',
+                impact: 'Impact',
+                improvement: 'Improvement',
+                need: 'Need',
+              };
+              const components: { label: string; raw: number; value: number }[] = [];
+              const consumptionVal = Math.max(1, Math.min(10, consumptionScore * 2));
+              components.push({ label: 'Need', raw: consumptionScore, value: consumptionVal });
+              questions.forEach((q) => {
+                const answer = answers[q.id] || 3;
+                let val: number;
+                if (q.id === 'urgency') {
+                  val = 12 - (answer * 2);
+                } else {
+                  val = answer * 2;
+                }
+                val = Math.max(1, Math.min(10, val));
+                components.push({ label: idToLabel[q.id] || q.id, raw: answer, value: val });
+              });
+
+              return (
+                <div className="mb-4 space-y-4">
+                  <div className="p-6 bg-muted/30 rounded-xl space-y-5">
+                    <div className="flex flex-col items-center gap-3">
+                      <span className="text-foreground/80 font-medium">Your Mindfulness Score</span>
+                      <div className="relative w-28 h-28">
+                        <svg className="w-28 h-28 -rotate-90" viewBox="0 0 120 120">
+                          <circle cx="60" cy="60" r={radius} fill="none" stroke="#e5e7eb" strokeWidth="10" />
+                          <circle cx="60" cy="60" r={radius} fill="none" stroke={color} strokeWidth="10"
+                            strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={strokeDashoffset}
+                            style={{ transition: 'stroke-dashoffset 0.5s ease' }} />
+                        </svg>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                          <span className="text-2xl font-bold" style={{ color }}>{score}</span>
+                          <span className="text-xs text-muted-foreground">/10</span>
+                        </div>
+                      </div>
+                      <span className="text-sm font-medium" style={{ color }}>{label}</span>
+                    </div>
+
+                    <div className="border-t border-border/30 pt-4 space-y-3">
+                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Score Breakdown</span>
+                      {components.map((c, i) => (
+                        <div key={i} className="space-y-1">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-foreground/70">{c.label}</span>
+                            <span className="text-foreground/50">{c.value}/10</span>
+                          </div>
+                          <div className="h-2 bg-muted rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full transition-all duration-500"
+                              style={{
+                                width: `${c.value * 10}%`,
+                                backgroundColor: c.value >= 7 ? '#dc2626' : c.value >= 4 ? '#d97706' : '#255736',
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                      <div className="flex justify-between text-xs pt-2 border-t border-border/30">
+                        <span className="text-foreground/70 font-medium">Average</span>
+                        <span className="font-semibold" style={{ color }}>{score}/10</span>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-foreground/80">
+                    Based on your mindfulness score, choose your preferred constraint approach:
+                  </p>
                 </div>
-                {(() => {
-                  const tempQuestionnaire: QuestionAnswer[] = [
-                    {
-                      id: 'consumption',
-                      question: 'Rank your need for this item',
-                      answer: String(consumptionScore),
-                    },
-                    ...questions.map((q) => ({
-                      id: q.id,
-                      question: q.question,
-                      answer: String(answers[q.id] || 1),
-                    })),
-                  ];
-                  return (
-                    <p className="text-sm text-foreground/70 leading-relaxed pt-2 border-t border-border/30">
-                      {generateMindfulnessExplanation(tempQuestionnaire, calculateMindfulnessScore(answers))}
-                    </p>
-                  );
-                })()}
-              </div>
-              <p className="text-foreground/80">
-                Based on your mindfulness score, choose your preferred constraint approach:
-              </p>
-            </div>
+              );
+            })()}
 
             {/* Time-based option */}
             <label

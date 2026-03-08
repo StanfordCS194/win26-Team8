@@ -1,6 +1,8 @@
 // Question Generation Service using Claude API (Anthropic)
 // Generates contextual reflection questions based on the product being added
 
+import { getExpoPublic } from './env';
+
 export interface GeneratedQuestion {
   id: string;
   question: string;
@@ -12,11 +14,6 @@ export interface GeneratedQuestion {
 
 const DEFAULT_QUESTIONS: GeneratedQuestion[] = [
   {
-    id: 'importance',
-    question: 'How important is this item to you?',
-    placeholder: 'Not important/Very important',
-  },
-  {
     id: 'urgency',
     question: 'How urgent is your need for this item?',
     placeholder: 'Not urgent/Very urgent',
@@ -27,13 +24,13 @@ const DEFAULT_QUESTIONS: GeneratedQuestion[] = [
     placeholder: 'Not satisfied/Very satisfied',
   },
   {
-    id: 'impact',
-    question: 'How significant will the positive impact of this purchase be?',
-    placeholder: 'No impact/Significant impact',
+    id: 'value',
+    question: 'How much value will this purchase add to your life compared to its cost?',
+    placeholder: 'Low value/High value',
   },
 ];
 
-const SYSTEM_PROMPT = `You are a mindful consumption assistant helping people reflect before making purchases. Generate 4 thoughtful, contextual reflection questions for someone considering buying a specific product.
+const SYSTEM_PROMPT = `You are a mindful consumption assistant helping people reflect before making purchases. Generate 3 thoughtful, contextual reflection questions for someone considering buying a specific product.
 
 IMPORTANT: Each question must be answerable on a 5-point scale where:
 - 1 = Strongly Disagree / Not at all / Very Low
@@ -59,35 +56,31 @@ The questions should:
 6. Be non-judgmental but thought-provoking
 7. Be phrased as statements or questions that can be rated on a 1-5 scale
 
-Return your response as a JSON array with exactly 4 objects, each having:
-- "id": a short identifier (e.g., "importance", "urgency", "alternatives", "need")
+Return your response as a JSON array with exactly 3 objects, each having:
+- "id": a short identifier (e.g., "urgency", "alternatives", "value")
 - "question": the reflection question (must be answerable on a 1-5 scale AND must include the product name)
 - "placeholder": labels for the scale endpoints (format: "Low/High" or "Not at all/Very much")
 
+Each question must cover a DISTINCT dimension of the purchase decision. Good dimensions include: urgency, alternatives/substitutes, financial impact, emotional vs practical need, long-term value. Do NOT repeat similar themes across questions.
+
 Example for "AirPods":
 [
-  {"id": "importance", "question": "How important is owning AirPods to you?", "placeholder": "Not important/Very important"},
-  {"id": "urgency", "question": "How urgent is your need for AirPods?", "placeholder": "Not urgent/Very urgent"},
-  {"id": "alternatives", "question": "How satisfied would you be with other headphones (wired, different wireless brands, or what you currently have)?", "placeholder": "Not satisfied/Very satisfied"},
-  {"id": "improvement", "question": "How much will AirPods improve your audio experience compared to what you have?", "placeholder": "No improvement/Significant improvement"}
+  {"id": "urgency", "question": "How urgent is your need for AirPods right now?", "placeholder": "Not urgent/Very urgent"},
+  {"id": "alternatives", "question": "How satisfied would you be with other headphones (wired, different brands, or what you currently have)?", "placeholder": "Not satisfied/Very satisfied"},
+  {"id": "value", "question": "How much will AirPods improve your daily audio experience compared to their cost?", "placeholder": "Low value/High value"}
 ]
 
 Example for "Tennis Racket":
 [
-  {"id": "importance", "question": "How important is owning a Tennis Racket to you?", "placeholder": "Not important/Very important"},
   {"id": "urgency", "question": "How urgent is your need for a Tennis Racket?", "placeholder": "Not urgent/Very urgent"},
-  {"id": "alternatives", "question": "How satisfied would you be with other tennis rackets (borrowing, renting, or using a different racket)?", "placeholder": "Not satisfied/Very satisfied"},
-  {"id": "improvement", "question": "How much will this Tennis Racket improve your tennis experience?", "placeholder": "No improvement/Significant improvement"}
+  {"id": "alternatives", "question": "How satisfied would you be borrowing, renting, or using a different racket instead?", "placeholder": "Not satisfied/Very satisfied"},
+  {"id": "value", "question": "How much will this Tennis Racket improve your game compared to its cost?", "placeholder": "Low value/High value"}
 ]
 
 Only respond with the JSON array, no other text.`;
 
-// Safe env access for both Expo (process.env) and browser/extension (no process)
 function getApiKey(): string {
-  if (typeof process !== 'undefined' && process.env) {
-    return process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY || '';
-  }
-  return '';
+  return getExpoPublic('EXPO_PUBLIC_ANTHROPIC_API_KEY');
 }
 
 export type GenerateQuestionsResult = {
@@ -102,10 +95,9 @@ export async function generateQuestions(
   // Note: Expo automatically loads .env files, but you must restart the dev server after adding/changing .env
   const apiKey = getApiKey();
 
-  // Debug: Log what we're getting from environment (only when process exists)
-  if (typeof process !== 'undefined' && process.env) {
-    console.log('Environment check:');
-    console.log('   EXPO_PUBLIC_ANTHROPIC_API_KEY exists:', !!process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY);
+  // Debug: Log what we're getting from environment
+  if (apiKey.length > 0) {
+    console.log('   EXPO_PUBLIC_ANTHROPIC_API_KEY exists: true');
   }
   console.log('   API key length:', apiKey.length);
   if (apiKey) {
@@ -133,21 +125,21 @@ export async function generateQuestions(
         'anthropic-dangerous-direct-browser-access': 'true',
       },
       body: JSON.stringify({
-        model: 'claude-opus-4-6',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 1000,
         system: SYSTEM_PROMPT,
         messages: [
           {
             role: 'user',
-            content: `Generate 4 contextual reflection questions for someone considering buying: "${productName}". 
+            content: `Generate 3 contextual reflection questions for someone considering buying: "${productName}".
+
+If the input looks like a URL or website name rather than a product, infer what kind of product it might be from context and generate questions about shopping on that site.
 
 Requirements:
-1. Include the product name "${productName}" in each question - do not use generic terms like "this item" or "this product".
-2. Recognize what type of product "${productName}" is and suggest category-specific alternatives. For example:
-   - If it's AirPods (wireless headphones), ask about "other headphones" or "wired headphones"
-   - If it's an iPhone (smartphone), ask about "other smartphones" or "your current phone"
-   - If it's a specific brand/model of a product type, reference that product category in alternatives
-3. Make questions specific to the product category and context.`,
+1. Include the product name or a short reference to it in each question.
+2. Recognize what type of product it is and suggest category-specific alternatives.
+3. Make each question cover a DISTINCT dimension (e.g. urgency, alternatives, value).
+4. ONLY respond with the JSON array. No explanations, no caveats, no other text.`,
           },
         ],
       }),
@@ -156,7 +148,6 @@ Requirements:
     if (!response.ok) {
       const errorText = await response.text();
       console.error('API Error:', response.status, errorText);
-      // 529 = "Overloaded" – Anthropic's API was temporarily too busy
       if (response.status === 529) {
         console.warn('Anthropic API overloaded (529). Falling back to default questions.');
         return { questions: DEFAULT_QUESTIONS, usedFallback: true };
@@ -184,8 +175,8 @@ Requirements:
     const questions: GeneratedQuestion[] = JSON.parse(jsonMatch[0]);
 
     // Validate the response structure
-    if (!Array.isArray(questions) || questions.length !== 4) {
-      console.error('Invalid response structure - expected 4 questions, got:', questions.length);
+    if (!Array.isArray(questions) || questions.length !== 3) {
+      console.error('Invalid response structure - expected 3 questions, got:', questions.length);
       throw new Error('Invalid response structure');
     }
 

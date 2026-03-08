@@ -26,6 +26,291 @@
     mod
   ));
 
+  // node_modules/scheduler/cjs/scheduler.production.js
+  var require_scheduler_production = __commonJS({
+    "node_modules/scheduler/cjs/scheduler.production.js"(exports) {
+      "use strict";
+      function push(heap, node) {
+        var index = heap.length;
+        heap.push(node);
+        a: for (; 0 < index; ) {
+          var parentIndex = index - 1 >>> 1, parent = heap[parentIndex];
+          if (0 < compare(parent, node))
+            heap[parentIndex] = node, heap[index] = parent, index = parentIndex;
+          else break a;
+        }
+      }
+      function peek(heap) {
+        return 0 === heap.length ? null : heap[0];
+      }
+      function pop(heap) {
+        if (0 === heap.length) return null;
+        var first = heap[0], last = heap.pop();
+        if (last !== first) {
+          heap[0] = last;
+          a: for (var index = 0, length = heap.length, halfLength = length >>> 1; index < halfLength; ) {
+            var leftIndex = 2 * (index + 1) - 1, left = heap[leftIndex], rightIndex = leftIndex + 1, right = heap[rightIndex];
+            if (0 > compare(left, last))
+              rightIndex < length && 0 > compare(right, left) ? (heap[index] = right, heap[rightIndex] = last, index = rightIndex) : (heap[index] = left, heap[leftIndex] = last, index = leftIndex);
+            else if (rightIndex < length && 0 > compare(right, last))
+              heap[index] = right, heap[rightIndex] = last, index = rightIndex;
+            else break a;
+          }
+        }
+        return first;
+      }
+      function compare(a, b) {
+        var diff = a.sortIndex - b.sortIndex;
+        return 0 !== diff ? diff : a.id - b.id;
+      }
+      exports.unstable_now = void 0;
+      if ("object" === typeof performance && "function" === typeof performance.now) {
+        localPerformance = performance;
+        exports.unstable_now = function() {
+          return localPerformance.now();
+        };
+      } else {
+        localDate = Date, initialTime = localDate.now();
+        exports.unstable_now = function() {
+          return localDate.now() - initialTime;
+        };
+      }
+      var localPerformance;
+      var localDate;
+      var initialTime;
+      var taskQueue = [];
+      var timerQueue = [];
+      var taskIdCounter = 1;
+      var currentTask = null;
+      var currentPriorityLevel = 3;
+      var isPerformingWork = false;
+      var isHostCallbackScheduled = false;
+      var isHostTimeoutScheduled = false;
+      var needsPaint = false;
+      var localSetTimeout = "function" === typeof setTimeout ? setTimeout : null;
+      var localClearTimeout = "function" === typeof clearTimeout ? clearTimeout : null;
+      var localSetImmediate = "undefined" !== typeof setImmediate ? setImmediate : null;
+      function advanceTimers(currentTime) {
+        for (var timer = peek(timerQueue); null !== timer; ) {
+          if (null === timer.callback) pop(timerQueue);
+          else if (timer.startTime <= currentTime)
+            pop(timerQueue), timer.sortIndex = timer.expirationTime, push(taskQueue, timer);
+          else break;
+          timer = peek(timerQueue);
+        }
+      }
+      function handleTimeout(currentTime) {
+        isHostTimeoutScheduled = false;
+        advanceTimers(currentTime);
+        if (!isHostCallbackScheduled)
+          if (null !== peek(taskQueue))
+            isHostCallbackScheduled = true, isMessageLoopRunning || (isMessageLoopRunning = true, schedulePerformWorkUntilDeadline());
+          else {
+            var firstTimer = peek(timerQueue);
+            null !== firstTimer && requestHostTimeout(handleTimeout, firstTimer.startTime - currentTime);
+          }
+      }
+      var isMessageLoopRunning = false;
+      var taskTimeoutID = -1;
+      var frameInterval = 5;
+      var startTime = -1;
+      function shouldYieldToHost() {
+        return needsPaint ? true : exports.unstable_now() - startTime < frameInterval ? false : true;
+      }
+      function performWorkUntilDeadline() {
+        needsPaint = false;
+        if (isMessageLoopRunning) {
+          var currentTime = exports.unstable_now();
+          startTime = currentTime;
+          var hasMoreWork = true;
+          try {
+            a: {
+              isHostCallbackScheduled = false;
+              isHostTimeoutScheduled && (isHostTimeoutScheduled = false, localClearTimeout(taskTimeoutID), taskTimeoutID = -1);
+              isPerformingWork = true;
+              var previousPriorityLevel = currentPriorityLevel;
+              try {
+                b: {
+                  advanceTimers(currentTime);
+                  for (currentTask = peek(taskQueue); null !== currentTask && !(currentTask.expirationTime > currentTime && shouldYieldToHost()); ) {
+                    var callback = currentTask.callback;
+                    if ("function" === typeof callback) {
+                      currentTask.callback = null;
+                      currentPriorityLevel = currentTask.priorityLevel;
+                      var continuationCallback = callback(
+                        currentTask.expirationTime <= currentTime
+                      );
+                      currentTime = exports.unstable_now();
+                      if ("function" === typeof continuationCallback) {
+                        currentTask.callback = continuationCallback;
+                        advanceTimers(currentTime);
+                        hasMoreWork = true;
+                        break b;
+                      }
+                      currentTask === peek(taskQueue) && pop(taskQueue);
+                      advanceTimers(currentTime);
+                    } else pop(taskQueue);
+                    currentTask = peek(taskQueue);
+                  }
+                  if (null !== currentTask) hasMoreWork = true;
+                  else {
+                    var firstTimer = peek(timerQueue);
+                    null !== firstTimer && requestHostTimeout(
+                      handleTimeout,
+                      firstTimer.startTime - currentTime
+                    );
+                    hasMoreWork = false;
+                  }
+                }
+                break a;
+              } finally {
+                currentTask = null, currentPriorityLevel = previousPriorityLevel, isPerformingWork = false;
+              }
+              hasMoreWork = void 0;
+            }
+          } finally {
+            hasMoreWork ? schedulePerformWorkUntilDeadline() : isMessageLoopRunning = false;
+          }
+        }
+      }
+      var schedulePerformWorkUntilDeadline;
+      if ("function" === typeof localSetImmediate)
+        schedulePerformWorkUntilDeadline = function() {
+          localSetImmediate(performWorkUntilDeadline);
+        };
+      else if ("undefined" !== typeof MessageChannel) {
+        channel = new MessageChannel(), port = channel.port2;
+        channel.port1.onmessage = performWorkUntilDeadline;
+        schedulePerformWorkUntilDeadline = function() {
+          port.postMessage(null);
+        };
+      } else
+        schedulePerformWorkUntilDeadline = function() {
+          localSetTimeout(performWorkUntilDeadline, 0);
+        };
+      var channel;
+      var port;
+      function requestHostTimeout(callback, ms) {
+        taskTimeoutID = localSetTimeout(function() {
+          callback(exports.unstable_now());
+        }, ms);
+      }
+      exports.unstable_IdlePriority = 5;
+      exports.unstable_ImmediatePriority = 1;
+      exports.unstable_LowPriority = 4;
+      exports.unstable_NormalPriority = 3;
+      exports.unstable_Profiling = null;
+      exports.unstable_UserBlockingPriority = 2;
+      exports.unstable_cancelCallback = function(task) {
+        task.callback = null;
+      };
+      exports.unstable_forceFrameRate = function(fps) {
+        0 > fps || 125 < fps ? console.error(
+          "forceFrameRate takes a positive int between 0 and 125, forcing frame rates higher than 125 fps is not supported"
+        ) : frameInterval = 0 < fps ? Math.floor(1e3 / fps) : 5;
+      };
+      exports.unstable_getCurrentPriorityLevel = function() {
+        return currentPriorityLevel;
+      };
+      exports.unstable_next = function(eventHandler) {
+        switch (currentPriorityLevel) {
+          case 1:
+          case 2:
+          case 3:
+            var priorityLevel = 3;
+            break;
+          default:
+            priorityLevel = currentPriorityLevel;
+        }
+        var previousPriorityLevel = currentPriorityLevel;
+        currentPriorityLevel = priorityLevel;
+        try {
+          return eventHandler();
+        } finally {
+          currentPriorityLevel = previousPriorityLevel;
+        }
+      };
+      exports.unstable_requestPaint = function() {
+        needsPaint = true;
+      };
+      exports.unstable_runWithPriority = function(priorityLevel, eventHandler) {
+        switch (priorityLevel) {
+          case 1:
+          case 2:
+          case 3:
+          case 4:
+          case 5:
+            break;
+          default:
+            priorityLevel = 3;
+        }
+        var previousPriorityLevel = currentPriorityLevel;
+        currentPriorityLevel = priorityLevel;
+        try {
+          return eventHandler();
+        } finally {
+          currentPriorityLevel = previousPriorityLevel;
+        }
+      };
+      exports.unstable_scheduleCallback = function(priorityLevel, callback, options) {
+        var currentTime = exports.unstable_now();
+        "object" === typeof options && null !== options ? (options = options.delay, options = "number" === typeof options && 0 < options ? currentTime + options : currentTime) : options = currentTime;
+        switch (priorityLevel) {
+          case 1:
+            var timeout = -1;
+            break;
+          case 2:
+            timeout = 250;
+            break;
+          case 5:
+            timeout = 1073741823;
+            break;
+          case 4:
+            timeout = 1e4;
+            break;
+          default:
+            timeout = 5e3;
+        }
+        timeout = options + timeout;
+        priorityLevel = {
+          id: taskIdCounter++,
+          callback,
+          priorityLevel,
+          startTime: options,
+          expirationTime: timeout,
+          sortIndex: -1
+        };
+        options > currentTime ? (priorityLevel.sortIndex = options, push(timerQueue, priorityLevel), null === peek(taskQueue) && priorityLevel === peek(timerQueue) && (isHostTimeoutScheduled ? (localClearTimeout(taskTimeoutID), taskTimeoutID = -1) : isHostTimeoutScheduled = true, requestHostTimeout(handleTimeout, options - currentTime))) : (priorityLevel.sortIndex = timeout, push(taskQueue, priorityLevel), isHostCallbackScheduled || isPerformingWork || (isHostCallbackScheduled = true, isMessageLoopRunning || (isMessageLoopRunning = true, schedulePerformWorkUntilDeadline())));
+        return priorityLevel;
+      };
+      exports.unstable_shouldYield = shouldYieldToHost;
+      exports.unstable_wrapCallback = function(callback) {
+        var parentPriorityLevel = currentPriorityLevel;
+        return function() {
+          var previousPriorityLevel = currentPriorityLevel;
+          currentPriorityLevel = parentPriorityLevel;
+          try {
+            return callback.apply(this, arguments);
+          } finally {
+            currentPriorityLevel = previousPriorityLevel;
+          }
+        };
+      };
+    }
+  });
+
+  // node_modules/scheduler/index.js
+  var require_scheduler = __commonJS({
+    "node_modules/scheduler/index.js"(exports, module) {
+      "use strict";
+      if (true) {
+        module.exports = require_scheduler_production();
+      } else {
+        module.exports = null;
+      }
+    }
+  });
+
   // node_modules/react/cjs/react.production.js
   var require_react_production = __commonJS({
     "node_modules/react/cjs/react.production.js"(exports) {
@@ -449,8 +734,8 @@
       exports.useOptimistic = function(passthrough, reducer) {
         return ReactSharedInternals.H.useOptimistic(passthrough, reducer);
       };
-      exports.useReducer = function(reducer, initialArg, init) {
-        return ReactSharedInternals.H.useReducer(reducer, initialArg, init);
+      exports.useReducer = function(reducer, initialArg, init2) {
+        return ReactSharedInternals.H.useReducer(reducer, initialArg, init2);
       };
       exports.useRef = function(initialValue) {
         return ReactSharedInternals.H.useRef(initialValue);
@@ -478,291 +763,6 @@
       "use strict";
       if (true) {
         module.exports = require_react_production();
-      } else {
-        module.exports = null;
-      }
-    }
-  });
-
-  // node_modules/scheduler/cjs/scheduler.production.js
-  var require_scheduler_production = __commonJS({
-    "node_modules/scheduler/cjs/scheduler.production.js"(exports) {
-      "use strict";
-      function push(heap, node) {
-        var index = heap.length;
-        heap.push(node);
-        a: for (; 0 < index; ) {
-          var parentIndex = index - 1 >>> 1, parent = heap[parentIndex];
-          if (0 < compare(parent, node))
-            heap[parentIndex] = node, heap[index] = parent, index = parentIndex;
-          else break a;
-        }
-      }
-      function peek(heap) {
-        return 0 === heap.length ? null : heap[0];
-      }
-      function pop(heap) {
-        if (0 === heap.length) return null;
-        var first = heap[0], last = heap.pop();
-        if (last !== first) {
-          heap[0] = last;
-          a: for (var index = 0, length = heap.length, halfLength = length >>> 1; index < halfLength; ) {
-            var leftIndex = 2 * (index + 1) - 1, left = heap[leftIndex], rightIndex = leftIndex + 1, right = heap[rightIndex];
-            if (0 > compare(left, last))
-              rightIndex < length && 0 > compare(right, left) ? (heap[index] = right, heap[rightIndex] = last, index = rightIndex) : (heap[index] = left, heap[leftIndex] = last, index = leftIndex);
-            else if (rightIndex < length && 0 > compare(right, last))
-              heap[index] = right, heap[rightIndex] = last, index = rightIndex;
-            else break a;
-          }
-        }
-        return first;
-      }
-      function compare(a, b) {
-        var diff = a.sortIndex - b.sortIndex;
-        return 0 !== diff ? diff : a.id - b.id;
-      }
-      exports.unstable_now = void 0;
-      if ("object" === typeof performance && "function" === typeof performance.now) {
-        localPerformance = performance;
-        exports.unstable_now = function() {
-          return localPerformance.now();
-        };
-      } else {
-        localDate = Date, initialTime = localDate.now();
-        exports.unstable_now = function() {
-          return localDate.now() - initialTime;
-        };
-      }
-      var localPerformance;
-      var localDate;
-      var initialTime;
-      var taskQueue = [];
-      var timerQueue = [];
-      var taskIdCounter = 1;
-      var currentTask = null;
-      var currentPriorityLevel = 3;
-      var isPerformingWork = false;
-      var isHostCallbackScheduled = false;
-      var isHostTimeoutScheduled = false;
-      var needsPaint = false;
-      var localSetTimeout = "function" === typeof setTimeout ? setTimeout : null;
-      var localClearTimeout = "function" === typeof clearTimeout ? clearTimeout : null;
-      var localSetImmediate = "undefined" !== typeof setImmediate ? setImmediate : null;
-      function advanceTimers(currentTime) {
-        for (var timer = peek(timerQueue); null !== timer; ) {
-          if (null === timer.callback) pop(timerQueue);
-          else if (timer.startTime <= currentTime)
-            pop(timerQueue), timer.sortIndex = timer.expirationTime, push(taskQueue, timer);
-          else break;
-          timer = peek(timerQueue);
-        }
-      }
-      function handleTimeout(currentTime) {
-        isHostTimeoutScheduled = false;
-        advanceTimers(currentTime);
-        if (!isHostCallbackScheduled)
-          if (null !== peek(taskQueue))
-            isHostCallbackScheduled = true, isMessageLoopRunning || (isMessageLoopRunning = true, schedulePerformWorkUntilDeadline());
-          else {
-            var firstTimer = peek(timerQueue);
-            null !== firstTimer && requestHostTimeout(handleTimeout, firstTimer.startTime - currentTime);
-          }
-      }
-      var isMessageLoopRunning = false;
-      var taskTimeoutID = -1;
-      var frameInterval = 5;
-      var startTime = -1;
-      function shouldYieldToHost() {
-        return needsPaint ? true : exports.unstable_now() - startTime < frameInterval ? false : true;
-      }
-      function performWorkUntilDeadline() {
-        needsPaint = false;
-        if (isMessageLoopRunning) {
-          var currentTime = exports.unstable_now();
-          startTime = currentTime;
-          var hasMoreWork = true;
-          try {
-            a: {
-              isHostCallbackScheduled = false;
-              isHostTimeoutScheduled && (isHostTimeoutScheduled = false, localClearTimeout(taskTimeoutID), taskTimeoutID = -1);
-              isPerformingWork = true;
-              var previousPriorityLevel = currentPriorityLevel;
-              try {
-                b: {
-                  advanceTimers(currentTime);
-                  for (currentTask = peek(taskQueue); null !== currentTask && !(currentTask.expirationTime > currentTime && shouldYieldToHost()); ) {
-                    var callback = currentTask.callback;
-                    if ("function" === typeof callback) {
-                      currentTask.callback = null;
-                      currentPriorityLevel = currentTask.priorityLevel;
-                      var continuationCallback = callback(
-                        currentTask.expirationTime <= currentTime
-                      );
-                      currentTime = exports.unstable_now();
-                      if ("function" === typeof continuationCallback) {
-                        currentTask.callback = continuationCallback;
-                        advanceTimers(currentTime);
-                        hasMoreWork = true;
-                        break b;
-                      }
-                      currentTask === peek(taskQueue) && pop(taskQueue);
-                      advanceTimers(currentTime);
-                    } else pop(taskQueue);
-                    currentTask = peek(taskQueue);
-                  }
-                  if (null !== currentTask) hasMoreWork = true;
-                  else {
-                    var firstTimer = peek(timerQueue);
-                    null !== firstTimer && requestHostTimeout(
-                      handleTimeout,
-                      firstTimer.startTime - currentTime
-                    );
-                    hasMoreWork = false;
-                  }
-                }
-                break a;
-              } finally {
-                currentTask = null, currentPriorityLevel = previousPriorityLevel, isPerformingWork = false;
-              }
-              hasMoreWork = void 0;
-            }
-          } finally {
-            hasMoreWork ? schedulePerformWorkUntilDeadline() : isMessageLoopRunning = false;
-          }
-        }
-      }
-      var schedulePerformWorkUntilDeadline;
-      if ("function" === typeof localSetImmediate)
-        schedulePerformWorkUntilDeadline = function() {
-          localSetImmediate(performWorkUntilDeadline);
-        };
-      else if ("undefined" !== typeof MessageChannel) {
-        channel = new MessageChannel(), port = channel.port2;
-        channel.port1.onmessage = performWorkUntilDeadline;
-        schedulePerformWorkUntilDeadline = function() {
-          port.postMessage(null);
-        };
-      } else
-        schedulePerformWorkUntilDeadline = function() {
-          localSetTimeout(performWorkUntilDeadline, 0);
-        };
-      var channel;
-      var port;
-      function requestHostTimeout(callback, ms) {
-        taskTimeoutID = localSetTimeout(function() {
-          callback(exports.unstable_now());
-        }, ms);
-      }
-      exports.unstable_IdlePriority = 5;
-      exports.unstable_ImmediatePriority = 1;
-      exports.unstable_LowPriority = 4;
-      exports.unstable_NormalPriority = 3;
-      exports.unstable_Profiling = null;
-      exports.unstable_UserBlockingPriority = 2;
-      exports.unstable_cancelCallback = function(task) {
-        task.callback = null;
-      };
-      exports.unstable_forceFrameRate = function(fps) {
-        0 > fps || 125 < fps ? console.error(
-          "forceFrameRate takes a positive int between 0 and 125, forcing frame rates higher than 125 fps is not supported"
-        ) : frameInterval = 0 < fps ? Math.floor(1e3 / fps) : 5;
-      };
-      exports.unstable_getCurrentPriorityLevel = function() {
-        return currentPriorityLevel;
-      };
-      exports.unstable_next = function(eventHandler) {
-        switch (currentPriorityLevel) {
-          case 1:
-          case 2:
-          case 3:
-            var priorityLevel = 3;
-            break;
-          default:
-            priorityLevel = currentPriorityLevel;
-        }
-        var previousPriorityLevel = currentPriorityLevel;
-        currentPriorityLevel = priorityLevel;
-        try {
-          return eventHandler();
-        } finally {
-          currentPriorityLevel = previousPriorityLevel;
-        }
-      };
-      exports.unstable_requestPaint = function() {
-        needsPaint = true;
-      };
-      exports.unstable_runWithPriority = function(priorityLevel, eventHandler) {
-        switch (priorityLevel) {
-          case 1:
-          case 2:
-          case 3:
-          case 4:
-          case 5:
-            break;
-          default:
-            priorityLevel = 3;
-        }
-        var previousPriorityLevel = currentPriorityLevel;
-        currentPriorityLevel = priorityLevel;
-        try {
-          return eventHandler();
-        } finally {
-          currentPriorityLevel = previousPriorityLevel;
-        }
-      };
-      exports.unstable_scheduleCallback = function(priorityLevel, callback, options) {
-        var currentTime = exports.unstable_now();
-        "object" === typeof options && null !== options ? (options = options.delay, options = "number" === typeof options && 0 < options ? currentTime + options : currentTime) : options = currentTime;
-        switch (priorityLevel) {
-          case 1:
-            var timeout = -1;
-            break;
-          case 2:
-            timeout = 250;
-            break;
-          case 5:
-            timeout = 1073741823;
-            break;
-          case 4:
-            timeout = 1e4;
-            break;
-          default:
-            timeout = 5e3;
-        }
-        timeout = options + timeout;
-        priorityLevel = {
-          id: taskIdCounter++,
-          callback,
-          priorityLevel,
-          startTime: options,
-          expirationTime: timeout,
-          sortIndex: -1
-        };
-        options > currentTime ? (priorityLevel.sortIndex = options, push(timerQueue, priorityLevel), null === peek(taskQueue) && priorityLevel === peek(timerQueue) && (isHostTimeoutScheduled ? (localClearTimeout(taskTimeoutID), taskTimeoutID = -1) : isHostTimeoutScheduled = true, requestHostTimeout(handleTimeout, options - currentTime))) : (priorityLevel.sortIndex = timeout, push(taskQueue, priorityLevel), isHostCallbackScheduled || isPerformingWork || (isHostCallbackScheduled = true, isMessageLoopRunning || (isMessageLoopRunning = true, schedulePerformWorkUntilDeadline())));
-        return priorityLevel;
-      };
-      exports.unstable_shouldYield = shouldYieldToHost;
-      exports.unstable_wrapCallback = function(callback) {
-        var parentPriorityLevel = currentPriorityLevel;
-        return function() {
-          var previousPriorityLevel = currentPriorityLevel;
-          currentPriorityLevel = parentPriorityLevel;
-          try {
-            return callback.apply(this, arguments);
-          } finally {
-            currentPriorityLevel = previousPriorityLevel;
-          }
-        };
-      };
-    }
-  });
-
-  // node_modules/scheduler/index.js
-  var require_scheduler = __commonJS({
-    "node_modules/scheduler/index.js"(exports, module) {
-      "use strict";
-      if (true) {
-        module.exports = require_scheduler_production();
       } else {
         module.exports = null;
       }
@@ -820,11 +820,11 @@
           return "use-credentials" === input ? input : "";
       }
       exports.__DOM_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE = Internals;
-      exports.createPortal = function(children, container2) {
+      exports.createPortal = function(children, container) {
         var key = 2 < arguments.length && void 0 !== arguments[2] ? arguments[2] : null;
-        if (!container2 || 1 !== container2.nodeType && 9 !== container2.nodeType && 11 !== container2.nodeType)
+        if (!container || 1 !== container.nodeType && 9 !== container.nodeType && 11 !== container.nodeType)
           throw Error(formatProdErrorMessage(299));
-        return createPortal$1(children, container2, null, key);
+        return createPortal$1(children, container, null, key);
       };
       exports.flushSync = function(fn) {
         var previousTransition = ReactSharedInternals.T, previousUpdatePriority = Internals.p;
@@ -4536,14 +4536,14 @@
           hook.memoizedState = [nextValue, deps];
           return nextValue;
         },
-        useReducer: function(reducer, initialArg, init) {
+        useReducer: function(reducer, initialArg, init2) {
           var hook = mountWorkInProgressHook();
-          if (void 0 !== init) {
-            var initialState = init(initialArg);
+          if (void 0 !== init2) {
+            var initialState = init2(initialArg);
             if (shouldDoubleInvokeUserFnsInHooksDEV) {
               setIsStrictModeForDevtools(true);
               try {
-                init(initialArg);
+                init2(initialArg);
               } finally {
                 setIsStrictModeForDevtools(false);
               }
@@ -4786,8 +4786,8 @@
         );
       }
       function resolveLazy(lazyType) {
-        var init = lazyType._init;
-        return init(lazyType._payload);
+        var init2 = lazyType._init;
+        return init2(lazyType._payload);
       }
       function createChildReconciler(shouldTrackSideEffects) {
         function deleteChild(returnFiber, childToDelete) {
@@ -4902,8 +4902,8 @@
                   lanes
                 ), newChild.return = returnFiber, newChild;
               case REACT_LAZY_TYPE:
-                var init = newChild._init;
-                newChild = init(newChild._payload);
+                var init2 = newChild._init;
+                newChild = init2(newChild._payload);
                 return createChild(returnFiber, newChild, lanes);
             }
             if (isArrayImpl(newChild) || getIteratorFn(newChild))
@@ -4972,8 +4972,8 @@
                   null === newChild.key ? newIdx : newChild.key
                 ) || null, updatePortal(returnFiber, existingChildren, newChild, lanes);
               case REACT_LAZY_TYPE:
-                var init = newChild._init;
-                newChild = init(newChild._payload);
+                var init2 = newChild._init;
+                newChild = init2(newChild._payload);
                 return updateFromMap(
                   existingChildren,
                   returnFiber,
@@ -6209,8 +6209,8 @@
           case 16:
             a: {
               current = workInProgress2.pendingProps;
-              var lazyComponent = workInProgress2.elementType, init = lazyComponent._init;
-              lazyComponent = init(lazyComponent._payload);
+              var lazyComponent = workInProgress2.elementType, init2 = lazyComponent._init;
+              lazyComponent = init2(lazyComponent._payload);
               workInProgress2.type = lazyComponent;
               if ("function" === typeof lazyComponent)
                 shouldConstruct(lazyComponent) ? (current = resolveClassComponentProps(lazyComponent, current), workInProgress2.tag = 1, workInProgress2 = updateClassComponent(
@@ -6228,7 +6228,7 @@
                 ));
               else {
                 if (void 0 !== lazyComponent && null !== lazyComponent) {
-                  if (init = lazyComponent.$$typeof, init === REACT_FORWARD_REF_TYPE) {
+                  if (init2 = lazyComponent.$$typeof, init2 === REACT_FORWARD_REF_TYPE) {
                     workInProgress2.tag = 11;
                     workInProgress2 = updateForwardRef(
                       null,
@@ -6238,7 +6238,7 @@
                       renderLanes2
                     );
                     break a;
-                  } else if (init === REACT_MEMO_TYPE) {
+                  } else if (init2 === REACT_MEMO_TYPE) {
                     workInProgress2.tag = 14;
                     workInProgress2 = updateMemoComponent(
                       null,
@@ -6264,14 +6264,14 @@
               renderLanes2
             );
           case 1:
-            return lazyComponent = workInProgress2.type, init = resolveClassComponentProps(
+            return lazyComponent = workInProgress2.type, init2 = resolveClassComponentProps(
               lazyComponent,
               workInProgress2.pendingProps
             ), updateClassComponent(
               current,
               workInProgress2,
               lazyComponent,
-              init,
+              init2,
               renderLanes2
             );
           case 3:
@@ -6283,7 +6283,7 @@
               if (null === current) throw Error(formatProdErrorMessage(387));
               lazyComponent = workInProgress2.pendingProps;
               var prevState = workInProgress2.memoizedState;
-              init = prevState.element;
+              init2 = prevState.element;
               cloneUpdateQueue(current, workInProgress2);
               processUpdateQueue(workInProgress2, lazyComponent, null, renderLanes2);
               var nextState = workInProgress2.memoizedState;
@@ -6310,12 +6310,12 @@
                     renderLanes2
                   );
                   break a;
-                } else if (lazyComponent !== init) {
-                  init = createCapturedValueAtFiber(
+                } else if (lazyComponent !== init2) {
+                  init2 = createCapturedValueAtFiber(
                     Error(formatProdErrorMessage(424)),
                     workInProgress2
                   );
-                  queueHydrationError(init);
+                  queueHydrationError(init2);
                   workInProgress2 = mountHostRootWithoutHydrating(
                     current,
                     workInProgress2,
@@ -6348,7 +6348,7 @@
                 }
               else {
                 resetHydrationState();
-                if (lazyComponent === init) {
+                if (lazyComponent === init2) {
                   workInProgress2 = bailoutOnAlreadyFinishedWork(
                     current,
                     workInProgress2,
@@ -6385,9 +6385,9 @@
               workInProgress2.type,
               workInProgress2.pendingProps,
               rootInstanceStackCursor.current
-            ), hydrationParentFiber = workInProgress2, rootOrSingletonContext = true, init = nextHydratableInstance, isSingletonScope(workInProgress2.type) ? (previousHydratableOnEnteringScopedSingleton = init, nextHydratableInstance = getNextHydratable(
+            ), hydrationParentFiber = workInProgress2, rootOrSingletonContext = true, init2 = nextHydratableInstance, isSingletonScope(workInProgress2.type) ? (previousHydratableOnEnteringScopedSingleton = init2, nextHydratableInstance = getNextHydratable(
               lazyComponent.firstChild
-            )) : nextHydratableInstance = init), reconcileChildren(
+            )) : nextHydratableInstance = init2), reconcileChildren(
               current,
               workInProgress2,
               workInProgress2.pendingProps.children,
@@ -6395,7 +6395,7 @@
             ), markRef(current, workInProgress2), null === current && (workInProgress2.flags |= 4194304), workInProgress2.child;
           case 5:
             if (null === current && isHydrating) {
-              if (init = lazyComponent = nextHydratableInstance)
+              if (init2 = lazyComponent = nextHydratableInstance)
                 lazyComponent = canHydrateInstance(
                   lazyComponent,
                   workInProgress2.type,
@@ -6403,23 +6403,23 @@
                   rootOrSingletonContext
                 ), null !== lazyComponent ? (workInProgress2.stateNode = lazyComponent, hydrationParentFiber = workInProgress2, nextHydratableInstance = getNextHydratable(
                   lazyComponent.firstChild
-                ), rootOrSingletonContext = false, init = true) : init = false;
-              init || throwOnHydrationMismatch(workInProgress2);
+                ), rootOrSingletonContext = false, init2 = true) : init2 = false;
+              init2 || throwOnHydrationMismatch(workInProgress2);
             }
             pushHostContext(workInProgress2);
-            init = workInProgress2.type;
+            init2 = workInProgress2.type;
             prevState = workInProgress2.pendingProps;
             nextState = null !== current ? current.memoizedProps : null;
             lazyComponent = prevState.children;
-            shouldSetTextContent(init, prevState) ? lazyComponent = null : null !== nextState && shouldSetTextContent(init, nextState) && (workInProgress2.flags |= 32);
-            null !== workInProgress2.memoizedState && (init = renderWithHooks(
+            shouldSetTextContent(init2, prevState) ? lazyComponent = null : null !== nextState && shouldSetTextContent(init2, nextState) && (workInProgress2.flags |= 32);
+            null !== workInProgress2.memoizedState && (init2 = renderWithHooks(
               current,
               workInProgress2,
               TransitionAwareHostComponent,
               null,
               null,
               renderLanes2
-            ), HostTransitionContext._currentValue = init);
+            ), HostTransitionContext._currentValue = init2);
             markRef(current, workInProgress2);
             reconcileChildren(current, workInProgress2, lazyComponent, renderLanes2);
             return workInProgress2.child;
@@ -6488,7 +6488,7 @@
               renderLanes2
             ), workInProgress2.child;
           case 9:
-            return init = workInProgress2.type._context, lazyComponent = workInProgress2.pendingProps.children, prepareToReadContext(workInProgress2), init = readContext(init), lazyComponent = lazyComponent(init), workInProgress2.flags |= 1, reconcileChildren(current, workInProgress2, lazyComponent, renderLanes2), workInProgress2.child;
+            return init2 = workInProgress2.type._context, lazyComponent = workInProgress2.pendingProps.children, prepareToReadContext(workInProgress2), init2 = readContext(init2), lazyComponent = lazyComponent(init2), workInProgress2.flags |= 1, reconcileChildren(current, workInProgress2, lazyComponent, renderLanes2), workInProgress2.child;
           case 14:
             return updateMemoComponent(
               current,
@@ -6518,10 +6518,10 @@
           case 22:
             return updateOffscreenComponent(current, workInProgress2, renderLanes2);
           case 24:
-            return prepareToReadContext(workInProgress2), lazyComponent = readContext(CacheContext), null === current ? (init = peekCacheFromPool(), null === init && (init = workInProgressRoot, prevState = createCache(), init.pooledCache = prevState, prevState.refCount++, null !== prevState && (init.pooledCacheLanes |= renderLanes2), init = prevState), workInProgress2.memoizedState = {
+            return prepareToReadContext(workInProgress2), lazyComponent = readContext(CacheContext), null === current ? (init2 = peekCacheFromPool(), null === init2 && (init2 = workInProgressRoot, prevState = createCache(), init2.pooledCache = prevState, prevState.refCount++, null !== prevState && (init2.pooledCacheLanes |= renderLanes2), init2 = prevState), workInProgress2.memoizedState = {
               parent: lazyComponent,
-              cache: init
-            }, initializeUpdateQueue(workInProgress2), pushProvider(workInProgress2, CacheContext, init)) : (0 !== (current.lanes & renderLanes2) && (cloneUpdateQueue(current, workInProgress2), processUpdateQueue(workInProgress2, null, null, renderLanes2), suspendIfUpdateReadFromEntangledAsyncAction()), init = current.memoizedState, prevState = workInProgress2.memoizedState, init.parent !== lazyComponent ? (init = { parent: lazyComponent, cache: lazyComponent }, workInProgress2.memoizedState = init, 0 === workInProgress2.lanes && (workInProgress2.memoizedState = workInProgress2.updateQueue.baseState = init), pushProvider(workInProgress2, CacheContext, lazyComponent)) : (lazyComponent = prevState.cache, pushProvider(workInProgress2, CacheContext, lazyComponent), lazyComponent !== init.cache && propagateContextChanges(
+              cache: init2
+            }, initializeUpdateQueue(workInProgress2), pushProvider(workInProgress2, CacheContext, init2)) : (0 !== (current.lanes & renderLanes2) && (cloneUpdateQueue(current, workInProgress2), processUpdateQueue(workInProgress2, null, null, renderLanes2), suspendIfUpdateReadFromEntangledAsyncAction()), init2 = current.memoizedState, prevState = workInProgress2.memoizedState, init2.parent !== lazyComponent ? (init2 = { parent: lazyComponent, cache: lazyComponent }, workInProgress2.memoizedState = init2, 0 === workInProgress2.lanes && (workInProgress2.memoizedState = workInProgress2.updateQueue.baseState = init2), pushProvider(workInProgress2, CacheContext, lazyComponent)) : (lazyComponent = prevState.cache, pushProvider(workInProgress2, CacheContext, lazyComponent), lazyComponent !== init2.cache && propagateContextChanges(
               workInProgress2,
               [CacheContext],
               renderLanes2,
@@ -9712,8 +9712,8 @@
             if (null === targetInst$jscomp$0) return;
             var nodeTag = targetInst$jscomp$0.tag;
             if (3 === nodeTag || 4 === nodeTag) {
-              var container2 = targetInst$jscomp$0.stateNode.containerInfo;
-              if (container2 === targetContainer) break;
+              var container = targetInst$jscomp$0.stateNode.containerInfo;
+              if (container === targetContainer) break;
               if (4 === nodeTag)
                 for (nodeTag = targetInst$jscomp$0.return; null !== nodeTag; ) {
                   var grandTag = nodeTag.tag;
@@ -9721,15 +9721,15 @@
                     return;
                   nodeTag = nodeTag.return;
                 }
-              for (; null !== container2; ) {
-                nodeTag = getClosestInstanceFromNode(container2);
+              for (; null !== container; ) {
+                nodeTag = getClosestInstanceFromNode(container);
                 if (null === nodeTag) return;
                 grandTag = nodeTag.tag;
                 if (5 === grandTag || 6 === grandTag || 26 === grandTag || 27 === grandTag) {
                   targetInst$jscomp$0 = ancestorInst = nodeTag;
                   continue a;
                 }
-                container2 = container2.parentNode;
+                container = container.parentNode;
               }
             }
             targetInst$jscomp$0 = targetInst$jscomp$0.return;
@@ -10922,8 +10922,8 @@
         } while (node);
         retryIfBlockedOn(suspenseInstance);
       }
-      function clearContainerSparingly(container2) {
-        var nextNode = container2.firstChild;
+      function clearContainerSparingly(container) {
+        var nextNode = container.firstChild;
         nextNode && 10 === nextNode.nodeType && (nextNode = nextNode.nextSibling);
         for (; nextNode; ) {
           var node = nextNode;
@@ -10941,7 +10941,7 @@
             case "LINK":
               if ("stylesheet" === node.rel.toLowerCase()) continue;
           }
-          container2.removeChild(node);
+          container.removeChild(node);
         }
       }
       function canHydrateInstance(instance, type, props, inRootOrSingleton) {
@@ -11064,8 +11064,8 @@
       }
       var preloadPropsMap = /* @__PURE__ */ new Map();
       var preconnectsSet = /* @__PURE__ */ new Set();
-      function getHoistableRoot(container2) {
-        return "function" === typeof container2.getRootNode ? container2.getRootNode() : 9 === container2.nodeType ? container2 : container2.ownerDocument;
+      function getHoistableRoot(container) {
+        return "function" === typeof container.getRootNode ? container.getRootNode() : 9 === container.nodeType ? container : container.ownerDocument;
       }
       var previousDispatcher = ReactDOMSharedInternals.d;
       ReactDOMSharedInternals.d = {
@@ -11632,14 +11632,14 @@
         parentComponent = emptyContextObject;
         return parentComponent;
       }
-      function updateContainerImpl(rootFiber, lane, element, container2, parentComponent, callback) {
+      function updateContainerImpl(rootFiber, lane, element, container, parentComponent, callback) {
         parentComponent = getContextForSubtree(parentComponent);
-        null === container2.context ? container2.context = parentComponent : container2.pendingContext = parentComponent;
-        container2 = createUpdate(lane);
-        container2.payload = { element };
+        null === container.context ? container.context = parentComponent : container.pendingContext = parentComponent;
+        container = createUpdate(lane);
+        container.payload = { element };
         callback = void 0 === callback ? null : callback;
-        null !== callback && (container2.callback = callback);
-        element = enqueueUpdate(rootFiber, container2, lane);
+        null !== callback && (container.callback = callback);
+        element = enqueueUpdate(rootFiber, container, lane);
         null !== element && (scheduleUpdateOnFiber(element, rootFiber, lane), entangleTransitions(element, rootFiber, lane));
       }
       function markRetryLaneImpl(fiber, retryLane) {
@@ -11661,22 +11661,22 @@
         }
       }
       var _enabled = true;
-      function dispatchDiscreteEvent(domEventName, eventSystemFlags, container2, nativeEvent) {
+      function dispatchDiscreteEvent(domEventName, eventSystemFlags, container, nativeEvent) {
         var prevTransition = ReactSharedInternals.T;
         ReactSharedInternals.T = null;
         var previousPriority = ReactDOMSharedInternals.p;
         try {
-          ReactDOMSharedInternals.p = 2, dispatchEvent(domEventName, eventSystemFlags, container2, nativeEvent);
+          ReactDOMSharedInternals.p = 2, dispatchEvent(domEventName, eventSystemFlags, container, nativeEvent);
         } finally {
           ReactDOMSharedInternals.p = previousPriority, ReactSharedInternals.T = prevTransition;
         }
       }
-      function dispatchContinuousEvent(domEventName, eventSystemFlags, container2, nativeEvent) {
+      function dispatchContinuousEvent(domEventName, eventSystemFlags, container, nativeEvent) {
         var prevTransition = ReactSharedInternals.T;
         ReactSharedInternals.T = null;
         var previousPriority = ReactDOMSharedInternals.p;
         try {
-          ReactDOMSharedInternals.p = 8, dispatchEvent(domEventName, eventSystemFlags, container2, nativeEvent);
+          ReactDOMSharedInternals.p = 8, dispatchEvent(domEventName, eventSystemFlags, container, nativeEvent);
         } finally {
           ReactDOMSharedInternals.p = previousPriority, ReactSharedInternals.T = prevTransition;
         }
@@ -12111,10 +12111,10 @@
         var root2 = this._internalRoot;
         if (null !== root2) {
           this._internalRoot = null;
-          var container2 = root2.containerInfo;
+          var container = root2.containerInfo;
           updateContainerImpl(root2.current, 2, null, root2, null, null);
           flushSyncWork$1();
-          container2[internalContainerInstanceKey] = null;
+          container[internalContainerInstanceKey] = null;
         }
       };
       function ReactDOMHydrationRoot(internalRoot) {
@@ -12169,12 +12169,12 @@
           }
       }
       var hook$jscomp$inline_2257;
-      exports.createRoot = function(container2, options2) {
-        if (!isValidContainer(container2)) throw Error(formatProdErrorMessage(299));
+      exports.createRoot = function(container, options2) {
+        if (!isValidContainer(container)) throw Error(formatProdErrorMessage(299));
         var isStrictMode = false, identifierPrefix = "", onUncaughtError = defaultOnUncaughtError, onCaughtError = defaultOnCaughtError, onRecoverableError = defaultOnRecoverableError, transitionCallbacks = null;
         null !== options2 && void 0 !== options2 && (true === options2.unstable_strictMode && (isStrictMode = true), void 0 !== options2.identifierPrefix && (identifierPrefix = options2.identifierPrefix), void 0 !== options2.onUncaughtError && (onUncaughtError = options2.onUncaughtError), void 0 !== options2.onCaughtError && (onCaughtError = options2.onCaughtError), void 0 !== options2.onRecoverableError && (onRecoverableError = options2.onRecoverableError), void 0 !== options2.unstable_transitionCallbacks && (transitionCallbacks = options2.unstable_transitionCallbacks));
         options2 = createFiberRoot(
-          container2,
+          container,
           1,
           false,
           null,
@@ -12187,16 +12187,16 @@
           transitionCallbacks,
           null
         );
-        container2[internalContainerInstanceKey] = options2.current;
-        listenToAllSupportedEvents(container2);
+        container[internalContainerInstanceKey] = options2.current;
+        listenToAllSupportedEvents(container);
         return new ReactDOMRoot(options2);
       };
-      exports.hydrateRoot = function(container2, initialChildren, options2) {
-        if (!isValidContainer(container2)) throw Error(formatProdErrorMessage(299));
+      exports.hydrateRoot = function(container, initialChildren, options2) {
+        if (!isValidContainer(container)) throw Error(formatProdErrorMessage(299));
         var isStrictMode = false, identifierPrefix = "", onUncaughtError = defaultOnUncaughtError, onCaughtError = defaultOnCaughtError, onRecoverableError = defaultOnRecoverableError, transitionCallbacks = null, formState = null;
         null !== options2 && void 0 !== options2 && (true === options2.unstable_strictMode && (isStrictMode = true), void 0 !== options2.identifierPrefix && (identifierPrefix = options2.identifierPrefix), void 0 !== options2.onUncaughtError && (onUncaughtError = options2.onUncaughtError), void 0 !== options2.onCaughtError && (onCaughtError = options2.onCaughtError), void 0 !== options2.onRecoverableError && (onRecoverableError = options2.onRecoverableError), void 0 !== options2.unstable_transitionCallbacks && (transitionCallbacks = options2.unstable_transitionCallbacks), void 0 !== options2.formState && (formState = options2.formState));
         initialChildren = createFiberRoot(
-          container2,
+          container,
           1,
           true,
           initialChildren,
@@ -12220,8 +12220,8 @@
         initialChildren.current.lanes = options2;
         markRootUpdated$1(initialChildren, options2);
         ensureRootIsScheduled(initialChildren);
-        container2[internalContainerInstanceKey] = initialChildren.current;
-        listenToAllSupportedEvents(container2);
+        container[internalContainerInstanceKey] = initialChildren.current;
+        listenToAllSupportedEvents(container);
         return new ReactDOMHydrationRoot(initialChildren);
       };
       exports.version = "19.1.0";
@@ -12296,9 +12296,287 @@
     }
   });
 
-  // extension/src/popup.tsx
-  var import_react5 = __toESM(require_react());
+  // extension/src/content.tsx
   var import_client = __toESM(require_client());
+
+  // extension/src/cartDetection.ts
+  var ADD_TO_CART_PATTERNS = [
+    /\badd\s+to\s+(cart|bag|basket)\b/i,
+    /\badd\s+to\s+(my|your)\s+bag\b/i,
+    /\badd\s+to\s+shopping\s+cart\b/i,
+    /\bbuy\s+now\b/i,
+    /\badd\s+to\s+bag\b/i,
+    /\badd\s+to\s+basket\b/i,
+    /\badd\s+to\s+cart\b/i,
+    /\bcart\s*[&+]\s*save\b/i,
+    /^add\s+to\s+cart$/i,
+    /\badd\s+cart\b/i,
+    /\badd\s+bag\b/i,
+    /\bpurchase\b/i,
+    /^add\s+to\s+bag\s*$/i,
+    /^add\s+to\s+cart\s*$/i
+  ];
+  var NOT_ADD_TO_CART_PATTERNS = [
+    /\badd\s+to\s+wishlist\b/i,
+    /\badd\s+to\s+list\b/i,
+    /\badd\s+to\s+registry\b/i,
+    /\badd\s+to\s+saved\b/i,
+    /\badd\s+address\b/i,
+    /\badd\s+payment\b/i,
+    /\badd\s+card\b/i,
+    /\bview\s+(cart|bag|basket)\b/i,
+    /\bsee\s+(cart|bag)\b/i,
+    /\bshop\s+now\b/i,
+    /\bsee\s+more\b/i,
+    /\bview\s+product\b/i,
+    /\bview\s+item\b/i,
+    /\bproduct\s+details?\b/i
+  ];
+  var ADD_TO_CART_SELECTORS = [
+    '[id*="add-to-cart"]',
+    '[id*="addToCart"]',
+    '[id*="add-to-bag"]',
+    '[id*="addToBag"]',
+    '[id*="add_to_cart"]',
+    '[id*="add_to_bag"]',
+    '[id="add-to-cart-button"]',
+    '[id="addToCart"]',
+    '[id="add-to-bag"]',
+    '[data-action*="add-to-cart"]',
+    '[data-action*="add-to-bag"]',
+    '[data-action*="addToCart"]',
+    '[data-action*="addToBag"]',
+    '[data-testid*="add-to-cart"]',
+    '[data-testid*="addToCart"]',
+    '[data-testid*="add-to-bag"]',
+    '[data-testid*="addToBag"]',
+    '[data-name*="add-to-cart" i]',
+    "[data-add-to-cart]",
+    "[data-add-to-cart-trigger]",
+    '[data-automation*="add-to-bag" i]',
+    '[data-automation*="add-to-cart" i]',
+    '[class*="add-to-cart"]',
+    '[class*="add_to_cart"]',
+    '[class*="addToCart"]',
+    '[class*="add-to-bag"]',
+    '[class*="addToBag"]',
+    '[class*="add_to_bag"]',
+    '[class*="product-form__submit"]',
+    '[class*="btn--add-to-cart"]',
+    '[class*="add-to-bag"]',
+    '[name="add"]',
+    '[name*="add-to-cart"]',
+    '[name*="addToCart"]',
+    '[name*="add-to-bag"]',
+    '[value*="add to cart" i]',
+    '[value*="add to bag" i]',
+    '[value*="add to basket" i]',
+    '[aria-label*="add to cart" i]',
+    '[aria-label*="add to bag" i]',
+    '[aria-label*="add to basket" i]',
+    '[title*="add to cart" i]',
+    '[title*="add to bag" i]'
+  ];
+  var REMOVE_DECREASE_PATTERNS = [
+    /\bremove\b/i,
+    /\bdelete\b/i,
+    /\bminus\b/i,
+    /\bdecrease\b/i,
+    /\bsubtract\b/i,
+    /\bless\b/i,
+    /\bdrop\b/i,
+    /\btake\s+away\b/i,
+    /\bempty\s+cart\b/i,
+    /\bclear\s+cart\b/i,
+    /\bquantity\s*[-–—]\s*$/i,
+    /^[-–—]$/,
+    /\bminus\s+one\b/i,
+    /\bdecrease\s+quantity\b/i
+  ];
+  var REMOVE_DECREASE_SELECTORS = [
+    '[class*="remove"]',
+    '[class*="delete"]',
+    '[class*="minus"]',
+    '[class*="decrease"]',
+    '[class*="quantity-decrement"]',
+    '[class*="quantity-minus"]',
+    '[id*="remove"]',
+    '[id*="delete"]',
+    '[id*="minus"]',
+    '[id*="decrease"]',
+    '[aria-label*="remove" i]',
+    '[aria-label*="delete" i]',
+    '[aria-label*="minus" i]',
+    '[aria-label*="decrease" i]',
+    '[title*="remove" i]',
+    '[title*="delete" i]',
+    '[data-action*="remove"]',
+    '[data-action*="decrease"]'
+  ];
+  function isRemoveOrDecreaseControl(element) {
+    const text = (element.textContent || "").trim();
+    const value = element.getAttribute("value") || element.value || "";
+    const ariaLabel = element.getAttribute("aria-label") || "";
+    const title = element.getAttribute("title") || "";
+    const id = element.getAttribute("id") || "";
+    const className = element.getAttribute("class") || "";
+    const combined = [text, value, ariaLabel, title, id, className].join(" ");
+    if (REMOVE_DECREASE_PATTERNS.some((re) => re.test(combined))) return true;
+    try {
+      if (REMOVE_DECREASE_SELECTORS.some((sel) => element.matches?.(sel))) return true;
+    } catch {
+    }
+    return false;
+  }
+  function hasExplicitAddToCartSemantics(element) {
+    const id = (element.getAttribute("id") || "").toLowerCase();
+    const dataAction = (element.getAttribute("data-action") || "").toLowerCase();
+    const dataTestId = (element.getAttribute("data-testid") || "").toLowerCase();
+    const ariaLabel = (element.getAttribute("aria-label") || "").toLowerCase();
+    const combined = [id, dataAction, dataTestId, ariaLabel].join(" ");
+    return /add[-_]?to[-_]?(cart|bag|basket)/.test(combined) || /addtocart|addtobag/.test(combined);
+  }
+  function isButtonLike(element) {
+    const tag = (element.tagName || "").toLowerCase();
+    const role = (element.getAttribute("role") || "").toLowerCase();
+    const type = (element.getAttribute("type") || element.type || "").toLowerCase();
+    if (tag === "button") return true;
+    if (tag === "input" && (type === "submit" || type === "button")) return true;
+    if (role === "button") return true;
+    if (hasExplicitAddToCartSemantics(element)) return true;
+    return false;
+  }
+  function isCartAddSubmitButton(element) {
+    const tag = (element.tagName || "").toLowerCase();
+    const type = (element.getAttribute("type") || element.type || "").toLowerCase();
+    if (tag === "button" && type === "submit") {
+      const form = element.form;
+      if (form && form.action) {
+        const action = form.action.toLowerCase();
+        if (action.includes("/cart/add") || action.includes("cart/add.js")) return true;
+      }
+    }
+    if (tag === "input" && type === "submit") {
+      const form = element.form;
+      if (form && form.action) {
+        const action = form.action.toLowerCase();
+        if (action.includes("/cart/add") || action.includes("cart/add.js")) return true;
+      }
+    }
+    return false;
+  }
+  var EXPLICIT_ADD_TO_CART_SELECTORS = [
+    '[id*="add-to-cart"]',
+    '[id*="addToCart"]',
+    '[id*="add-to-bag"]',
+    '[id*="addToBag"]',
+    '[data-action*="add-to-cart"]',
+    '[data-action*="add-to-bag"]',
+    '[data-action*="addToCart"]',
+    '[data-action*="addToBag"]',
+    '[data-testid*="add-to-cart"]',
+    '[data-testid*="addToCart"]',
+    '[data-testid*="add-to-bag"]',
+    '[data-testid*="addToBag"]',
+    '[aria-label*="add to cart" i]',
+    '[aria-label*="add to bag" i]',
+    '[aria-label*="add to basket" i]',
+    '[class*="add-to-bag"]',
+    '[class*="addToBag"]',
+    '[class*="add_to_bag"]',
+    '[class*="add-to-cart"]',
+    '[class*="addToCart"]',
+    '[class*="add_to_cart"]'
+  ];
+  function matchesAddToCart(element) {
+    if (isCartAddSubmitButton(element)) return true;
+    const text = (element.textContent || "").trim();
+    const innerText = typeof element.innerText === "string" ? element.innerText.trim() : "";
+    const value = element.getAttribute("value") || element.value || "";
+    const ariaLabel = element.getAttribute("aria-label") || "";
+    const title = element.getAttribute("title") || "";
+    const id = element.getAttribute("id") || "";
+    const className = element.getAttribute("class") || "";
+    const name = element.getAttribute("name") || "";
+    const dataAction = element.getAttribute("data-action") || "";
+    const dataTestId = element.getAttribute("data-testid") || "";
+    const dataName = element.getAttribute("data-name") || "";
+    const dataAutomation = element.getAttribute("data-automation") || element.getAttribute("data-automation-id") || "";
+    const combined = [text, innerText, value, ariaLabel, title, id, className, name, dataAction, dataTestId, dataName, dataAutomation].join(" ");
+    if (NOT_ADD_TO_CART_PATTERNS.some((re) => re.test(combined))) return false;
+    const matchesPattern = ADD_TO_CART_PATTERNS.some((re) => re.test(combined));
+    const matchesExplicitSelector = EXPLICIT_ADD_TO_CART_SELECTORS.some((sel) => {
+      try {
+        return element.matches?.(sel) ?? false;
+      } catch {
+        return false;
+      }
+    });
+    if (isButtonLike(element)) {
+      if (matchesPattern) return true;
+      try {
+        if (ADD_TO_CART_SELECTORS.some((sel) => element.matches?.(sel))) return true;
+        for (const sel of ADD_TO_CART_SELECTORS) {
+          const closestEl = element.closest?.(sel);
+          if (closestEl && isButtonLike(closestEl)) return true;
+        }
+      } catch {
+      }
+      return false;
+    }
+    if (matchesExplicitSelector && matchesPattern) return true;
+    try {
+      for (const sel of EXPLICIT_ADD_TO_CART_SELECTORS) {
+        const closestEl = element.closest?.(sel);
+        if (closestEl && matchesPattern && ADD_TO_CART_PATTERNS.some((re) => re.test(closestEl.textContent || ""))) return true;
+      }
+    } catch {
+    }
+    return false;
+  }
+  function findAddToCartTarget(clickEvent, overlayRootId) {
+    const overlayRoot = overlayRootId ? document.getElementById(overlayRootId) : null;
+    const path = clickEvent.composedPath ? clickEvent.composedPath() : [];
+    for (let i = 0; i < path.length; i++) {
+      const node = path[i];
+      if (node && typeof node.nodeType !== "undefined" && node.nodeType === Node.ELEMENT_NODE) {
+        const el = node;
+        if (el === document.body) continue;
+        if (overlayRoot && (el === overlayRoot || overlayRoot.contains(el))) continue;
+        let hitRemove = false;
+        for (let j = 0; j <= i; j++) {
+          const n = path[j];
+          if (n && typeof n.nodeType !== "undefined" && n.nodeType === Node.ELEMENT_NODE) {
+            if (isRemoveOrDecreaseControl(n)) {
+              hitRemove = true;
+              break;
+            }
+          }
+        }
+        if (hitRemove) continue;
+        if (matchesAddToCart(el)) return el;
+      }
+    }
+    let current = clickEvent.target || null;
+    while (current && current !== document.body) {
+      if (overlayRoot && (current === overlayRoot || overlayRoot.contains(current))) return null;
+      if (isRemoveOrDecreaseControl(current)) return null;
+      if (matchesAddToCart(current)) return current;
+      const nextParent = current.parentElement ? current.parentElement : current.parentNode && current.parentNode.host !== void 0 ? current.parentNode.host : null;
+      current = nextParent;
+    }
+    const target = clickEvent.target;
+    if (target) {
+      const interactive = target.closest?.('button, [role="button"], input[type="submit"]');
+      if (interactive && interactive !== overlayRoot && !(overlayRoot && overlayRoot.contains(interactive)) && !isRemoveOrDecreaseControl(interactive) && matchesAddToCart(interactive)) {
+        return interactive;
+      }
+    }
+    return null;
+  }
+
+  // extension/src/ContentOverlay.tsx
+  var import_react5 = __toESM(require_react());
 
   // components/AddItemForm.tsx
   var import_react3 = __toESM(require_react());
@@ -25171,13 +25449,13 @@ ${suffix}`;
   var fetchWithAuth = (supabaseKey, getAccessToken, customFetch) => {
     const fetch$1 = resolveFetch4(customFetch);
     const HeadersConstructor = resolveHeadersConstructor();
-    return async (input, init) => {
+    return async (input, init2) => {
       var _await$getAccessToken;
       const accessToken = (_await$getAccessToken = await getAccessToken()) !== null && _await$getAccessToken !== void 0 ? _await$getAccessToken : supabaseKey;
-      let headers = new HeadersConstructor(init === null || init === void 0 ? void 0 : init.headers);
+      let headers = new HeadersConstructor(init2 === null || init2 === void 0 ? void 0 : init2.headers);
       if (!headers.has("apikey")) headers.set("apikey", supabaseKey);
       if (!headers.has("Authorization")) headers.set("Authorization", `Bearer ${accessToken}`);
-      return fetch$1(input, _objectSpread22(_objectSpread22({}, init), {}, { headers }));
+      return fetch$1(input, _objectSpread22(_objectSpread22({}, init2), {}, { headers }));
     };
   };
   function ensureTrailingSlash(url) {
@@ -25494,13 +25772,14 @@ ${suffix}`;
     }
   }
 
-  // extension/src/popup.tsx
+  // extension/src/ContentOverlay.tsx
   var import_jsx_runtime3 = __toESM(require_jsx_runtime());
-  var App = () => {
+  var OVERLAY_ID = "second-thought-overlay";
+  function ContentOverlay({ onClose, pageUrl }) {
     const [session, setSession] = (0, import_react5.useState)(null);
     const [loading, setLoading] = (0, import_react5.useState)(true);
-    const [activeUrl, setActiveUrl] = (0, import_react5.useState)("");
-    const [urlStatus, setUrlStatus] = (0, import_react5.useState)("");
+    const [showForm, setShowForm] = (0, import_react5.useState)(false);
+    const [showSavedScreen, setShowSavedScreen] = (0, import_react5.useState)(false);
     const [submitMessage, setSubmitMessage] = (0, import_react5.useState)("");
     (0, import_react5.useEffect)(() => {
       supabase.auth.getSession().then(({ data: { session: session2 } }) => {
@@ -25516,51 +25795,36 @@ ${suffix}`;
       });
       return () => subscription.unsubscribe();
     }, []);
-    (0, import_react5.useEffect)(() => {
-      if (typeof chrome !== "undefined" && chrome.tabs && chrome.tabs.query) {
-        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-          const currentUrl = tabs && tabs[0] && tabs[0].url;
-          if (currentUrl) {
-            setActiveUrl(currentUrl);
-          } else {
-            setUrlStatus("Unable to read the active tab URL.");
-          }
-        });
-      }
-    }, []);
-    const handleSignOut = async () => {
-      await supabase.auth.signOut();
-      setSession(null);
+    const handleBackdropClick = (e) => {
+      if (e.target === e.currentTarget) onClose();
+    };
+    const handleAddToMindfulCart = () => {
+      setShowForm(true);
       setSubmitMessage("");
     };
     const handleSubmit = async (item) => {
-      console.log("=== handleSubmit called ===");
-      console.log("Session exists:", !!session);
-      console.log("Session user:", session?.user?.email);
       if (!session?.user) {
-        console.error("NO SESSION - cannot save item");
-        setSubmitMessage("Error: Not logged in. Please sign out and sign in again.");
+        setSubmitMessage("Error: Not logged in. Please sign in to save items.");
         return;
       }
       const userId = session.user.id;
       setSubmitMessage("Saving...");
       try {
         const dbItem = itemToDbItem(item, userId);
-        console.log("DB item to insert:", JSON.stringify(dbItem, null, 2));
         const { data, error: itemError } = await supabase.from("items").insert([dbItem]).select();
-        console.log("Supabase response - data:", data);
-        console.log("Supabase response - error:", itemError);
         if (itemError) {
-          console.error("INSERT FAILED:", itemError.message, itemError.details, itemError.hint);
           setSubmitMessage(`Error: ${itemError.message}`);
           return;
         }
-        console.log("Item saved successfully!");
-        setSubmitMessage("Item saved! Open the web app to view it.");
+        setShowForm(false);
+        setShowSavedScreen(true);
       } catch (err) {
-        console.error("EXCEPTION saving item:", err);
         setSubmitMessage(`Error: ${err.message}`);
       }
+    };
+    const handleFormCancel = () => {
+      setShowForm(false);
+      setSubmitMessage("");
     };
     const checkUrlInInventory = (0, import_react5.useCallback)(
       async (url) => {
@@ -25572,54 +25836,318 @@ ${suffix}`;
       },
       [session?.user?.id]
     );
+    const handleSignIn = async (email, password) => {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      return { error };
+    };
     if (loading) {
-      return /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "flex items-center justify-center min-h-[200px]", children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { className: "text-muted-foreground", children: "Loading..." }) });
+      return /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { id: OVERLAY_ID, className: "st-overlay-root", children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "st-overlay-backdrop", onClick: handleBackdropClick, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "st-overlay-card", children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { className: "st-overlay-message", children: "Loading..." }) }) }) });
     }
     if (!session) {
-      const handleSignIn = async (email, password) => {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        return { error };
-      };
-      return /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Auth, { onSignIn: handleSignIn, compact: true });
-    }
-    return /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "flex items-center justify-between mb-3", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("h1", { className: "text-xl font-bold text-foreground", children: "Second Thought" }),
+      return /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { id: OVERLAY_ID, onClick: (e) => e.stopPropagation(), children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "st-overlay-backdrop", onClick: handleBackdropClick, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "st-overlay-card st-overlay-card-form", onClick: (e) => e.stopPropagation(), children: [
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("h1", { className: "st-overlay-title", children: "Second Thought" }),
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { className: "st-overlay-message", children: "Sign in to save items to your mindful cart." }),
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Auth, { onSignIn: handleSignIn, compact: true }),
         /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
           "button",
           {
-            onClick: handleSignOut,
-            className: "text-sm text-muted-foreground hover:text-foreground transition-colors",
-            children: "Sign out"
+            type: "button",
+            className: "st-overlay-close",
+            onClick: (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onClose();
+            },
+            children: "Continue without adding"
           }
         )
-      ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { className: "text-xs text-muted-foreground mb-4", children: session.user.email }),
-      urlStatus && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { className: "text-sm text-muted-foreground mb-2", children: urlStatus }),
-      submitMessage && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "bg-primary/10 border border-primary/20 text-foreground rounded-xl p-3 text-sm mb-4", children: submitMessage }),
-      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
-        AddItemForm,
+      ] }) }) });
+    }
+    if (showSavedScreen) {
+      return /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { id: OVERLAY_ID, className: "st-overlay-root", onClick: (e) => e.stopPropagation(), children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "st-overlay-backdrop", onClick: handleBackdropClick, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "st-overlay-card", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("h1", { className: "st-overlay-title", children: "Item saved!" }),
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
+          "button",
+          {
+            type: "button",
+            className: "st-overlay-btn-primary",
+            onClick: (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onClose();
+            },
+            children: "Close"
+          }
+        )
+      ] }) }) });
+    }
+    if (showForm) {
+      return /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { id: OVERLAY_ID, className: "st-overlay-root", onClick: (e) => e.stopPropagation(), children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "st-overlay-backdrop st-overlay-backdrop-form", onClick: handleBackdropClick, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(
+        "div",
         {
-          onSubmit: handleSubmit,
-          onCancel: () => window.close(),
-          initialUrl: activeUrl,
-          checkUrlInInventory
+          className: "st-overlay-card st-overlay-card-form",
+          onClick: (e) => e.stopPropagation(),
+          onMouseDown: (e) => e.stopPropagation(),
+          children: [
+            submitMessage && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "mb-3 p-3 rounded-xl text-sm bg-primary/10 border border-primary/20 text-foreground", children: submitMessage }),
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
+              AddItemForm,
+              {
+                onSubmit: handleSubmit,
+                onCancel: handleFormCancel,
+                initialUrl: pageUrl,
+                checkUrlInInventory
+              }
+            )
+          ]
+        }
+      ) }) });
+    }
+    return /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { id: OVERLAY_ID, onClick: (e) => e.stopPropagation(), children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "st-overlay-backdrop", onClick: handleBackdropClick, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "st-overlay-card", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("h1", { className: "st-overlay-title", children: "Second Thought" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { className: "st-overlay-message", children: "Would you like to give this purchase a second thought?" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { type: "button", className: "st-overlay-btn-primary", onClick: handleAddToMindfulCart, children: "Add to mindful cart" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
+        "button",
+        {
+          type: "button",
+          className: "st-overlay-close",
+          onClick: (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onClose();
+          },
+          children: "Continue without adding"
         }
       )
-    ] });
-  };
-  var container = document.getElementById("root");
-  if (container) {
-    const root = (0, import_client.createRoot)(container);
-    root.render(/* @__PURE__ */ (0, import_jsx_runtime3.jsx)(App, {}));
+    ] }) }) });
   }
+
+  // lib/fetchUserProductUrls.ts
+  async function fetchItemByProductUrlWithClient(supabaseClient, userId, pageUrl) {
+    try {
+      const { data, error } = await supabaseClient.from("items").select("product_url, wait_until_date, friend_name, is_unlocked, goal").eq("user_id", userId).not("product_url", "is", null);
+      if (error) return { item: null, error };
+      const rows = data || [];
+      const normalizedPage = normalizeProductUrl(pageUrl);
+      const match = rows.find(
+        (r) => r.product_url && normalizeProductUrl(r.product_url) === normalizedPage
+      );
+      if (!match) return { item: null, error: null };
+      return {
+        item: {
+          wait_until_date: match.wait_until_date,
+          friend_name: match.friend_name,
+          is_unlocked: match.is_unlocked,
+          goal: match.goal
+        },
+        error: null
+      };
+    } catch (error) {
+      return { item: null, error };
+    }
+  }
+
+  // lib/dateUtils.ts
+  function daysRemainingUntil(dateStr) {
+    if (!dateStr || !dateStr.trim()) return 0;
+    try {
+      const d = new Date(dateStr.trim());
+      if (Number.isNaN(d.getTime())) return 0;
+      const today = /* @__PURE__ */ new Date();
+      today.setHours(0, 0, 0, 0);
+      d.setHours(0, 0, 0, 0);
+      const diffMs = d.getTime() - today.getTime();
+      const days = Math.floor(diffMs / (24 * 60 * 60 * 1e3));
+      return Math.max(0, days);
+    } catch {
+      return 0;
+    }
+  }
+  function formatUnlockDate(dateStr) {
+    if (!dateStr || !dateStr.trim()) return "\u2014";
+    try {
+      const d = new Date(dateStr.trim());
+      if (Number.isNaN(d.getTime())) return "\u2014";
+      return d.toLocaleDateString(void 0, {
+        month: "short",
+        day: "numeric",
+        year: "numeric"
+      });
+    } catch {
+      return "\u2014";
+    }
+  }
+
+  // extension/src/content.tsx
+  var import_jsx_runtime4 = __toESM(require_jsx_runtime());
+  var DEBUG = false;
+  var CLOSE_COOLDOWN_MS = 800;
+  var BANNER_ID = "second-thought-url-banner";
+  var lastOverlayCloseTime = 0;
+  function showOverlay() {
+    const doc = document;
+    if (doc.getElementById(OVERLAY_ID)) return;
+    if (Date.now() - lastOverlayCloseTime < CLOSE_COOLDOWN_MS) return;
+    const container = doc.createElement("div");
+    container.id = OVERLAY_ID;
+    doc.body.style.overflow = "hidden";
+    doc.body.appendChild(container);
+    const root = (0, import_client.createRoot)(container);
+    function handleClose() {
+      lastOverlayCloseTime = Date.now();
+      try {
+        root.unmount();
+      } catch (_) {
+      }
+      if (container.parentNode) {
+        container.parentNode.removeChild(container);
+      }
+      doc.body.style.overflow = "";
+    }
+    root.render(
+      /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(ContentOverlay, { onClose: handleClose, pageUrl: doc.location?.href })
+    );
+  }
+  function onDocumentClick(e) {
+    if (Date.now() - lastOverlayCloseTime < CLOSE_COOLDOWN_MS) return;
+    const addToCartEl = findAddToCartTarget(e, OVERLAY_ID);
+    if (!addToCartEl) return;
+    if (DEBUG) console.log("Second Thought: add-to-cart detected", addToCartEl);
+    setTimeout(showOverlay, 100);
+  }
+  function showUrlBanner(content) {
+    const doc = document;
+    if (doc.getElementById(BANNER_ID)) return;
+    const bar = doc.createElement("div");
+    bar.id = BANNER_ID;
+    const variantClass = content.variant === "unlocked" ? "st-url-banner st-url-banner--unlocked" : content.variant === "goals" ? "st-url-banner st-url-banner--goals" : "st-url-banner st-url-banner--time";
+    bar.className = variantClass;
+    const headingHtml = escapeHtml(content.title);
+    const subtitleHtml = content.subtitle ? escapeHtml(content.subtitle) : "";
+    const linesHtml = content.lines.map((line) => {
+      if (line.kind === "metrics") {
+        const [daysRaw, unlockRaw] = line.value.split("|");
+        const days = escapeHtml(daysRaw ?? "");
+        const unlock = escapeHtml(unlockRaw ?? "");
+        return `
+          <div class="st-url-banner-line st-url-banner-line--metrics">
+            <span class="st-url-banner-line-label">Days remaining:</span>
+            <span class="st-url-banner-line-value st-url-banner-line-value-days">${days}</span>
+            <span class="st-url-banner-line-separator">\xB7</span>
+            <span class="st-url-banner-line-label st-url-banner-line-label-unlock">Unlocks on:</span>
+            <span class="st-url-banner-line-value st-url-banner-line-value-unlock">${unlock}</span>
+          </div>
+        `;
+      }
+      const value = escapeHtml(line.value);
+      if (line.label) {
+        const label = escapeHtml(line.label);
+        return `<div class="st-url-banner-line"><span class="st-url-banner-line-label">${label}</span><span class="st-url-banner-line-value">${value}</span></div>`;
+      }
+      return `<div class="st-url-banner-line"><span class="st-url-banner-line-value">${value}</span></div>`;
+    }).join("");
+    bar.innerHTML = `
+    <div class="st-url-banner-inner">
+      <div class="st-url-banner-content">
+        <div class="st-url-banner-heading-row">
+          <div class="st-url-banner-heading">${headingHtml}</div>
+          ${subtitleHtml ? `<div class="st-url-banner-subtitle">${subtitleHtml}</div>` : ""}
+        </div>
+        <div class="st-url-banner-lines">
+          ${linesHtml}
+        </div>
+      </div>
+      <button type="button" class="st-url-banner-dismiss" aria-label="Dismiss">\xD7</button>
+    </div>
+  `;
+    const dismiss = bar.querySelector(".st-url-banner-dismiss");
+    if (dismiss) {
+      dismiss.addEventListener("click", () => {
+        bar.remove();
+      });
+    }
+    doc.body.insertBefore(bar, doc.body.firstChild);
+  }
+  function escapeHtml(s) {
+    const div = document.createElement("div");
+    div.textContent = s;
+    return div.innerHTML;
+  }
+  async function checkUrlAndShowBanner() {
+    if (window !== window.top) return;
+    const url = document.location?.href || "";
+    if (!url || url.startsWith("chrome:") || url.startsWith("edge:") || url.startsWith("about:")) return;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) return;
+      const { item, error } = await fetchItemByProductUrlWithClient(supabase, session.user.id, url);
+      if (error || !item) return;
+      if (item.is_unlocked) {
+        const isTimeBased = !!item.wait_until_date;
+        showUrlBanner({
+          variant: "unlocked",
+          title: "Mindfulness constraint reached",
+          lines: [
+            { value: isTimeBased ? "Time-based constraint \u23F3" : "Goals-based constraint \u{1F3AF}" },
+            ...item.goal?.trim() && !isTimeBased ? [{ label: "Your goal:", value: item.goal.trim() }] : [],
+            { value: "Congrats on unlocking this item and making a more mindful purchase!" }
+          ]
+        });
+        return;
+      }
+      if (item.wait_until_date) {
+        const days = daysRemainingUntil(item.wait_until_date);
+        const unlockDate = formatUnlockDate(item.wait_until_date);
+        showUrlBanner({
+          variant: "time",
+          title: "Mindful constraint active",
+          lines: [
+            { value: "Time-based constraint \u23F3" },
+            {
+              kind: "metrics",
+              value: `${days}|${unlockDate}`
+            }
+          ]
+        });
+      } else {
+        const friendLabel = item.friend_name?.trim() || "your friend";
+        const goalText = item.goal?.trim();
+        showUrlBanner({
+          variant: "goals",
+          title: "Mindful constraint active",
+          lines: [
+            { value: "Goals-based constraint \u{1F3AF}" },
+            ...goalText ? [{ label: "Your goal:", value: goalText }] : [],
+            {
+              value: `To unlock this item, complete your goal and enter the password from ${friendLabel}.`
+            }
+          ]
+        });
+      }
+    } catch {
+    }
+  }
+  function init() {
+    document.addEventListener("click", onDocumentClick, true);
+    chrome.runtime?.onMessage?.addListener((message) => {
+      if (message.type === "SHOW_URL_BANNER" && window === window.top) {
+        checkUrlAndShowBanner();
+      }
+    });
+    if (window === window.top) {
+      checkUrlAndShowBanner();
+    }
+    if (DEBUG) console.log("Second Thought: content script loaded");
+  }
+  init();
 })();
 /*! Bundled license information:
 
-react/cjs/react.production.js:
+scheduler/cjs/scheduler.production.js:
   (**
    * @license React
-   * react.production.js
+   * scheduler.production.js
    *
    * Copyright (c) Meta Platforms, Inc. and affiliates.
    *
@@ -25627,10 +26155,10 @@ react/cjs/react.production.js:
    * LICENSE file in the root directory of this source tree.
    *)
 
-scheduler/cjs/scheduler.production.js:
+react/cjs/react.production.js:
   (**
    * @license React
-   * scheduler.production.js
+   * react.production.js
    *
    * Copyright (c) Meta Platforms, Inc. and affiliates.
    *

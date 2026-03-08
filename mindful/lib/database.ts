@@ -1,4 +1,6 @@
 import { supabase } from '../env';
+import { fetchUserProductUrlsWithClient, fetchItemByProductUrlWithClient } from './fetchUserProductUrls';
+import { daysRemainingUntil, formatUnlockDate } from './dateUtils';
 import type { Item, ItemCategory, QuestionAnswer } from '../types/item';
 
 /**
@@ -10,6 +12,7 @@ export interface DbItem {
   user_id: string;
   name: string;
   image_url: string | null;
+  product_url: string | null;
   category: string | null;
   constraint_type: 'time' | 'goals';
   consumption_score: number;
@@ -19,6 +22,11 @@ export interface DbItem {
   added_date: string;
   created_at: string;
   updated_at: string;
+  // Friend unlock fields – match Supabase schema
+  friend_name: string | null;
+  friend_email: string | null;
+  unlock_password: string | null;
+  is_unlocked: boolean | null;
 }
 
 /**
@@ -31,6 +39,7 @@ function itemToDb(item: Item, userId: string): Omit<DbItem, 'created_at' | 'upda
     user_id: userId,
     name: item.name,
     image_url: item.imageUrl || null,
+    product_url: item.productUrl || null,
     category: item.category || null,
     constraint_type: item.constraintType,
     consumption_score: item.consumptionScore,
@@ -53,8 +62,10 @@ function itemToDb(item: Item, userId: string): Omit<DbItem, 'created_at' | 'upda
 function dbToItem(dbItem: DbItem): Item {
   return {
     id: dbItem.id,
+    isUnlocked: dbItem.is_unlocked ?? false,
     name: dbItem.name,
     imageUrl: dbItem.image_url || undefined,
+    productUrl: dbItem.product_url || undefined,
     category: dbItem.category as ItemCategory | undefined,
     constraintType: dbItem.constraint_type,
     consumptionScore: dbItem.consumption_score,
@@ -69,19 +80,22 @@ function dbToItem(dbItem: DbItem): Item {
   };
 }
 
+// Columns needed for list/detail – include friend/unlock fields so guard info is preserved
+const ITEMS_SELECT =
+  'id, user_id, name, image_url, product_url, category, constraint_type, consumption_score, wait_until_date, difficulty, questionnaire, added_date, created_at, updated_at, friend_name, friend_email, unlock_password, is_unlocked';
+
 /**
  * FETCH ALL ITEMS FOR A USER
- * 
+ * Uses index (user_id, created_at DESC) when present. Selects only needed columns for faster response.
+ *
  * @param userId - User's UUID
  * @returns { items: Item[], error: any }
  */
 export async function fetchItems(userId: string): Promise<{ items: Item[]; error: any }> {
   try {
-    console.log('📥 Fetching items for user:', userId);
-    
     const { data, error } = await supabase
       .from('items')
-      .select('*')
+      .select(ITEMS_SELECT)
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
     
@@ -102,6 +116,31 @@ export async function fetchItems(userId: string): Promise<{ items: Item[]; error
     console.error('❌ Fetch exception:', error);
     return { items: [], error };
   }
+}
+
+/**
+ * Fetch product_url values for a user (for duplicate-URL check).
+ * Uses shared fetchUserProductUrlsWithClient with the app's supabase client.
+ */
+export async function fetchUserProductUrls(userId: string): Promise<{ urls: string[]; error: any }> {
+  return fetchUserProductUrlsWithClient(supabase, userId);
+}
+
+/** Re-export for app use (extension uses fetchItemByProductUrlWithClient + its own client). */
+export { daysRemainingUntil, formatUnlockDate };
+
+/**
+ * Fetch the item matching a product URL for the current user (app supabase).
+ * Returns wait_until_date, friend_name, and is_unlocked for extension banner (locked vs unlocked).
+ */
+export async function fetchItemByProductUrl(
+  userId: string,
+  pageUrl: string
+): Promise<{
+  item: { wait_until_date: string | null; friend_name: string | null; is_unlocked: boolean | null } | null;
+  error: any;
+}> {
+  return fetchItemByProductUrlWithClient(supabase, userId, pageUrl);
 }
 
 /**
@@ -239,6 +278,60 @@ export async function saveItem(item: Item, userId: string): Promise<{ success: b
     console.error('❌ Save exception (caught):', error);
     console.error('❌ Exception type:', typeof error);
     console.error('❌ Exception details:', error);
+    return { success: false, error };
+  }
+}
+
+/**
+ * UPDATE ITEM'S is_unlocked FLAG (time expired or goal password entered)
+ * Keeps the item in the items table; does not delete or move to another table.
+ */
+export async function updateItemUnlocked(
+  itemId: string,
+  userId: string,
+  isUnlocked: boolean
+): Promise<{ success: boolean; error: any }> {
+  try {
+    const { error } = await supabase
+      .from('items')
+      .update({ is_unlocked: isUnlocked })
+      .eq('id', itemId)
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('❌ Update is_unlocked error:', error);
+      return { success: false, error };
+    }
+    return { success: true, error: null };
+  } catch (error) {
+    console.error('❌ Update is_unlocked exception:', error);
+    return { success: false, error };
+  }
+}
+
+/**
+ * UPDATE ITEM CATEGORY
+ * Allows changing category from item detail view.
+ */
+export async function updateItemCategory(
+  itemId: string,
+  userId: string,
+  category: ItemCategory | undefined
+): Promise<{ success: boolean; error: any }> {
+  try {
+    const { error } = await supabase
+      .from('items')
+      .update({ category: category ?? null })
+      .eq('id', itemId)
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('❌ Update category error:', error);
+      return { success: false, error };
+    }
+    return { success: true, error: null };
+  } catch (error) {
+    console.error('❌ Update category exception:', error);
     return { success: false, error };
   }
 }

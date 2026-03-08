@@ -1,10 +1,11 @@
 # win26-Team8
-Read more on our wiki page: https://github.com/StanfordCS194/win26-Team8/wiki
-Hi this is Nicole! Testing here. 
-Hey - this is Tarini testing
-This is Mina testing branches!
 
-Tarini Mutreja
-Nicole Esibov (for source control with git assignment)
-this is emily, hiii
-hi this is Manat
+Welcome to the Team 8 project repository for Stanford CS194 (Winter 2026).
+
+## 🖥️ Second Thought Application
+You can view the deployed application here:  
+https://second-thought-lilac.vercel.app/
+
+## 📚 Documentation
+Detailed documentation, design decisions, and development notes can be found on our Wiki:  
+https://github.com/StanfordCS194/win26-Team8/wiki
