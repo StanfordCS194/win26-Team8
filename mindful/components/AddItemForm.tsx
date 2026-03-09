@@ -101,9 +101,11 @@ interface AddItemFormProps {
   initialUrl?: string;
   /** If provided, called when moving to dynamic questions. Return true to block and show "already in inventory". */
   checkUrlInInventory?: (url: string) => Promise<boolean>;
+  /** Names of items the user already has; used to generate questions about fit/overlap. */
+  existingItemNames?: string[];
 }
 
-export function AddItemForm({ onSubmit, onCancel, initialUrl, checkUrlInInventory }: AddItemFormProps) {
+export function AddItemForm({ onSubmit, onCancel, initialUrl, checkUrlInInventory, existingItemNames }: AddItemFormProps) {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [productUrl, setProductUrl] = useState(initialUrl ?? '');
   const [name, setName] = useState('');
@@ -298,7 +300,10 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl, checkUrlInInventor
     setIsLoadingQuestions(true);
 
     try {
-      const { questions: generatedQuestions, usedFallback } = await generateQuestions(itemName);
+      const { questions: generatedQuestions, usedFallback } = await generateQuestions(itemName, {
+        category,
+        existingItemNames: existingItemNames?.filter((n) => n.trim() && n !== itemName),
+      });
       setQuestions(generatedQuestions);
       setQuestionsUsedFallback(!!usedFallback);
 

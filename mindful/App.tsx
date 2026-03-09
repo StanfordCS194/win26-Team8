@@ -692,6 +692,7 @@ function AppContent() {
                 const normalized = normalizeProductUrl(url);
                 return items.some((i) => i.productUrl && normalizeProductUrl(i.productUrl) === normalized);
               }}
+              existingItemNames={items.map((i) => i.name)}
             />
           ) : (
             <SignInRequired />

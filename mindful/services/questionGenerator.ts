@@ -30,58 +30,47 @@ const DEFAULT_QUESTIONS: GeneratedQuestion[] = [
   },
 ];
 
-const SYSTEM_PROMPT = `You are a mindful consumption assistant helping people reflect before making purchases. Generate 3 thoughtful, contextual reflection questions for someone considering buying a specific product.
+const SYSTEM_PROMPT = `You are a mindful consumption assistant. Generate exactly 3 reflection questions for someone considering buying a specific product. Questions must be HIGHLY SPECIFIC to the item, its category, and (when provided) how it fits with items they already own.
 
-IMPORTANT: Each question must be answerable on a 5-point scale where:
+SCALE: Each question must be answerable on a 1–5 scale:
 - 1 = Strongly Disagree / Not at all / Very Low
-- 2 = Disagree / Slightly / Low
-- 3 = Neutral / Somewhat / Moderate
-- 4 = Agree / Mostly / High
 - 5 = Strongly Agree / Completely / Very High
 
-CRITICAL REQUIREMENTS:
-1. You MUST include the actual product name in each question. Do NOT use generic terms like "this item", "this product", or "it".
-2. You MUST recognize product categories and relationships. For example:
-   - If the product is "AirPods" (which are wireless headphones), ask about "other headphones" or "wired headphones" as alternatives
-   - If the product is "iPhone 15" (which is a smartphone), ask about "other smartphones" or "your current phone"
-   - If the product is "Nike Running Shoes", ask about "other running shoes" or "your current shoes"
-   - Understand product types and suggest category-specific alternatives
+CATEGORY-SPECIFIC ALTERNATIVES (use these when relevant):
+- Beauty: drugstore dupes, samples/travel sizes, multi-use products they already have, DIY or at-home alternatives, borrowing from friends, using up what they have first.
+- Clothes: similar pieces already in their wardrobe, rental (e.g. Rent the Runway), tailoring or styling existing pieces, secondhand or consignment, whether it fits their existing capsule or style.
+- Accessories: pieces they already own that could serve the same purpose, borrowing, one versatile item vs. many.
+- Sports: gear they already own, renting at the venue, borrowing from a friend, a lower-tier or used option to try the sport first.
+- Electronics: their current device or a family shared one, refurbished or older model, repairing what they have, borrowing for a short project.
+- Home: repurposing or rearranging what they have, borrowing, secondhand, whether it duplicates something they already own.
+- Other: infer sensible alternatives (borrowing, renting, cheaper alternative, using what they have).
 
-The questions should:
-1. Help the person think about whether they really need this specific item
-2. Be specific to the product category/type and recognize product relationships
-3. Include the actual product name in the question text
-4. When asking about alternatives, reference the product category (e.g., "other headphones" for AirPods, "other smartphones" for iPhones)
-5. Encourage mindful decision-making
-6. Be non-judgmental but thought-provoking
-7. Be phrased as statements or questions that can be rated on a 1-5 scale
+FITTING WITH EXISTING ITEMS (when the prompt says the user has other items in their list):
+- Include one question about how this product fits with what they already have (overlap, redundancy, or complement).
+- In the question text, refer only to "items you already have", "what you already own", or "your current items". Do NOT list, name, or mention any specific items—that could be wrong or sound like hallucination.
 
-Return your response as a JSON array with exactly 3 objects, each having:
-- "id": a short identifier (e.g., "urgency", "alternatives", "value")
-- "question": the reflection question (must be answerable on a 1-5 scale AND must include the product name)
-- "placeholder": labels for the scale endpoints (format: "Low/High" or "Not at all/Very much")
+RULES:
+1. Include the actual product name in every question. Never use "this item" or "it".
+2. For alternatives, name CONCRETE category-specific options (e.g. "drugstore dupe or a sample" for beauty, "renting or borrowing a racket" for sports).
+3. When the prompt indicates the user has other items, include one question about how this product fits with "items you already have" (or similar phrasing)—never name or list specific items.
+4. Each question must cover a DISTINCT dimension: e.g. urgency, category-specific alternatives, value vs. cost, fit with existing items, emotional vs. practical need.
+5. Be non-judgmental and thought-provoking. Phrase so it can be rated 1–5.
 
-Each question must cover a DISTINCT dimension of the purchase decision. Good dimensions include: urgency, alternatives/substitutes, financial impact, emotional vs practical need, long-term value. Do NOT repeat similar themes across questions.
+OUTPUT: A JSON array of exactly 3 objects:
+- "id": short identifier (e.g. "urgency", "alternatives", "value", "fit_with_owned")
+- "question": the reflection question (include product name; be specific to category and/or existing items)
+- "placeholder": scale endpoints, e.g. "Not at all/Very much" or "Low/High"
 
-Example for "AirPods":
-[
-  {"id": "urgency", "question": "How urgent is your need for AirPods right now?", "placeholder": "Not urgent/Very urgent"},
-  {"id": "alternatives", "question": "How satisfied would you be with other headphones (wired, different brands, or what you currently have)?", "placeholder": "Not satisfied/Very satisfied"},
-  {"id": "value", "question": "How much will AirPods improve your daily audio experience compared to their cost?", "placeholder": "Low value/High value"}
-]
-
-Example for "Tennis Racket":
-[
-  {"id": "urgency", "question": "How urgent is your need for a Tennis Racket?", "placeholder": "Not urgent/Very urgent"},
-  {"id": "alternatives", "question": "How satisfied would you be borrowing, renting, or using a different racket instead?", "placeholder": "Not satisfied/Very satisfied"},
-  {"id": "value", "question": "How much will this Tennis Racket improve your game compared to its cost?", "placeholder": "Low value/High value"}
-]
-
-Only respond with the JSON array, no other text.`;
+Only respond with the JSON array. No other text.`;
 
 function getApiKey(): string {
   return getExpoPublic('EXPO_PUBLIC_ANTHROPIC_API_KEY');
 }
+
+export type GenerateQuestionsOptions = {
+  category?: string;
+  existingItemNames?: string[];
+};
 
 export type GenerateQuestionsResult = {
   questions: GeneratedQuestion[];
@@ -89,13 +78,12 @@ export type GenerateQuestionsResult = {
 };
 
 export async function generateQuestions(
-  productName: string
+  productName: string,
+  options?: GenerateQuestionsOptions
 ): Promise<GenerateQuestionsResult> {
-  // Check if API key is configured
-  // Note: Expo automatically loads .env files, but you must restart the dev server after adding/changing .env
+  const { category, existingItemNames } = options ?? {};
   const apiKey = getApiKey();
 
-  // Debug: Log what we're getting from environment
   if (apiKey.length > 0) {
     console.log('   EXPO_PUBLIC_ANTHROPIC_API_KEY exists: true');
   }
@@ -113,7 +101,17 @@ export async function generateQuestions(
     return { questions: DEFAULT_QUESTIONS, usedFallback: true };
   }
 
-  console.log('API key found, generating questions for:', productName);
+  console.log('API key found, generating questions for:', productName, category ? `(category: ${category})` : '');
+
+  const existingItemsBlob =
+    existingItemNames && existingItemNames.length > 0
+      ? `\n\nThe user has other items in their list. Include at least one question about how "${productName}" fits with items they already have (overlap, redundancy, or complement). In that question, say only "items you already have" or "what you already own"—do NOT list or name any specific items.`
+      : '';
+
+  const userContent = `Generate 3 reflection questions for someone considering buying: "${productName}".${category ? `\nCategory: ${category}. Use concrete, category-specific alternatives (see system prompt).` : ''}${existingItemsBlob}
+
+If the input looks like a URL or site name, infer the kind of product and generate questions accordingly.
+Return ONLY the JSON array of 3 objects with "id", "question", and "placeholder". No other text.`;
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -128,20 +126,7 @@ export async function generateQuestions(
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 1000,
         system: SYSTEM_PROMPT,
-        messages: [
-          {
-            role: 'user',
-            content: `Generate 3 contextual reflection questions for someone considering buying: "${productName}".
-
-If the input looks like a URL or website name rather than a product, infer what kind of product it might be from context and generate questions about shopping on that site.
-
-Requirements:
-1. Include the product name or a short reference to it in each question.
-2. Recognize what type of product it is and suggest category-specific alternatives.
-3. Make each question cover a DISTINCT dimension (e.g. urgency, alternatives, value).
-4. ONLY respond with the JSON array. No explanations, no caveats, no other text.`,
-          },
-        ],
+        messages: [{ role: 'user', content: userContent }],
       }),
     });
 
