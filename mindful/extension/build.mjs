@@ -4,9 +4,7 @@ import { join } from 'path';
 
 // Load .env file and extract EXPO_PUBLIC_ variables
 const envFile = readFileSync('.env', 'utf-8');
-const define = {
-  'process.env.NODE_ENV': '"production"',
-};
+const envVars = { NODE_ENV: 'production' };
 
 for (const line of envFile.split('\n')) {
   const trimmed = line.trim();
@@ -16,9 +14,13 @@ for (const line of envFile.split('\n')) {
   const key = trimmed.slice(0, eqIndex);
   const value = trimmed.slice(eqIndex + 1);
   if (key.startsWith('EXPO_PUBLIC_')) {
-    define[`process.env.${key}`] = JSON.stringify(value);
+    envVars[key] = value;
   }
 }
+
+const define = {
+  'process.env': JSON.stringify(envVars),
+};
 
 // Build to a temp file first to avoid Windows "user-mapped section" errors
 // when popup.js is open in an editor or another process.

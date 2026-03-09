@@ -2,9 +2,7 @@ import { build } from 'esbuild';
 import { readFileSync, renameSync, existsSync, unlinkSync } from 'fs';
 import { join } from 'path';
 
-const define = {
-  'process.env.NODE_ENV': '"production"',
-};
+const envVars = { NODE_ENV: 'production' };
 
 try {
   const envFile = readFileSync('.env', 'utf-8');
@@ -16,12 +14,16 @@ try {
     const key = trimmed.slice(0, eqIndex);
     const value = trimmed.slice(eqIndex + 1);
     if (key.startsWith('EXPO_PUBLIC_')) {
-      define[`process.env.${key}`] = JSON.stringify(value);
+      envVars[key] = value;
     }
   }
 } catch {
   // .env optional for content script
 }
+
+const define = {
+  'process.env': JSON.stringify(envVars),
+};
 
 const outDir = 'extension';
 const outFile = join(outDir, 'content.js');
