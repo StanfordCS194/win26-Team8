@@ -1,3 +1,5 @@
+import { useRef, useState } from 'react';
+import type { ChangeEvent } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import type { Item } from '../types/item';
 import {
@@ -10,6 +12,7 @@ import {
   ShoppingBag,
   Tag,
   Lightbulb,
+  Camera,
 } from 'lucide-react';
 
 interface ProfileProps {
@@ -90,7 +93,12 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 export function Profile({ items }: ProfileProps) {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, updateProfilePicture } = useAuth();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+  const [avatarSaving, setAvatarSaving] = useState(false);
+
+  const avatarUrl = user?.user_metadata?.avatar_url as string | undefined;
 
   const getDisplayName = () => {
     if (profile?.first_name && profile?.last_name) {
@@ -125,19 +133,92 @@ export function Profile({ items }: ProfileProps) {
     (a, b) => new Date(b.addedDate).getTime() - new Date(a.addedDate).getTime()
   );
 
+  const handleChoosePhoto = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setAvatarError(null);
+    if (!file.type.startsWith('image/')) {
+      setAvatarError('Please choose an image file.');
+      e.target.value = '';
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setAvatarError('Image is too large. Please choose one under 2MB.');
+      e.target.value = '';
+      return;
+    }
+
+    setAvatarSaving(true);
+    try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ''));
+        reader.onerror = () => reject(new Error('Failed to read file.'));
+        reader.readAsDataURL(file);
+      });
+      const { error } = await updateProfilePicture(dataUrl);
+      if (error) {
+        setAvatarError('Could not update profile photo. Please try again.');
+      }
+    } catch {
+      setAvatarError('Could not read this image. Please try another file.');
+    } finally {
+      setAvatarSaving(false);
+      e.target.value = '';
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-12">
       {/* Profile Header */}
       <div className="bg-card rounded-3xl shadow-lg border border-border p-8">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-6">
-            <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
-              <User className="w-10 h-10 text-primary" />
+            <div className="relative">
+              <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <User className="w-10 h-10 text-primary" />
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={handleChoosePhoto}
+                disabled={avatarSaving}
+                className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-card border border-border shadow-sm flex items-center justify-center hover:bg-muted transition-colors disabled:opacity-60"
+                title="Change profile picture"
+                aria-label="Change profile picture"
+              >
+                <Camera className="w-4 h-4 text-foreground" />
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarFileChange}
+              />
             </div>
             <div>
               <h1 className="text-3xl font-bold text-foreground mb-2">{getDisplayName()}</h1>
               <p className="text-muted-foreground">{user?.email}</p>
               <p className="text-sm text-muted-foreground mt-1">Member since {memberSince}</p>
+              {avatarSaving && (
+                <p className="text-xs text-muted-foreground mt-1">Saving profile photo...</p>
+              )}
+              {avatarError && (
+                <p className="text-xs text-destructive mt-1">{avatarError}</p>
+              )}
             </div>
           </div>
           <button

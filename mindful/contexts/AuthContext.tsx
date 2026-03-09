@@ -19,6 +19,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: unknown }>;
   signIn: (email: string, password: string) => Promise<{ error: unknown }>;
   signOut: () => Promise<void>;
+  updateProfilePicture: (avatarUrl: string | null) => Promise<{ error: unknown }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -174,6 +175,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   };
 
+  const updateProfilePicture = async (avatarUrl: string | null) => {
+    if (!user) return { error: new Error('Not signed in') };
+    const currentMetadata = user.user_metadata ?? {};
+    const nextMetadata = { ...currentMetadata };
+    if (avatarUrl && avatarUrl.trim()) {
+      nextMetadata.avatar_url = avatarUrl.trim();
+    } else {
+      delete nextMetadata.avatar_url;
+    }
+
+    const { data, error } = await supabase.auth.updateUser({
+      data: nextMetadata,
+    });
+    if (!error && data.user) {
+      setUser(data.user);
+    }
+    return { error: error ?? null };
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -184,6 +204,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signUp,
         signIn,
         signOut,
+        updateProfilePicture,
       }}
     >
       {children}
