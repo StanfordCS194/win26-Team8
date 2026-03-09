@@ -1,3 +1,4 @@
+// Walkthrough for New Users
 import { useState } from 'react';
 import { 
   Sparkles, 
