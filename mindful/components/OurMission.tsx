@@ -22,11 +22,15 @@ export function OurMission({ onGetStarted, userEmail }: OurMissionProps) {
   const { signIn, signUp } = useAuth();
   const [animatedTitle, setAnimatedTitle] = useState('');
   const [isTypingTitle, setIsTypingTitle] = useState(true);
+  const [showYellowHighlights, setShowYellowHighlights] = useState(false);
+  const [showGreenHighlights, setShowGreenHighlights] = useState(false);
 
   useEffect(() => {
     const title = 'Second Thought';
     setAnimatedTitle('');
     setIsTypingTitle(true);
+    setShowYellowHighlights(false);
+    setShowGreenHighlights(false);
     let index = 0;
     const timer = window.setInterval(() => {
       index += 1;
@@ -34,6 +38,8 @@ export function OurMission({ onGetStarted, userEmail }: OurMissionProps) {
       if (index >= title.length) {
         window.clearInterval(timer);
         setIsTypingTitle(false);
+        window.setTimeout(() => setShowYellowHighlights(true), 250);
+        window.setTimeout(() => setShowGreenHighlights(true), 1650);
       }
     }, 90);
     return () => window.clearInterval(timer);
@@ -230,32 +236,72 @@ export function OurMission({ onGetStarted, userEmail }: OurMissionProps) {
   return (
     <div className="space-y-16">
       {/* Hero Section */}
-      <div className="text-center py-16 px-4">
+      <div className="text-center px-4 pt-18 pb-28 min-h-[92vh] flex flex-col items-center justify-center">
         <h1 className="text-5xl md:text-6xl font-bold text-[#06402B] mb-6 font-serif min-h-[1.2em]">
           {animatedTitle}
           {isTypingTitle && <span className="ml-1 animate-pulse">|</span>}
         </h1>
         
         <p className="text-xl md:text-2xl text-[#255736] leading-relaxed max-w-4xl mx-auto mb-12 font-serif">
-          Long gone are the days of clicking ads, immediately purchasing the product, and forgetting about its existence within days. With personalized guidance and restraints on impulsive spending, our mission is to help users practice{' '}
-          <span className="relative inline-block">
-            <span className="relative z-10">intentional, mindful consumption</span>
-            <span className="absolute bottom-0 left-0 w-full h-[2px] bg-primary/30 origin-left animate-[subtleSlide_1.5s_ease-in-out_1s_forwards] scale-x-0"></span>
+          Long gone are the days of clicking ads, immediately purchasing the product, and forgetting about its existence within days. With{' '}
+          <span className={`inline-block px-1 rounded-md ${
+            showYellowHighlights
+              ? 'animate-[yellowFocus_0.9s_ease-out_forwards]'
+              : 'bg-transparent text-[#255736]'
+          }`}>
+            personalized reflection questions 
           </span>
-          {' '}to both instill{' '}
+          {' '}and{' '}
+          <span className={`inline-block px-1 rounded-md ${
+            showYellowHighlights
+              ? 'animate-[yellowFocus_0.9s_ease-out_0.2s_forwards]'
+              : 'bg-transparent text-[#255736]'
+          }`}>
+            tailored constraints 🔒
+          </span>
+          {' '}on impulsive spending, our mission is to help users practice{' '}
           <span className="relative inline-block">
-            <span className="relative z-10">financial responsibility</span>
+            <span className={`relative z-10 inline-block px-1 rounded-md ${
+              showGreenHighlights
+                ? 'animate-[phraseFocus_1.2s_ease-in-out_forwards]'
+                : 'bg-transparent'
+            }`}>
+              intentional, mindful consumption 💭
+            </span>
+            <span className={`absolute bottom-0 left-0 w-full h-[2px] bg-primary/30 origin-left ${
+              showGreenHighlights
+                ? 'animate-[subtleSlide_1s_ease-in-out_forwards]'
+                : 'scale-x-0 opacity-0'
+            }`}></span>
+          </span>
+          {/* {' '}to both instill{' '}
+          <span className="relative inline-block">
+            <span className="relative z-10 inline-block px-1 rounded-md animate-[phraseFocus_1.6s_ease-in-out_1.8s_both]">
+              financial responsibility
+            </span>
             <span className="absolute bottom-0 left-0 w-full h-[2px] bg-primary/30 origin-left animate-[subtleSlide_1.5s_ease-in-out_2s_forwards] scale-x-0"></span>
           </span>
-          {' '}and also minimize fashion's significant contributions to{' '}
+          {' '} and{' '}
           <span className="relative inline-block">
-            <span className="relative z-10">carbon emissions</span>
+            <span className="relative z-10 inline-block px-1 rounded-md animate-[phraseFocus_1.6s_ease-in-out_2.8s_both]">
+              minimize fashion&apos;s significant contributions to carbon emissions
+            </span>
             <span className="absolute bottom-0 left-0 w-full h-[2px] bg-primary/30 origin-left animate-[subtleSlide_1.5s_ease-in-out_3s_forwards] scale-x-0"></span>
-          </span>
+          </span> */}
           .
         </p>
         
         <style>{`
+          @keyframes yellowFocus {
+            0% {
+              background-color: rgba(252, 240, 225, 0);
+              color: #255736;
+            }
+            100% {
+              background-color: #fcf0e1;
+              color: #6b4e16;
+            }
+          }
           @keyframes subtleSlide {
             0% {
               transform: scaleX(0);
@@ -267,6 +313,20 @@ export function OurMission({ onGetStarted, userEmail }: OurMissionProps) {
             100% {
               transform: scaleX(1);
               opacity: 0.7;
+            }
+          }
+          @keyframes phraseFocus {
+            0% {
+              background-color: rgba(37, 87, 54, 0);
+              color: #255736;
+            }
+            35% {
+              background-color: rgba(37, 87, 54, 0.14);
+              color: #06402B;
+            }
+            100% {
+              background-color: rgba(37, 87, 54, 0.08);
+              color: #06402B;
             }
           }
         `}</style>
