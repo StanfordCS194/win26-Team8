@@ -186,7 +186,7 @@ export function OurMission({ onGetStarted, userEmail }: OurMissionProps) {
               <div>
                 <h4 className="font-semibold text-foreground mb-1 text-base">Answer Reflection Questions</h4>
                 <p className="text-base text-foreground/70">
-                  Respond to 5 personalized questions to help you reflect on your decision with a mindfulness score
+                  Respond to personalized questions to help you reflect on your decision with a mindfulness score
                 </p>
               </div>
             </div>
@@ -274,20 +274,6 @@ export function OurMission({ onGetStarted, userEmail }: OurMissionProps) {
                 : 'scale-x-0 opacity-0'
             }`}></span>
           </span>
-          {/* {' '}to both instill{' '}
-          <span className="relative inline-block">
-            <span className="relative z-10 inline-block px-1 rounded-md animate-[phraseFocus_1.6s_ease-in-out_1.8s_both]">
-              financial responsibility
-            </span>
-            <span className="absolute bottom-0 left-0 w-full h-[2px] bg-primary/30 origin-left animate-[subtleSlide_1.5s_ease-in-out_2s_forwards] scale-x-0"></span>
-          </span>
-          {' '} and{' '}
-          <span className="relative inline-block">
-            <span className="relative z-10 inline-block px-1 rounded-md animate-[phraseFocus_1.6s_ease-in-out_2.8s_both]">
-              minimize fashion&apos;s significant contributions to carbon emissions
-            </span>
-            <span className="absolute bottom-0 left-0 w-full h-[2px] bg-primary/30 origin-left animate-[subtleSlide_1.5s_ease-in-out_3s_forwards] scale-x-0"></span>
-          </span> */}
           .
         </p>
         
@@ -404,9 +390,9 @@ export function OurMission({ onGetStarted, userEmail }: OurMissionProps) {
               </div>
               
               <div className="bg-accent/5 rounded-xl p-4 border border-accent/20">
-                <p className="text-lg font-semibold text-[#06402B] mb-2 font-serif">Take Back Control</p>
+                <p className="text-4xl font-bold text-accent mb-2">80%</p>
                 <p className="text-[#255736] font-serif">
-                  Make intentional decisions and save money while helping the planet
+                  Nearly 80% of consumers admit to making impulse purchases online
                 </p>
               </div>
             </div>

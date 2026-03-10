@@ -563,6 +563,14 @@ function AppContent() {
     );
   };
 
+  const handleMissionGetStarted = () => {
+    setCurrentView('home');
+    requestAnimationFrame(() => {
+      appScrollRef.current?.scrollTo({ top: 0, behavior: 'auto' });
+      window.scrollTo({ top: 0, behavior: 'auto' });
+    });
+  };
+
   return (
     <div ref={appScrollRef} className="w-full min-h-screen bg-background overflow-y-auto relative">
       {/* Header */}
@@ -641,7 +649,7 @@ function AppContent() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-16">
         {currentView === 'mission' && (
-          <OurMission onGetStarted={() => setCurrentView('home')} userEmail={user?.email} />
+          <OurMission onGetStarted={handleMissionGetStarted} userEmail={user?.email} />
         )}
         {currentView === 'home' && (
           user ? (
