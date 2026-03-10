@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { 
   Sparkles, 
   TrendingDown, 
@@ -19,6 +20,25 @@ interface OurMissionProps {
 
 export function OurMission({ onGetStarted, userEmail }: OurMissionProps) {
   const { signIn, signUp } = useAuth();
+  const [animatedTitle, setAnimatedTitle] = useState('');
+  const [isTypingTitle, setIsTypingTitle] = useState(true);
+
+  useEffect(() => {
+    const title = 'Second Thought';
+    setAnimatedTitle('');
+    setIsTypingTitle(true);
+    let index = 0;
+    const timer = window.setInterval(() => {
+      index += 1;
+      setAnimatedTitle(title.slice(0, index));
+      if (index >= title.length) {
+        window.clearInterval(timer);
+        setIsTypingTitle(false);
+      }
+    }, 90);
+    return () => window.clearInterval(timer);
+  }, []);
+
   const scrollToOnboarding = () => {
     const onboardingSection = document.getElementById('onboarding-section');
     if (onboardingSection) {
@@ -211,8 +231,9 @@ export function OurMission({ onGetStarted, userEmail }: OurMissionProps) {
     <div className="space-y-16">
       {/* Hero Section */}
       <div className="text-center py-16 px-4">
-        <h1 className="text-5xl md:text-6xl font-bold text-[#06402B] mb-6 font-serif">
-          Second Thought
+        <h1 className="text-5xl md:text-6xl font-bold text-[#06402B] mb-6 font-serif min-h-[1.2em]">
+          {animatedTitle}
+          {isTypingTitle && <span className="ml-1 animate-pulse">|</span>}
         </h1>
         
         <p className="text-xl md:text-2xl text-[#255736] leading-relaxed max-w-4xl mx-auto mb-12 font-serif">
