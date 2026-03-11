@@ -63,7 +63,7 @@ By helping users slow down and reflect, Second Thought aims to:
 
 | Layer | Technologies |
 |------|-------------|
-| **Frontend Dashboard** | React, TypeScript, CSS |
+| **Website** | React, TypeScript, CSS |
 | **Browser Extension** | JavaScript, HTML, CSS |
 | **Application Infrastructure** | Node.js, ES Module build scripts |
 | **State Management** | React Context API |
