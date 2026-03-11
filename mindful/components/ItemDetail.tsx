@@ -35,89 +35,41 @@ function isConstraintComplete(item: Item): boolean {
   return false;
 }
 
-// Generate intuitive explanation of how mindfulness score reflects the user's responses
-function generateMindfulnessExplanation(questionnaire: QuestionAnswer[], finalScore: number): string {
-  const insights: string[] = [];
-  const areasForGrowth: string[] = [];
-  
+const ID_TO_LABEL: Record<string, string> = {
+  consumption: 'Need',
+  urgency: 'Urgency',
+  importance: 'Importance',
+  alternatives: 'Alternatives',
+  value: 'Value',
+  impact: 'Impact',
+  improvement: 'Improvement',
+  need: 'Need',
+};
+
+function getScoreColor(score: number): string {
+  return score >= 7 ? '#dc2626' : score >= 4 ? '#d97706' : '#255736';
+}
+
+function getScoreLabel(score: number): string {
+  return score >= 7 ? 'High impulse' : score >= 4 ? 'Moderate' : 'Mindful';
+}
+
+function buildScoreBreakdown(questionnaire: QuestionAnswer[]): { label: string; value: number }[] {
+  const components: { label: string; value: number }[] = [];
   questionnaire.forEach((qa) => {
-    const numericAnswer = parseInt(qa.answer, 10);
-    if (isNaN(numericAnswer) || numericAnswer < 1 || numericAnswer > 5) return;
-    
-    if (qa.id === 'consumption') {
-      const needLevel = numericAnswer <= 2 ? 'low' : numericAnswer <= 3 ? 'moderate' : 'high';
-      insights.push(`You indicated a ${needLevel} need for this item (${numericAnswer}/5), showing you've recognized your desire`);
-    } else if (qa.id === 'urgency') {
-      if (numericAnswer <= 2) {
-        insights.push(`You indicated low urgency (${numericAnswer}/5), demonstrating patience and thoughtful consideration rather than impulsive decision-making`);
-      } else if (numericAnswer >= 4) {
-        insights.push(`You indicated high urgency (${numericAnswer}/5), which suggests a more reactive approach that may limit reflection time`);
-        areasForGrowth.push('taking more time to reflect before acting');
-      } else {
-        insights.push(`You indicated moderate urgency (${numericAnswer}/5), showing some consideration of timing`);
-        areasForGrowth.push('allowing more time for reflection');
-      }
+    if (qa.id === 'goal') return;
+    const raw = parseInt(qa.answer, 10);
+    if (isNaN(raw) || raw < 1 || raw > 5) return;
+    let val: number;
+    if (qa.id === 'urgency') {
+      val = 12 - (raw * 2);
     } else {
-      // Extract question meaning from text
-      const qLower = qa.question.toLowerCase();
-      let questionMeaning = '';
-      let reflectionType = '';
-      let growthArea = '';
-      
-      if (qLower.includes('essential') || qLower.includes('important')) {
-        questionMeaning = numericAnswer >= 4 ? 'very essential' : numericAnswer <= 2 ? 'not very essential' : 'moderately essential';
-        reflectionType = 'thoughtful reflection about its importance';
-        if (numericAnswer <= 3) {
-          growthArea = 'deeper consideration of whether this truly meets your needs';
-        }
-      } else if (qLower.includes('alternative') || qLower.includes('satisfied')) {
-        questionMeaning = numericAnswer >= 4 ? 'high satisfaction with alternatives' : numericAnswer <= 2 ? 'low satisfaction with alternatives' : 'moderate satisfaction with alternatives';
-        reflectionType = numericAnswer >= 4 ? 'openness to alternatives and flexibility' : 'you\'ve considered alternatives and determined they don\'t meet your needs';
-        if (numericAnswer <= 2) {
-          growthArea = 'exploring whether any alternatives could work with some adjustment';
-        } else if (numericAnswer <= 3) {
-          growthArea = 'further exploration of alternative options';
-        }
-      } else if (qLower.includes('impact') || qLower.includes('consequence') || qLower.includes('significant')) {
-        questionMeaning = numericAnswer >= 4 ? 'significant positive impact' : numericAnswer <= 2 ? 'limited impact' : 'moderate impact';
-        reflectionType = 'awareness of the purchase\'s consequences';
-        if (numericAnswer <= 3) {
-          growthArea = 'deeper reflection on the broader impact of this purchase';
-        }
-      } else if (qLower.includes('integrat') || qLower.includes('confident') || qLower.includes('expect')) {
-        questionMeaning = numericAnswer >= 4 ? 'high confidence' : numericAnswer <= 2 ? 'low confidence' : 'moderate confidence';
-        reflectionType = 'thoughtful evaluation of how this item fits into your life';
-        if (numericAnswer <= 3) {
-          growthArea = 'more thorough evaluation of how this integrates with your lifestyle';
-        }
-      } else {
-        questionMeaning = numericAnswer >= 4 ? 'strong agreement' : numericAnswer <= 2 ? 'limited agreement' : 'moderate agreement';
-        reflectionType = 'reflection on this aspect';
-        if (numericAnswer <= 3) {
-          growthArea = 'deeper consideration of this aspect';
-        }
-      }
-      
-      insights.push(`You indicated ${questionMeaning} (${numericAnswer}/5), which demonstrates ${reflectionType}`);
-      if (growthArea && numericAnswer <= 3) {
-        areasForGrowth.push(growthArea);
-      }
+      val = raw * 2;
     }
+    val = Math.max(1, Math.min(10, val));
+    components.push({ label: ID_TO_LABEL[qa.id] || qa.id, value: val });
   });
-  
-  if (insights.length === 0) return '';
-  
-  let explanation = `Your score of ${finalScore}/10 reflects your thoughtful decision-making process. ${insights.join('. ')}.`;
-  
-  if (finalScore < 10 && areasForGrowth.length > 0) {
-    explanation += ` You can reflect further on ${areasForGrowth[0]}${areasForGrowth.length > 1 ? `, as well as ${areasForGrowth.slice(1).join(', and ')}` : ''} to deepen your mindfulness around this decision.`;
-  } else if (finalScore < 10) {
-    explanation += ` You can reflect further across all dimensions of this decision to deepen your mindfulness.`;
-  } else {
-    explanation += ` Together, these responses demonstrate exceptional intentionality and awareness in your decision-making process.`;
-  }
-  
-  return explanation;
+  return components;
 }
 
 const CATEGORY_OPTIONS: ItemCategory[] = ['Beauty', 'Clothes', 'Accessories', 'Sports', 'Electronics', 'Home', 'Other'];
@@ -403,23 +355,64 @@ export function ItemDetail({ item, onBack, backLabel = 'Back to list', onDelete,
               </h1>
 
               <div className="space-y-5">
-                <div className="p-5 rounded-xl space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-foreground/80">Mindfulness Score</span>
-                    <span className={`text-2xl font-semibold font-serif ${
-                      item.consumptionScore >= 7 ? 'text-destructive' : 
-                      item.consumptionScore >= 4 ? 'text-accent' : 
-                      'text-primary'
-                    }`}>
-                      {item.consumptionScore}/10
-                    </span>
-                  </div>
-                  {item.questionnaire && item.questionnaire.length > 0 && (
-                    <p className="text-sm text-foreground/70 leading-relaxed pt-2 border-t border-border/30">
-                      {generateMindfulnessExplanation(item.questionnaire, item.consumptionScore)}
-                    </p>
-                  )}
-                </div>
+                {(() => {
+                  const score = item.consumptionScore;
+                  const percentage = score * 10;
+                  const radius = 54;
+                  const circumference = 2 * Math.PI * radius;
+                  const strokeDashoffset = circumference - (percentage / 100) * circumference;
+                  const color = getScoreColor(score);
+                  const label = getScoreLabel(score);
+                  const breakdown = item.questionnaire ? buildScoreBreakdown(item.questionnaire) : [];
+
+                  return (
+                    <div className="p-6 bg-muted/30 rounded-xl space-y-5">
+                      <div className="flex flex-col items-center gap-3">
+                        <span className="text-foreground/80 font-medium">Mindfulness Score</span>
+                        <div className="relative w-28 h-28">
+                          <svg className="w-28 h-28 -rotate-90" viewBox="0 0 120 120">
+                            <circle cx="60" cy="60" r={radius} fill="none" stroke="#e5e7eb" strokeWidth="10" />
+                            <circle cx="60" cy="60" r={radius} fill="none" stroke={color} strokeWidth="10"
+                              strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={strokeDashoffset}
+                              style={{ transition: 'stroke-dashoffset 0.5s ease' }} />
+                          </svg>
+                          <div className="absolute inset-0 flex flex-col items-center justify-center">
+                            <span className="text-2xl font-bold" style={{ color }}>{score}</span>
+                            <span className="text-xs text-muted-foreground">/10</span>
+                          </div>
+                        </div>
+                        <span className="text-sm font-medium" style={{ color }}>{label}</span>
+                      </div>
+
+                      {breakdown.length > 0 && (
+                        <div className="border-t border-border/30 pt-4 space-y-3">
+                          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Score Breakdown</span>
+                          {breakdown.map((c, i) => (
+                            <div key={i} className="space-y-1">
+                              <div className="flex justify-between text-xs">
+                                <span className="text-foreground/70">{c.label}</span>
+                                <span className="text-foreground/50">{c.value}/10</span>
+                              </div>
+                              <div className="h-2 bg-muted rounded-full overflow-hidden">
+                                <div
+                                  className="h-full rounded-full transition-all duration-500"
+                                  style={{
+                                    width: `${c.value * 10}%`,
+                                    backgroundColor: getScoreColor(c.value),
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                          <div className="flex justify-between text-xs pt-2 border-t border-border/30">
+                            <span className="text-foreground/70 font-medium">Average</span>
+                            <span className="font-semibold" style={{ color }}>{score}/10</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {/* Goal: Unlock Password form only (goal + difficulty boxes moved below image) */}
                 {item.constraintType === 'goals' && (

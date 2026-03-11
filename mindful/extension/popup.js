@@ -12304,7 +12304,18 @@
   var import_react3 = __toESM(require_react());
 
   // services/env.ts
+  var ENV_CACHE = {};
+  try {
+    ENV_CACHE["EXPO_PUBLIC_ANTHROPIC_API_KEY"] = "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";
+    ENV_CACHE["EXPO_PUBLIC_OPENAI_API_KEY"] = "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";
+    ENV_CACHE["EXPO_PUBLIC_RESEND_API_KEY"] = "re_92Qa7Fo5_LXNRSke4vt2dcRhvixBWN1Sr";
+    ENV_CACHE["EXPO_PUBLIC_POSTHOG_KEY"] = process.env.EXPO_PUBLIC_POSTHOG_KEY ?? "";
+  } catch {
+  }
   function getExpoPublic(key) {
+    if (key in ENV_CACHE) {
+      return ENV_CACHE[key];
+    }
     try {
       if (typeof process !== "undefined" && process.env && key in process.env) {
         const v = process.env[key];
