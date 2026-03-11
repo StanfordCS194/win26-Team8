@@ -15,9 +15,6 @@ ADD COLUMN IF NOT EXISTS user_name TEXT;
 ALTER TABLE public.friend_unlock_emails
 ADD COLUMN IF NOT EXISTS item_name TEXT;
 
-ALTER TABLE public.friend_unlock_emails
-ADD COLUMN IF NOT EXISTS set_password_url TEXT;
-
 -- 3. Create trigger function that sends email via Resend API using pg_net
 CREATE OR REPLACE FUNCTION public.send_friend_unlock_email()
 RETURNS TRIGGER
@@ -25,20 +22,18 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-  v_set_password_url TEXT;
   v_friend_name TEXT;
   v_user_name TEXT;
   v_item_name TEXT;
+  v_password TEXT;
   v_subject TEXT;
   v_html TEXT;
   v_request_id BIGINT;
 BEGIN
-  -- Build the set-password URL
-  v_set_password_url := COALESCE(NEW.set_password_url, 'https://mohgivduzthccoybnbnr.supabase.co')
-                        || '?token=' || NEW.friend_token::TEXT;
   v_friend_name := COALESCE(NEW.friend_name, 'there');
   v_user_name := COALESCE(NEW.user_name, 'Your friend');
   v_item_name := COALESCE(NEW.item_name, 'an item');
+  v_password := COALESCE(NEW.unlock_password, '');
   v_subject := v_user_name || ' needs your help with a goal!';
 
   v_html := '<div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">'
@@ -48,16 +43,15 @@ BEGIN
     || 'mindful consumption. They''ve set a goal they need to complete before purchasing '
     || '<strong>' || v_item_name || '</strong>.</p>'
     || '<p style="color: #333; line-height: 1.6;">'
-    || 'They''ve chosen you as their accountability partner! Please set a password that '
-    || 'they''ll need to enter once they''ve completed their goal.</p>'
-    || '<div style="text-align: center; margin: 32px 0;">'
-    || '<a href="' || v_set_password_url || '" '
-    || 'style="background-color: #255736; color: white; padding: 14px 28px; '
-    || 'border-radius: 9999px; text-decoration: none; font-weight: bold; display: inline-block;">'
-    || 'Set Password</a></div>'
+    || 'They''ve chosen you as their accountability partner! Here is the unlock password '
+    || 'that they''ll need to enter once they''ve completed their goal:</p>'
+    || '<div style="text-align: center; margin: 32px 0; padding: 20px; background-color: #f0f5f1; border-radius: 12px; border: 2px solid #255736;">'
+    || '<p style="color: #666; font-size: 14px; margin: 0 0 8px 0;">Unlock Password</p>'
+    || '<p style="color: #255736; font-size: 32px; font-weight: bold; letter-spacing: 4px; margin: 0;">'
+    || v_password || '</p></div>'
     || '<p style="color: #666; font-size: 14px; line-height: 1.5;">'
-    || 'After you set the password, let ' || v_user_name || ' know when they''ve '
-    || 'earned it by completing their goal.</p>'
+    || 'Please share this password with ' || v_user_name || ' only after they''ve '
+    || 'completed their goal.</p>'
     || '<hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;" />'
     || '<p style="color: #999; font-size: 12px;">'
     || 'This email was sent by Second Thought. If you didn''t expect this, you can ignore it.</p>'

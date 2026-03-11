@@ -266,17 +266,17 @@ function AppContent() {
       console.log('Item saved to Supabase');
 
       // Store friend unlock email record — the DB trigger sends the email automatically
-      if (item.constraintType === 'goals' && item.friendName && item.friendEmail) {
+      if (item.constraintType === 'goals' && item.friendName && item.friendEmail && item.unlockPassword) {
         const { createFriendUnlockEmail } = await import('./lib/friendUnlockService');
         const userName = profile?.first_name || user.email?.split('@')[0] || 'Your friend';
         const emailRecord = await createFriendUnlockEmail(
           newItem.id,
           item.friendEmail,
+          item.unlockPassword,
           {
             friendName: item.friendName,
             userName,
             itemName: item.name,
-            setPasswordUrl: `${window.location.origin}/set-password.html`,
           }
         );
 

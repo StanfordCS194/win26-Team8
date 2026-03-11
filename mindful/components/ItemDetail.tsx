@@ -426,36 +426,6 @@ export function ItemDetail({ item, onBack, backLabel = 'Back to list', onDelete,
                   <div className="space-y-4">
                       {/* Unlock section - hide when viewing from Unlocked tab */}
                       {!isUnlockedItem && (
-                        !item.unlockPassword ? (
-                          <div className="p-5 bg-amber-50 rounded-xl border border-amber-200">
-                            <div className="flex items-start gap-3">
-                              <Lock className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
-                              <div className="flex-1">
-                                <div className="text-sm text-foreground/80 font-medium mb-2">
-                                  Waiting for {item.friendName || 'your friend'}
-                                </div>
-                                <p className="text-xs text-muted-foreground mb-3">
-                                  An email has been sent to {item.friendName || 'your friend'}
-                                  {item.friendEmail ? ` (${item.friendEmail})` : ''} asking them to set a password.
-                                  Once they set it, come back here and enter the password they give you.
-                                </p>
-                                <div className="flex items-center gap-2 text-xs text-amber-700">
-                                  <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></div>
-                                  Pending — password not yet set
-                                </div>
-                                {onRefresh && (
-                                  <button
-                                    type="button"
-                                    onClick={onRefresh}
-                                    className="mt-3 text-xs text-amber-700 underline hover:text-amber-800"
-                                  >
-                                    Check again
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
                           <form onSubmit={handleUnlock} className="p-5 bg-primary/10 rounded-xl border border-primary/20">
                             <div className="flex items-start gap-3">
                               <Lock className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
@@ -463,7 +433,7 @@ export function ItemDetail({ item, onBack, backLabel = 'Back to list', onDelete,
                                 <div className="text-sm text-foreground/80 font-medium mb-2">Unlock Item</div>
                                 <p className="text-xs text-muted-foreground mb-3">
                                   {item.friendName
-                                    ? `Enter the password from ${item.friendName} to unlock this item and mark your goal as complete.`
+                                    ? `Ask ${item.friendName} for the unlock password they received by email to unlock this item and mark your goal as complete.`
                                     : 'Enter the unlock password to unlock this item and mark your goal as complete.'}
                                 </p>
                                 <div className="flex gap-2">
@@ -513,7 +483,6 @@ export function ItemDetail({ item, onBack, backLabel = 'Back to list', onDelete,
                               </div>
                             </div>
                           </form>
-                        )
                       )}
                     </div>
                 )}
