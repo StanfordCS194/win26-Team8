@@ -6,7 +6,7 @@ Many online impulse purchases happen in the moment—after seeing a product on T
 
 Our mission is to help users **practice intentional, mindful consumption**, promoting both **financial responsibility** and **more sustainable shopping habits** by reducing fashion’s significant contribution to carbon emissions.
 
-This project was developed for **Stanford CS194 (Winter 2026)**.
+This project was developed for **Stanford CS194 (Winter 2026) Team 8**.
 
 ---
 
@@ -61,10 +61,13 @@ By helping users slow down and reflect, Second Thought aims to:
 
 # 🛠️ Tech Stack
 
-- **Frontend:** React / Next.js  
-- **Extension:** Chrome Extension API  
-- **Deployment:** Vercel  
-- **Backend / APIs:** Anthropic API
+| Layer | Technologies |
+|------|-------------|
+| **Frontend Dashboard** | React, TypeScript, CSS |
+| **Browser Extension** | JavaScript, HTML, CSS |
+| **Application Infrastructure** | Node.js, ES Module build scripts |
+| **State Management** | React Context API |
+| **Deployment** | Vercel |
 
 ---
 
@@ -73,11 +76,3 @@ By helping users slow down and reflect, Second Thought aims to:
 Detailed documentation, design decisions, and development notes can be found on our Wiki:
 
 https://github.com/StanfordCS194/win26-Team8/wiki
-
----
-
-# 👥 Team
-
-Stanford **CS194 – Winter 2026**
-
-Team 8
