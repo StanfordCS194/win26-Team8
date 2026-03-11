@@ -2,36 +2,50 @@ import { supabase } from '../env';
 
 /**
  * Service for managing friend unlock emails
- * Stores friend email and password information for sending unlock passwords
+ * Email sending is handled server-side by a PostgreSQL trigger via pg_net
  */
 
 export interface FriendUnlockEmail {
   id: string;
   item_id: string;
   friend_email: string;
-  unlock_password: string;
+  unlock_password: string | null;
+  friend_token: string;
+  password_set_at: string | null;
   sent_at: string | null;
   created_at: string;
+  friend_name: string | null;
+  user_name: string | null;
+  item_name: string | null;
+  set_password_url: string | null;
 }
 
 /**
  * Create a new friend unlock email record
- * This stores the friend's email and unlock password for later email sending
+ * The database trigger will automatically send the email via pg_net + Resend
  */
 export async function createFriendUnlockEmail(
   itemId: string,
   friendEmail: string,
-  unlockPassword: string
+  options?: {
+    friendName?: string;
+    userName?: string;
+    itemName?: string;
+    setPasswordUrl?: string;
+  }
 ): Promise<{ success: boolean; data?: FriendUnlockEmail; error?: any }> {
   try {
     console.log('📧 Creating friend unlock email record:', { itemId, friendEmail });
-    
+
     const { data, error } = await supabase
       .from('friend_unlock_emails')
       .insert({
         item_id: itemId,
         friend_email: friendEmail,
-        unlock_password: unlockPassword,
+        friend_name: options?.friendName || null,
+        user_name: options?.userName || null,
+        item_name: options?.itemName || null,
+        set_password_url: options?.setPasswordUrl || null,
       })
       .select()
       .single();
@@ -75,7 +89,6 @@ export async function markEmailAsSent(
 
 /**
  * Get all pending (unsent) emails for a user's items
- * Useful for batch email sending
  */
 export async function getPendingEmails(
   userId: string

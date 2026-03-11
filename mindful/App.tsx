@@ -10,6 +10,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { fetchItems, deleteItem as deleteItemDb, updateItemUnlocked, updateItemCategory } from './lib/database';
 import { saveItemDirect, saveDeletionReasonDirect } from './lib/database-alt';
 import { normalizeProductUrl } from './lib/urlUtils';
+import { supabase } from './env';
 import { Plus, User } from 'lucide-react';
 import './styles/globals.css';
 import logoImage from './assets/logo.png';
@@ -21,7 +22,7 @@ const FETCH_ITEMS_TIMEOUT_MS = 20000;
 type View = 'home' | 'item' | 'add' | 'time' | 'goals' | 'mission' | 'profile';
 
 function AppContent() {
-  const { user, session, loading } = useAuth();
+  const { user, session, loading, profile } = useAuth();
   const appScrollRef = useRef<HTMLDivElement | null>(null);
   const [items, setItems] = useState<Item[]>([]);
   const [currentView, setCurrentView] = useState<View>('mission');
@@ -264,17 +265,23 @@ function AppContent() {
     if (success) {
       console.log('Item saved to Supabase');
 
-      // Store friend unlock email information if this is a goals-based constraint with a friend
-      if (item.constraintType === 'goals' && item.friendName && item.friendEmail && item.unlockPassword) {
+      // Store friend unlock email record — the DB trigger sends the email automatically
+      if (item.constraintType === 'goals' && item.friendName && item.friendEmail) {
         const { createFriendUnlockEmail } = await import('./lib/friendUnlockService');
+        const userName = profile?.first_name || user.email?.split('@')[0] || 'Your friend';
         const emailRecord = await createFriendUnlockEmail(
           newItem.id,
           item.friendEmail,
-          item.unlockPassword
+          {
+            friendName: item.friendName,
+            userName,
+            itemName: item.name,
+            setPasswordUrl: `${window.location.origin}/set-password.html`,
+          }
         );
 
-        if (emailRecord.success) {
-          console.log('Friend unlock email record created in database');
+        if (emailRecord.success && emailRecord.data) {
+          console.log('Friend unlock email record created, trigger will send email');
         } else {
           console.warn('Failed to create friend unlock email record:', emailRecord.error);
         }
@@ -682,6 +689,7 @@ function AppContent() {
                   : 'Back to All Items'
               }
               onDelete={handleDeleteItem}
+              onRefresh={handleRefreshItems}
               onUnlock={handleUnlockItem}
               isUnlockedItem={isSelectedUnlockedItem}
               onRemoveUnlocked={handleRemoveUnlockedItem}
