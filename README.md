@@ -17,11 +17,11 @@ You can try the deployed application here:
 
 
 ---
-# 🎥 Demo Video
+# 🎥 Promo Video
 
-Click the thumbnail below to watch the demo:
+Click the thumbnail below to watch our promo video:
 
-[![Second Thought Demo](https://img.youtube.com/vi/DXpuB7ylHzQ/0.jpg)](https://youtu.be/DXpuB7ylHzQ)
+[![Second Thought Promo](https://img.youtube.com/vi/DXpuB7ylHzQ/0.jpg)](https://youtu.be/DXpuB7ylHzQ)
 
 ---
 
