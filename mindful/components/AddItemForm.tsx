@@ -325,7 +325,7 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl, checkUrlInInventor
     const calculatedScore = calculateMindfulnessScore(answers);
 
     // Lower mindfulness score → longer wait, higher score → shorter wait
-    const MIN_DAYS = 3;   // very mindful
+    const MIN_DAYS = 1;   // very mindful
     const MAX_DAYS = 21;  // least mindful
     const daysRange = MAX_DAYS - MIN_DAYS;
     const normalized = (10 - calculatedScore) / 9; // 0 when score=10, 1 when score=1
@@ -737,9 +737,7 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl, checkUrlInInventor
                               className="h-full rounded-full transition-all duration-500"
                               style={{
                                 width: c.value === 0 ? '2%' : `${c.value * 10}%`,
-                                backgroundColor: c.mindfulEnd === 'high'
-                                  ? (c.value >= 7 ? '#255736' : c.value >= 4 ? '#d97706' : '#dc2626')
-                                  : (c.value >= 7 ? '#dc2626' : c.value >= 4 ? '#d97706' : '#255736'),
+                                backgroundColor: c.value >= 7 ? '#255736' : c.value >= 4 ? '#d97706' : '#dc2626'
                               }}
                             />
                           </div>

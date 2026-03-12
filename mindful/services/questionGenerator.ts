@@ -65,9 +65,7 @@ OUTPUT: A JSON array of exactly 3 objects. Each object must have:
 - "id": short identifier (e.g. "urgency", "alternatives", "value", "fit_with_owned")
 - "question": the reflection question (include product name; be specific to category and/or existing items)
 - "placeholder": scale endpoints, e.g. "Not at all/Very much" or "Low/High"
-- "mindfulEnd": either "high" or "low", corresponding to which end of the scale indicates deeper reflection behind the purchase, and more mindful habits around consumption. 
-  - "high" means the upper end of the scale (5) reflects more mindful shopping behavior. e.g. the question "How much value will this purchase add to your life compared to its cost?" would have a mindfulEnd of "high" because a higher score indicates more mindful shopping, purchasing items with high value to cost ratios. 
-  - "low" means the lower end of the scale (1) reflects more mindful shopping behavior. e.g. the question "How many sundresses do you already own that have a similar style?" would have a mindfulEnd of "low" because a lower score indicates more mindful shopping, purchasing only items that are dissimilar from what they already own, and fulfill a unique niche.
+- "mindfulEnd": either "high" or "low". Output "high" if the upper end of the scale (5) reflects more mindful shopping behavior, and "low" if the lower end (1) is more mindful
 
 Only respond with the JSON array. No other text.`;
 
