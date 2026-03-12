@@ -15,6 +15,14 @@ You can try the deployed application here:
 
 🌐 https://second-thought-lilac.vercel.app/
 
+
+---
+
+# 🎥 Demo Video
+
+Watch a short demo of **Second Thought** to see how the Chrome extension interrupts impulse purchases and how the dashboard helps users reflect on their spending habits.
+
+▶️ **Demo:** []
 ---
 
 # ⚙️ How It Works
