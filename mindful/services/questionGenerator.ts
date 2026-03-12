@@ -7,6 +7,8 @@ export interface GeneratedQuestion {
   id: string;
   question: string;
   placeholder: string;
+  /** Whether the upper end (5) or lower end (1) of the scale is more mindful */
+  mindfulEnd: 'high' | 'low';
 }
 
 // For Expo, use EXPO_PUBLIC_ prefix for environment variables
@@ -17,16 +19,19 @@ const DEFAULT_QUESTIONS: GeneratedQuestion[] = [
     id: 'urgency',
     question: 'How urgent is your need for this item?',
     placeholder: 'Not urgent/Very urgent',
+    mindfulEnd: 'high',
   },
   {
     id: 'alternatives',
     question: 'How satisfied would you be with alternatives (borrowing, renting, using what you have)?',
     placeholder: 'Not satisfied/Very satisfied',
+    mindfulEnd: 'low',
   },
   {
     id: 'value',
     question: 'How much value will this purchase add to your life compared to its cost?',
     placeholder: 'Low value/High value',
+    mindfulEnd: 'high',
   },
 ];
 
@@ -56,10 +61,11 @@ RULES:
 4. Each question must cover a DISTINCT dimension: e.g. urgency, category-specific alternatives, value vs. cost, fit with existing items, emotional vs. practical need.
 5. Be non-judgmental and thought-provoking. Phrase so it can be rated 1–5.
 
-OUTPUT: A JSON array of exactly 3 objects:
+OUTPUT: A JSON array of exactly 3 objects. Each object must have:
 - "id": short identifier (e.g. "urgency", "alternatives", "value", "fit_with_owned")
 - "question": the reflection question (include product name; be specific to category and/or existing items)
 - "placeholder": scale endpoints, e.g. "Not at all/Very much" or "Low/High"
+- "mindfulEnd": either "high" or "low". Output "high" if the upper end of the scale (5) reflects more mindful shopping behavior, and "low" if the lower end (1) is more mindful
 
 Only respond with the JSON array. No other text.`;
 
@@ -111,7 +117,7 @@ export async function generateQuestions(
   const userContent = `Generate 3 reflection questions for someone considering buying: "${productName}".${category ? `\nCategory: ${category}. Use concrete, category-specific alternatives (see system prompt).` : ''}${existingItemsBlob}
 
 If the input looks like a URL or site name, infer the kind of product and generate questions accordingly.
-Return ONLY the JSON array of 3 objects with "id", "question", and "placeholder". No other text.`;
+Return ONLY the JSON array of 3 objects with "id", "question", "placeholder", and "mindfulEnd". No other text.`;
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -166,7 +172,7 @@ Return ONLY the JSON array of 3 objects with "id", "question", and "placeholder"
     }
 
     for (const q of questions) {
-      if (!q.id || !q.question || !q.placeholder) {
+      if (!q.id || !q.question || !q.placeholder || (q.mindfulEnd !== 'high' && q.mindfulEnd !== 'low')) {
         console.error('Invalid question structure:', q);
         throw new Error('Invalid question structure');
       }

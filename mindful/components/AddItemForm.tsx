@@ -245,23 +245,13 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl, checkUrlInInventor
 
     if (questions.length > 0) {
       questions.forEach((q) => {
-        const answer = questionAnswers[q.id] || 1;
+        const answer = questionAnswers[q.id] ?? 1;
 
-        let mindfulnessValue: number;
+        const mindfulnessValue =
+          q.mindfulEnd === 'high'
+            ? (answer - 1) * 2.5
+            : (5 - answer) * 2.5; // low: 1→10, 2→7.5, 3→5, 4→2.5, 5→0
 
-        switch (q.id) {
-          case 'urgency':
-            mindfulnessValue = 12 - (answer * 2);
-            break;
-          case 'importance':
-          case 'alternatives':
-          case 'impact':
-          default:
-            mindfulnessValue = (answer * 2);
-            break;
-        }
-
-        mindfulnessValue = Math.max(1, Math.min(10, mindfulnessValue));
         mindfulnessValues.push(mindfulnessValue);
       });
     }
@@ -344,12 +334,12 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl, checkUrlInInventor
     waitDate.setDate(waitDate.getDate() + days);
     setWaitUntilDate(waitDate.toISOString().split('T')[0]);
 
-    if (calculatedScore <= 3) {
-      setDifficulty('easy');
-    } else if (calculatedScore <= 7) {
+    if (calculatedScore <= 3.3) {
+      setDifficulty('hard');
+    } else if (calculatedScore <= 6.7) {
       setDifficulty('medium');
     } else {
-      setDifficulty('hard');
+      setDifficulty('easy');
     }
 
     setStep(3);
