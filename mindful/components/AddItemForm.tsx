@@ -736,7 +736,7 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl, checkUrlInInventor
                             <div
                               className="h-full rounded-full transition-all duration-500"
                               style={{
-                                width: `${c.value * 10}%`,
+                                width: c.value === 0 ? '2%' : `${c.value * 10}%`,
                                 backgroundColor: c.mindfulEnd === 'high'
                                   ? (c.value >= 7 ? '#255736' : c.value >= 4 ? '#d97706' : '#dc2626')
                                   : (c.value >= 7 ? '#dc2626' : c.value >= 4 ? '#d97706' : '#255736'),
