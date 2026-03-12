@@ -21,7 +21,7 @@ You can try the deployed application here:
 
 Click the thumbnail below to watch the demo:
 
-[![Second Thought Demo](https://youtu.be/DXpuB7ylHzQ)
+[![Second Thought Demo](https://youtu.be/DXpuB7ylHzQ?si=zZeDQ5kfZ1IMxqm6)
 
 ---
 
