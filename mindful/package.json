@@ -13,7 +13,7 @@
     "build:popup": "npm run build:popup:css && node extension/build.mjs",
     "build:content:css": "tailwindcss -i extension/src/content.css -o extension/content.css",
     "build:content": "npm run build:content:css && node extension/build-content.mjs",
-    "build:extension": "npm run build:popup && npm run build:content",
+    "build:extension": "npm run build:popup && npm run build:content && node scripts/zip-extension.mjs",
     "test": "vitest run"
   },
   "dependencies": {
@@ -56,6 +56,7 @@
   },
   "devDependencies": {
     "@types/react": "~19.1.0",
+    "archiver": "^7.0.1",
     "autoprefixer": "^10.4.23",
     "esbuild": "^0.25.12",
     "postcss": "^8.5.6",
