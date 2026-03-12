@@ -3,10 +3,12 @@ import {
   Sparkles, 
   TrendingDown, 
   DollarSign, 
+  Heart,
   Target, 
   Clock,
   MessageSquare,
   Download,
+  PlayCircle,
   ChevronRight,
   Check
 } from 'lucide-react';
@@ -218,7 +220,7 @@ export function OurMission({ onGetStarted, userEmail }: OurMissionProps) {
           
           {/* Add Item Button */}
           {userEmail && (
-            <div className="text-center pt-4">
+            <div className="pt-4 flex flex-col sm:flex-row gap-3 justify-center items-center">
               <button
                 onClick={onGetStarted}
                 className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-8 py-4 rounded-full hover:bg-primary/90 transition-all shadow-lg hover:shadow-xl font-semibold text-lg"
@@ -322,7 +324,17 @@ export function OurMission({ onGetStarted, userEmail }: OurMissionProps) {
             onClick={scrollToWhyWeCare}
             className="inline-flex items-center gap-3 bg-muted text-foreground px-12 py-5 rounded-full hover:bg-muted/80 transition-all shadow-lg hover:shadow-xl text-xl font-semibold"
           >
+            <Heart className="w-6 h-6" />
             Why We Care
+          </button>
+          <button
+            onClick={() => {
+              window.open('https://www.youtube.com/watch?v=DXpuB7ylHzQ', '_blank', 'noopener,noreferrer');
+            }}
+            className="inline-flex items-center gap-3 bg-[#e0ca92] text-[#5B4A00] px-12 py-5 rounded-full hover:bg-[#e0ca92] transition-all shadow-lg hover:shadow-xl text-xl font-semibold"
+          >
+            <PlayCircle className="w-6 h-6" />
+            Promo Video
           </button>
           <button
             onClick={scrollToOnboarding}
