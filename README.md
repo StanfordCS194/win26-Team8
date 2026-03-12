@@ -17,12 +17,12 @@ You can try the deployed application here:
 
 
 ---
-
 # 🎥 Demo Video
 
-Watch a short demo of **Second Thought** to see how the Chrome extension interrupts impulse purchases and how the dashboard helps users reflect on their spending habits.
+Click the thumbnail below to watch the demo.
 
 [![Second Thought Demo](https://img.youtube.com/vi/DXpuB7ylHzQ/0.jpg)](https://youtu.be/DXpuB7ylHzQ)
+
 ---
 
 # ⚙️ How It Works
