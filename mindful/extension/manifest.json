@@ -3,12 +3,6 @@
   "name": "mindful",
   "version": "1.0.0",
   "description": "mindful web app packaged as a Chrome extension.",
-  "web_accessible_resources": [
-    {
-      "resources": ["content.css"],
-      "matches": ["<all_urls>"]
-    }
-  ],
   "action": {
     "default_title": "mindful",
     "default_popup": "index.html"
@@ -26,6 +20,7 @@
     {
       "matches": ["<all_urls>"],
       "js": ["content.js"],
+      "css": ["content.css"],
       "run_at": "document_end",
       "all_frames": true
     }

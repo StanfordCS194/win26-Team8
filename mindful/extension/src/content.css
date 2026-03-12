@@ -1,8 +1,5 @@
 @import "../../styles/globals.css";
 
-/* Extension-only styles. Design tokens come from :host (injected in content.tsx).
-   All of this is injected into Shadow DOM so the page and extension cannot affect each other. */
-
 /* Banner shown when current page URL is already in the user's mindful cart */
 .st-url-banner {
   position: fixed;
@@ -15,9 +12,10 @@
   padding: 12px 16px;
   box-sizing: border-box;
   pointer-events: none;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
 }
 
-/* LOCKED BANNER STYLE – uses webapp tokens */
+/* LOCKED BANNER STYLE*/
 .st-url-banner-inner {
   max-width: 960px;
   width: 100%;
@@ -27,9 +25,9 @@
   gap: 12px;
   padding: 10px 16px;
   padding-right: 40px;
-  border-radius: var(--radius);
-  background: var(--secondary);
-  border: 1px solid var(--border);
+  border-radius: 18px; 
+  background: #efdac1; 
+  border: 1px solid #d8a56a;
   box-shadow: 0 18px 40px rgba(15, 23, 42, 0.45);
   box-sizing: border-box;
   pointer-events: auto;
@@ -54,14 +52,14 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: var(--foreground);
+  color: #047857;
   opacity: 0.9;
 }
 
 .st-url-banner-subtitle {
   font-size: 11px;
   font-weight: 500;
-  color: var(--muted-foreground);
+  color: #065f46;
   opacity: 0.9;
 }
 
@@ -111,7 +109,7 @@
   font-size: 20px;
   font-weight: 700;
   line-height: 1;
-  color: var(--foreground);
+  color: #92400e;
   background: transparent;
   border: none;
   border-radius: 0;
@@ -124,23 +122,23 @@
 
 .st-url-banner--time .st-url-banner-heading,
 .st-url-banner--goals .st-url-banner-heading {
-  color: var(--foreground);
+  color: #92400e; /* deeper amber for locked state heading */
 }
 
 .st-url-banner--time .st-url-banner-subtitle,
 .st-url-banner--goals .st-url-banner-subtitle {
-  color: var(--muted-foreground);
+  color: #b45309;
 }
 
-/* Unlocked variant – webapp primary tint */
+/* Green variant when item is unlocked */
 .st-url-banner--unlocked .st-url-banner-inner {
-  background: var(--muted);
-  border-color: var(--primary);
-  color: var(--foreground);
+  background: #d7e4d8; /* green-100 */
+  border-color: #A3B9A4;
+  color: #064e3b; /* dark green text */
 }
 
 .st-url-banner--unlocked .st-url-banner-dismiss {
-  color: var(--foreground);
+  color: #064e3b;
   background: transparent;
   border: none;
 }
@@ -159,13 +157,14 @@
   font-weight: 600;
 }
 
-/* Content overlay – uses webapp design tokens */
+/* Second Thought content overlay – shown when user clicks add-to-cart on a site */
 
 #second-thought-overlay,
 .st-overlay-root {
   position: fixed;
   inset: 0;
   z-index: 2147483647;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
 }
 
 .st-overlay-backdrop {
@@ -185,13 +184,12 @@
 }
 
 .st-overlay-card {
-  background: var(--card);
-  border-radius: var(--radius);
+  background: #fff;
+  border-radius: 12px;
   padding: 28px 32px;
   max-width: 380px;
   width: 100%;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
-  border: 1px solid var(--border);
 }
 
 .st-overlay-card-form {
@@ -205,14 +203,14 @@
   margin: 0 0 12px;
   font-size: 1.5rem;
   font-weight: 700;
-  color: var(--card-foreground);
+  color: #111;
 }
 
 .st-overlay-message {
   margin: 0 0 20px;
   font-size: 1rem;
   line-height: 1.5;
-  color: var(--muted-foreground);
+  color: #444;
 }
 
 .st-overlay-message.st-overlay-success {
@@ -226,10 +224,10 @@
   margin-bottom: 10px;
   font-size: 1rem;
   font-weight: 600;
-  color: var(--primary-foreground);
+  color: #fff;
   background: var(--primary);
   border: none;
-  border-radius: var(--radius);
+  border-radius: 8px;
   cursor: pointer;
 }
 
@@ -249,7 +247,7 @@
   color: var(--foreground);
   background: transparent;
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: 8px;
   cursor: pointer;
 }
 
