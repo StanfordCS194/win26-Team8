@@ -677,8 +677,8 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl, checkUrlInInventor
               const radius = 54;
               const circumference = 2 * Math.PI * radius;
               const strokeDashoffset = circumference - (percentage / 100) * circumference;
-              const color = score >= 7 ? '#dc2626' : score >= 4 ? '#d97706' : '#255736';
-              const label = score >= 7 ? 'High impulse' : score >= 4 ? 'Moderate' : 'Mindful';
+              const color = score < 4 ? '#dc2626' : score < 7 ? '#d97706' : '#255736';
+              const label = score < 4 ? 'High impulse' : score < 7 ? 'Moderate' : 'Mindful';
 
               // Build breakdown of each component
               const idToLabel: Record<string, string> = {
@@ -691,19 +691,17 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl, checkUrlInInventor
                 improvement: 'Improvement',
                 need: 'Need',
               };
-              const components: { label: string; raw: number; value: number }[] = [];
+              const components: { label: string; raw: number; value: number; mindfulEnd: 'high' | 'low' }[] = [];
               const consumptionVal = Math.max(1, Math.min(10, consumptionScore * 2));
-              components.push({ label: 'Need', raw: consumptionScore, value: consumptionVal });
+              components.push({ label: 'Need', raw: consumptionScore, value: consumptionVal, mindfulEnd: 'high' });
               questions.forEach((q) => {
                 const answer = answers[q.id] || 3;
-                let val: number;
-                if (q.id === 'urgency') {
-                  val = 12 - (answer * 2);
-                } else {
-                  val = answer * 2;
-                }
-                val = Math.max(1, Math.min(10, val));
-                components.push({ label: idToLabel[q.id] || q.id, raw: answer, value: val });
+                const mindfulnessValue =
+                  q.mindfulEnd === 'high'
+                    ? (answer - 1) * 2.5
+                    : (5 - answer) * 2.5;
+                const val = Math.max(0, Math.min(10, mindfulnessValue));
+                components.push({ label: idToLabel[q.id] || q.id, raw: answer, value: val, mindfulEnd: q.mindfulEnd });
               });
 
               return (
@@ -739,7 +737,9 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl, checkUrlInInventor
                               className="h-full rounded-full transition-all duration-500"
                               style={{
                                 width: `${c.value * 10}%`,
-                                backgroundColor: c.value >= 7 ? '#dc2626' : c.value >= 4 ? '#d97706' : '#255736',
+                                backgroundColor: c.mindfulEnd === 'high'
+                                  ? (c.value >= 7 ? '#255736' : c.value >= 4 ? '#d97706' : '#dc2626')
+                                  : (c.value >= 7 ? '#dc2626' : c.value >= 4 ? '#d97706' : '#255736'),
                               }}
                             />
                           </div>
