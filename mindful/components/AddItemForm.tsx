@@ -240,7 +240,8 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl, checkUrlInInventor
   const calculateMindfulnessScore = (questionAnswers: Record<string, number>): number => {
     const mindfulnessValues: number[] = [];
 
-    const consumptionMindfulness = consumptionScore * 2;
+    // Need: lower raw score (1 = Need Less) = more mindful → same as mindfulEnd 'low'
+    const consumptionMindfulness = (consumptionScore - 1) * 2.5;
     mindfulnessValues.push(consumptionMindfulness);
 
     if (questions.length > 0) {
@@ -692,7 +693,7 @@ export function AddItemForm({ onSubmit, onCancel, initialUrl, checkUrlInInventor
                 need: 'Need',
               };
               const components: { label: string; raw: number; value: number; mindfulEnd: 'high' | 'low' }[] = [];
-              const consumptionVal = Math.max(1, Math.min(10, consumptionScore * 2));
+              const consumptionVal = Math.max(0, Math.min(10, (consumptionScore - 1) * 2.5));
               components.push({ label: 'Need', raw: consumptionScore, value: consumptionVal, mindfulEnd: 'high' });
               questions.forEach((q) => {
                 const answer = answers[q.id] || 3;
