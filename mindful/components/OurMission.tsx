@@ -157,58 +157,37 @@ export function OurMission({ onGetStarted, userEmail }: OurMissionProps) {
       description: 'Add items you\'re considering purchasing',
       icon: Sparkles,
       content: (
-        <div className="space-y-5">
-          <div className="space-y-5">
-            <div className="flex items-start gap-3">
-              <div className="w-7 h-7 rounded-lg border-2 border-primary text-primary flex items-center justify-center font-semibold flex-shrink-0 text-sm">
-                1
+        <div className="space-y-5 max-w-2xl mx-auto">
+          <ol className="text-base text-foreground/80 space-y-4 list-none pl-0">
+            <li className="flex items-start gap-3">
+              <span className="w-7 h-7 rounded-lg border-2 border-primary text-primary flex items-center justify-center font-semibold flex-shrink-0 text-sm">1</span>
+              <div className="space-y-2">
+                <span className="block font-semibold text-foreground">Enter Product Link or Use the Browser Extension</span>
+                <span className="block">Tell us what you&apos;re thinking about buying</span>
               </div>
-              <div>
-                <h4 className="font-semibold text-foreground mb-1 text-base">Enter Product Link or Use the Browser Extension</h4>
-                <p className="text-base text-foreground/70">
-                  Tell us what you're thinking about buying
-                </p>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="w-7 h-7 rounded-lg border-2 border-primary text-primary flex items-center justify-center font-semibold flex-shrink-0 text-sm">2</span>
+              <div className="space-y-2">
+                <span className="block font-semibold text-foreground">Answer Reflection Questions</span>
+                <span className="block">Respond to personalized questions to help you reflect on your decision with a mindfulness score</span>
               </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <div className="w-7 h-7 rounded-lg border-2 border-primary text-primary flex items-center justify-center font-semibold flex-shrink-0 text-sm">
-                2
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="w-7 h-7 rounded-lg border-2 border-primary text-primary flex items-center justify-center font-semibold flex-shrink-0 text-sm">3</span>
+              <div className="space-y-2">
+                <span className="block font-semibold text-foreground">Choose Your Constraint</span>
+                <span className="block">Select time-based (wait X days) or goals-based (complete a challenge first) constraint</span>
               </div>
-              <div>
-                <h4 className="font-semibold text-foreground mb-1 text-base">Answer Reflection Questions</h4>
-                <p className="text-base text-foreground/70">
-                  Respond to personalized questions to help you reflect on your decision with a mindfulness score
-                </p>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="w-7 h-7 rounded-lg border-2 border-primary text-primary flex items-center justify-center font-semibold flex-shrink-0 text-sm">4</span>
+              <div className="space-y-2">
+                <span className="block font-semibold text-foreground">Track Your Progress</span>
+                <span className="block">View your items in Timeline or Goals view and watch your mindfulness grow</span>
               </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <div className="w-7 h-7 rounded-lg border-2 border-primary text-primary flex items-center justify-center font-semibold flex-shrink-0 text-sm">
-                3
-              </div>
-              <div>
-                <h4 className="font-semibold text-foreground mb-1 text-base">Choose Your Constraint</h4>
-                <p className="text-base text-foreground/70">
-                  Select time-based (wait X days) or goals-based (complete a challenge first) constraint
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <div className="w-7 h-7 rounded-lg border-2 border-primary text-primary flex items-center justify-center font-semibold flex-shrink-0 text-sm">
-                4
-              </div>
-              <div>
-                <h4 className="font-semibold text-foreground mb-1 text-base">Track Your Progress</h4>
-                <p className="text-base text-foreground/70">
-                  View your items in Timeline or Goals view and watch your mindfulness grow
-                </p>
-              </div>
-            </div>
-          </div>
-          
-          {/* Add Item Button */}
+            </li>
+          </ol>
           {userEmail && (
             <div className="pt-4 flex flex-col sm:flex-row gap-3 justify-center items-center">
               <button
