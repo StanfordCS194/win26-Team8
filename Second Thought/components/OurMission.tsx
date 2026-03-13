@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { Auth } from './Auth';
 import { useAuth } from '../contexts/AuthContext';
+import promoVideo from '../assets/Second Thought Demo.mp4';
 
 interface OurMissionProps {
   onGetStarted: () => void;
@@ -58,6 +59,13 @@ export function OurMission({ onGetStarted, userEmail }: OurMissionProps) {
     const whyWeCareSection = document.getElementById('why-we-care-section');
     if (whyWeCareSection) {
       whyWeCareSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  const scrollToPromoVideo = () => {
+    const promoVideoSection = document.getElementById('promo-video-section');
+    if (promoVideoSection) {
+      promoVideoSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
 
@@ -297,9 +305,7 @@ export function OurMission({ onGetStarted, userEmail }: OurMissionProps) {
             Why We Care
           </button>
           <button
-            onClick={() => {
-              window.open('https://www.youtube.com/watch?v=DXpuB7ylHzQ', '_blank', 'noopener,noreferrer');
-            }}
+            onClick={scrollToPromoVideo}
             className="inline-flex items-center gap-3 bg-[#e0ca92] text-[#5B4A00] px-12 py-5 rounded-full hover:bg-[#e0ca92] transition-all shadow-lg hover:shadow-xl text-xl font-semibold"
           >
             <PlayCircle className="w-6 h-6" />
@@ -316,7 +322,7 @@ export function OurMission({ onGetStarted, userEmail }: OurMissionProps) {
       </div>
 
       {/* Why We Care Section */}
-      <div id="why-we-care-section" className="max-w-6xl mx-auto scroll-mt-8">
+      <div id="why-we-care-section" className="max-w-6xl mx-auto scroll-mt-8 pb-10 md:pb-16">
         <h2 className="text-4xl md:text-5xl font-bold text-[#06402B] mb-4 text-center font-serif">
           Why We Care
         </h2>
@@ -378,6 +384,24 @@ export function OurMission({ onGetStarted, userEmail }: OurMissionProps) {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Promo Video Section */}
+      <div id="promo-video-section" className="max-w-6xl mx-auto scroll-mt-8">
+        <h2 className="text-4xl md:text-5xl font-bold text-[#06402B] mb-4 text-center font-serif">
+          Promo Video
+        </h2>
+
+        <div className="rounded-3xl border-2 border-primary/20 bg-card shadow-lg p-4 md:p-6 max-w-[1030px] mx-auto">
+          <video
+            className="w-full rounded-2xl"
+            controls
+            preload="metadata"
+          >
+            <source src={promoVideo} type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
         </div>
       </div>
 
