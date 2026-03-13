@@ -15,6 +15,14 @@ You can try the deployed application here:
 
 🌐 https://second-thought-lilac.vercel.app/
 
+
+---
+# 🎥 Promo Video
+
+Click the thumbnail below to watch our promo video:
+
+[![Second Thought Promo](https://img.youtube.com/vi/DXpuB7ylHzQ/0.jpg)](https://youtu.be/DXpuB7ylHzQ)
+
 ---
 
 # ⚙️ How It Works

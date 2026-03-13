@@ -6,6 +6,7 @@ import {
   Target, 
   MessageSquare, 
   Download,
+  PlayCircle,
   ChevronRight,
   ChevronLeft,
   Check
@@ -157,6 +158,15 @@ export function Walkthrough({ onComplete, userEmail }: WalkthroughProps) {
             </div>
 
             <div className="flex flex-col gap-4 items-center">
+              <button
+                onClick={() => {
+                  window.open('https://www.youtube.com/watch?v=DXpuB7ylHzQ', '_blank', 'noopener,noreferrer');
+                }}
+                className="inline-flex items-center gap-2 bg-accent text-accent-foreground px-6 py-3 rounded-full hover:bg-accent/90 transition-all shadow-md"
+              >
+                <PlayCircle className="w-5 h-5" />
+                Watch Promo Video
+              </button>
               <div className="flex gap-4 justify-center">
                 <button
                   onClick={() => {
