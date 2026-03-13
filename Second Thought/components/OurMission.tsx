@@ -322,7 +322,7 @@ export function OurMission({ onGetStarted, userEmail }: OurMissionProps) {
       </div>
 
       {/* Why We Care Section */}
-      <div id="why-we-care-section" className="max-w-6xl mx-auto scroll-mt-8 pb-10 md:pb-16">
+      <div id="why-we-care-section" className="max-w-6xl mx-auto scroll-mt-8 md:pb-6">
         <h2 className="text-4xl md:text-5xl font-bold text-[#06402B] mb-4 text-center font-serif">
           Why We Care
         </h2>
