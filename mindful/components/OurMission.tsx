@@ -109,56 +109,46 @@ export function OurMission({ onGetStarted, userEmail }: OurMissionProps) {
     },
     {
       title: 'Get the Browser Extension',
-      description: 'Install our browser extension to add items with one click while shopping online!',
+      description: 'Follow these steps to install the Second Thought extension.',
       icon: Download,
       content: (
-        <div className="text-center space-y-4">
-          <div className="space-y-3 max-w-2xl mx-auto">
-            
-            
-            <div className="bg-muted/30 rounded-xl p-4 space-y-3">
-              <h4 className="font-semibold text-foreground text-lg text-left">Extension Features:</h4>
-              <ul className="text-base text-foreground/70 space-y-3 text-left">
-                <li className="flex items-start gap-2">
-                  <Check className="w-5 h-5 text-primary flex-shrink-0" />
-                  <span>Add items directly from product pages</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="w-5 h-5 text-primary flex-shrink-0" />
-                  <span>Automatic product name and image detection</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="w-5 h-5 text-primary flex-shrink-0" />
-                  <span>Reflect on your decision right away</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="w-5 h-5 text-primary flex-shrink-0" />
-                  <span>Works on Amazon, eBay, Nike, and more</span>
-                </li>
-              </ul>
-            </div>
-
-            <div className="flex gap-4 justify-center">
-              <button
-                onClick={() => {
-                  alert('Extension download coming soon! For now, use the web app to add items.');
-                }}
-                className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-full hover:bg-primary/90 transition-all shadow-md"
-              >
-                <Download className="w-5 h-5" />
-                Download for Chrome
-              </button>
-              <button
-                onClick={() => {
-                  alert('Extension download coming soon! For now, use the web app to add items.');
-                }}
-                className="inline-flex items-center gap-2 bg-muted text-foreground px-6 py-3 rounded-full hover:bg-muted/80 transition-all"
-              >
-                <Download className="w-5 h-5" />
-                Download for Firefox
-              </button>
-            </div>
-          </div>
+        <div className="space-y-5 max-w-2xl mx-auto">
+          <ol className="text-base text-foreground/80 space-y-4 list-none pl-0">
+            <li className="flex items-start gap-3">
+              <span className="w-7 h-7 rounded-lg border-2 border-primary text-primary flex items-center justify-center font-semibold flex-shrink-0 text-sm">1</span>
+              <div className="space-y-2">
+                <span className="block">Download the Second Thought Extension, and unzip the file.</span>
+                <a
+                  href="/second-thought-extension.zip"
+                  download="second-thought-extension.zip"
+                  className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-lg hover:bg-primary/90 transition-colors font-medium text-sm shadow-sm"
+                >
+                  <Download className="w-4 h-4" />
+                  Download extension (zip)
+                </a>
+              </div>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="w-7 h-7 rounded-lg border-2 border-primary text-primary flex items-center justify-center font-semibold flex-shrink-0 text-sm">2</span>
+              <span>Navigate to <code className="bg-muted px-1.5 py-0.5 rounded text-sm">chrome://extensions/</code>.</span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="w-7 h-7 rounded-lg border-2 border-primary text-primary flex items-center justify-center font-semibold flex-shrink-0 text-sm">3</span>
+              <span>Enable Developer Mode in the top right corner.</span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="w-7 h-7 rounded-lg border-2 border-primary text-primary flex items-center justify-center font-semibold flex-shrink-0 text-sm">4</span>
+              <span>Select &quot;Load Unpacked&quot; in the top left corner, and select the folder containing the unzipped Second Thought Extension. This folder should contain "dist" and "src" subfolders.</span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="w-7 h-7 rounded-lg border-2 border-primary text-primary flex items-center justify-center font-semibold flex-shrink-0 text-sm">5</span>
+              <span>The Second Thought extension will activate whenever you click "Add to Cart", or equivalent, when online shopping in your Chrome browser. You can also activate it manually through the Chrome Extension toolbar, located to the right of the URL bar.</span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="w-7 h-7 rounded-lg border-2 border-primary text-primary flex items-center justify-center font-semibold flex-shrink-0 text-sm">6</span>
+              <span>Enjoy!</span>
+            </li>
+          </ol>
         </div>
       ),
     },
@@ -167,58 +157,37 @@ export function OurMission({ onGetStarted, userEmail }: OurMissionProps) {
       description: 'Add items you\'re considering purchasing',
       icon: Sparkles,
       content: (
-        <div className="space-y-5">
-          <div className="space-y-5">
-            <div className="flex items-start gap-3">
-              <div className="w-7 h-7 rounded-lg border-2 border-primary text-primary flex items-center justify-center font-semibold flex-shrink-0 text-sm">
-                1
+        <div className="space-y-5 max-w-2xl mx-auto">
+          <ol className="text-base text-foreground/80 space-y-4 list-none pl-0">
+            <li className="flex items-start gap-3">
+              <span className="w-7 h-7 rounded-lg border-2 border-primary text-primary flex items-center justify-center font-semibold flex-shrink-0 text-sm">1</span>
+              <div className="space-y-2">
+                <span className="block font-semibold text-foreground">Enter Product Link or Use the Browser Extension</span>
+                <span className="block">Tell us what you&apos;re thinking about buying</span>
               </div>
-              <div>
-                <h4 className="font-semibold text-foreground mb-1 text-base">Enter Product Link or Use the Browser Extension</h4>
-                <p className="text-base text-foreground/70">
-                  Tell us what you're thinking about buying
-                </p>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="w-7 h-7 rounded-lg border-2 border-primary text-primary flex items-center justify-center font-semibold flex-shrink-0 text-sm">2</span>
+              <div className="space-y-2">
+                <span className="block font-semibold text-foreground">Answer Reflection Questions</span>
+                <span className="block">Respond to personalized questions to help you reflect on your decision with a mindfulness score</span>
               </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <div className="w-7 h-7 rounded-lg border-2 border-primary text-primary flex items-center justify-center font-semibold flex-shrink-0 text-sm">
-                2
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="w-7 h-7 rounded-lg border-2 border-primary text-primary flex items-center justify-center font-semibold flex-shrink-0 text-sm">3</span>
+              <div className="space-y-2">
+                <span className="block font-semibold text-foreground">Choose Your Constraint</span>
+                <span className="block">Select time-based (wait X days) or goals-based (complete a challenge first) constraint</span>
               </div>
-              <div>
-                <h4 className="font-semibold text-foreground mb-1 text-base">Answer Reflection Questions</h4>
-                <p className="text-base text-foreground/70">
-                  Respond to personalized questions to help you reflect on your decision with a mindfulness score
-                </p>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="w-7 h-7 rounded-lg border-2 border-primary text-primary flex items-center justify-center font-semibold flex-shrink-0 text-sm">4</span>
+              <div className="space-y-2">
+                <span className="block font-semibold text-foreground">Track Your Progress</span>
+                <span className="block">View your items in Timeline or Goals view and watch your mindfulness grow</span>
               </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <div className="w-7 h-7 rounded-lg border-2 border-primary text-primary flex items-center justify-center font-semibold flex-shrink-0 text-sm">
-                3
-              </div>
-              <div>
-                <h4 className="font-semibold text-foreground mb-1 text-base">Choose Your Constraint</h4>
-                <p className="text-base text-foreground/70">
-                  Select time-based (wait X days) or goals-based (complete a challenge first) constraint
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <div className="w-7 h-7 rounded-lg border-2 border-primary text-primary flex items-center justify-center font-semibold flex-shrink-0 text-sm">
-                4
-              </div>
-              <div>
-                <h4 className="font-semibold text-foreground mb-1 text-base">Track Your Progress</h4>
-                <p className="text-base text-foreground/70">
-                  View your items in Timeline or Goals view and watch your mindfulness grow
-                </p>
-              </div>
-            </div>
-          </div>
-          
-          {/* Add Item Button */}
+            </li>
+          </ol>
           {userEmail && (
             <div className="pt-4 flex flex-col sm:flex-row gap-3 justify-center items-center">
               <button

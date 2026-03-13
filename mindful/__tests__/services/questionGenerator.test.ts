@@ -39,10 +39,9 @@ describe('generateQuestions', () => {
     vi.stubEnv('EXPO_PUBLIC_ANTHROPIC_API_KEY', 'sk-ant-test-key-12345');
 
     const mockQuestions = [
-      { id: 'importance', question: 'How important are AirPods?', placeholder: 'Not/Very' },
-      { id: 'urgency', question: 'How urgent are AirPods?', placeholder: 'Not/Very' },
-      { id: 'alternatives', question: 'How about other headphones?', placeholder: 'Not/Very' },
-      { id: 'impact', question: 'How much will AirPods improve things?', placeholder: 'Not/Very' },
+      { id: 'importance', question: 'How important are AirPods?', placeholder: 'Not/Very', mindfulEnd: 'high' as const },
+      { id: 'urgency', question: 'How urgent are AirPods?', placeholder: 'Not/Very', mindfulEnd: 'low' as const },
+      { id: 'alternatives', question: 'How about other headphones?', placeholder: 'Not/Very', mindfulEnd: 'high' as const },
     ];
 
     mockFetch.mockResolvedValueOnce({
@@ -105,8 +104,8 @@ describe('generateQuestions', () => {
     vi.stubEnv('EXPO_PUBLIC_ANTHROPIC_API_KEY', 'sk-ant-test-key-12345');
 
     const twoQuestions = [
-      { id: 'a', question: 'Q1?', placeholder: 'P1' },
-      { id: 'b', question: 'Q2?', placeholder: 'P2' },
+      { id: 'a', question: 'Q1?', placeholder: 'P1', mindfulEnd: 'high' as const },
+      { id: 'b', question: 'Q2?', placeholder: 'P2', mindfulEnd: 'low' as const },
     ];
 
     mockFetch.mockResolvedValueOnce({
@@ -125,10 +124,9 @@ describe('generateQuestions', () => {
     vi.stubEnv('EXPO_PUBLIC_ANTHROPIC_API_KEY', 'sk-ant-test-key-12345');
 
     const badQuestions = [
-      { id: 'a', question: 'Q1?' }, // missing placeholder
-      { id: 'b', question: 'Q2?', placeholder: 'P2' },
-      { id: 'c', question: 'Q3?', placeholder: 'P3' },
-      { id: 'd', question: 'Q4?', placeholder: 'P4' },
+      { id: 'a', question: 'Q1?', placeholder: 'P1' }, // missing mindfulEnd
+      { id: 'b', question: 'Q2?', placeholder: 'P2', mindfulEnd: 'high' as const },
+      { id: 'c', question: 'Q3?', placeholder: 'P3', mindfulEnd: 'low' as const },
     ];
 
     mockFetch.mockResolvedValueOnce({
@@ -157,10 +155,9 @@ describe('generateQuestions', () => {
     vi.stubEnv('EXPO_PUBLIC_ANTHROPIC_API_KEY', 'sk-ant-test-key-12345');
 
     const mockQuestions = [
-      { id: 'a', question: 'Q1?', placeholder: 'P1' },
-      { id: 'b', question: 'Q2?', placeholder: 'P2' },
-      { id: 'c', question: 'Q3?', placeholder: 'P3' },
-      { id: 'd', question: 'Q4?', placeholder: 'P4' },
+      { id: 'a', question: 'Q1?', placeholder: 'P1', mindfulEnd: 'high' as const },
+      { id: 'b', question: 'Q2?', placeholder: 'P2', mindfulEnd: 'low' as const },
+      { id: 'c', question: 'Q3?', placeholder: 'P3', mindfulEnd: 'high' as const },
     ];
 
     mockFetch.mockResolvedValueOnce({
